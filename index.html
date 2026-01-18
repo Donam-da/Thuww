@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Image Gallery</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <script>
+        // Three.js and OrbitControls are now loaded globally from the head tag, so no imports are needed.
+
+        // --- Scene Setup ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7.5);
+        scene.add(directionalLight);
+
+        // --- Controls ---
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // --- "Sun" (Central Point) ---
+        // Removing the sun to create a more chaotic scene.
+        // const sunGeometry = new THREE.SphereGeometry(1, 32, 32);
+        // const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        // const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+        // scene.add(sun);
+
+        // --- Image "Planets" ---
+        const numberOfImages = 62; // Updated to match the number of files
+        const imageUrls = Array.from({length: numberOfImages}, (_, i) => `images/${i + 1}.png`);
+
+        const textureLoader = new THREE.TextureLoader();
+        const imageObjects = [];
+        const bounds = 25; // The size of the invisible cube the images will fly in
+
+        imageUrls.forEach((url, i) => {
+            let plane = null; // Declare plane here for scope
+            const texture = textureLoader.load(url, 
+                () => {},
+                undefined,
+                () => {
+                    console.error(`Could not load texture: ${url}. Using a placeholder.`);
+                    const placeholderCanvas = document.createElement('canvas');
+                    placeholderCanvas.width = 256; placeholder.height = 256;
+                    const context = placeholderCanvas.getContext('2d');
+                    context.fillStyle = '#ccc'; context.fillRect(0, 0, 256, 256);
+                    context.fillStyle = '#333'; context.font = '20px Arial';
+                    context.textAlign = 'center'; context.fillText(`${i + 1}.png not found`, 128, 128);
+                    const placeholderTexture = new THREE.CanvasTexture(placeholderCanvas);
+                    if (plane) {
+                        plane.material.map = placeholderTexture;
+                        plane.material.needsUpdate = true;
+                    }
+                }
+            );
+
+            const geometry = new THREE.PlaneGeometry(2, 2);
+            const material = new THREE.MeshStandardMaterial({
+                map: texture,
+                side: THREE.DoubleSide
+            });
+            plane = new THREE.Mesh(geometry, material);
+
+            // Assign a random position inside a cube
+            plane.position.x = (Math.random() - 0.5) * bounds * 2;
+            plane.position.y = (Math.random() - 0.5) * bounds * 2;
+            plane.position.z = (Math.random() - 0.5) * bounds * 2;
+            
+            scene.add(plane);
+
+            // Store the mesh and its random velocity
+            imageObjects.push({
+                mesh: plane,
+                velocity: new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.02,
+                    (Math.random() - 0.5) * 0.02,
+                    (Math.random() - 0.5) * 0.02
+                )
+            });
+        });
+
+        // --- Camera Position ---
+        camera.position.z = 40; // Pulled camera back a bit to see more of the scene
+        camera.lookAt(scene.position);
+
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            imageObjects.forEach(obj => {
+                // Move the image
+                obj.mesh.position.add(obj.velocity);
+
+                // Bounce off the walls of the invisible cube
+                if (Math.abs(obj.mesh.position.x) > bounds) obj.velocity.x *= -1;
+                if (Math.abs(obj.mesh.position.y) > bounds) obj.velocity.y *= -1;
+                if (Math.abs(obj.mesh.position.z) > bounds) obj.velocity.z *= -1;
+
+                // Make the plane always face the camera
+                obj.mesh.lookAt(camera.position);
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // --- Handle Window Resize ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
+
+        animate();
+    </script>
+</body>
+</html>
