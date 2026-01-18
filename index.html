@@ -84,13 +84,18 @@
             
             scene.add(plane);
 
-            // Store the mesh and its random velocity
+            // Store the mesh and its random velocity and rotation
             imageObjects.push({
                 mesh: plane,
                 velocity: new THREE.Vector3(
                     (Math.random() - 0.5) * 0.02,
                     (Math.random() - 0.5) * 0.02,
                     (Math.random() - 0.5) * 0.02
+                ),
+                rotationSpeed: new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.01,
+                    (Math.random() - 0.5) * 0.01,
+                    (Math.random() - 0.5) * 0.01
                 )
             });
         });
@@ -108,13 +113,24 @@
                 // Move the image
                 obj.mesh.position.add(obj.velocity);
 
-                // Bounce off the walls of the invisible cube
-                if (Math.abs(obj.mesh.position.x) > bounds) obj.velocity.x *= -1;
-                if (Math.abs(obj.mesh.position.y) > bounds) obj.velocity.y *= -1;
-                if (Math.abs(obj.mesh.position.z) > bounds) obj.velocity.z *= -1;
+                // Apply random rotation
+                obj.mesh.rotation.x += obj.rotationSpeed.x;
+                obj.mesh.rotation.y += obj.rotationSpeed.y;
+                obj.mesh.rotation.z += obj.rotationSpeed.z;
 
-                // Make the plane always face the camera
-                obj.mesh.lookAt(camera.position);
+                // Bounce off the walls of the invisible cube, with a small push to prevent sticking
+                if (Math.abs(obj.mesh.position.x) > bounds) {
+                    obj.velocity.x *= -1;
+                    obj.mesh.position.x += obj.velocity.x * 2; 
+                }
+                if (Math.abs(obj.mesh.position.y) > bounds) {
+                    obj.velocity.y *= -1;
+                    obj.mesh.position.y += obj.velocity.y * 2;
+                }
+                if (Math.abs(obj.mesh.position.z) > bounds) {
+                    obj.velocity.z *= -1;
+                    obj.mesh.position.z += obj.velocity.z * 2;
+                }
             });
 
             controls.update();
