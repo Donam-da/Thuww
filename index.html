@@ -23,9 +23,20 @@
             position: absolute; top: 20px; right: 30px; color: white;
             font-size: 30px; cursor: pointer; text-decoration: none; font-family: Arial, sans-serif;
         }
+        .planet-label {
+            color: #FFF;
+            font-family: sans-serif;
+            padding: 2px 5px;
+            background: transparent;
+            font-size: 14px;
+            white-space: nowrap;
+            cursor: pointer;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
 </head>
 <body>
     <div id="loader-overlay">
@@ -44,12 +55,19 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
+        // --- Label Renderer Setup ---
+        let labelRenderer = new THREE.CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        document.body.appendChild(labelRenderer.domElement);
+
         // --- Lighting ---
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
         scene.add(ambientLight);
 
         // --- Controls ---
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, labelRenderer.domElement); // Pass labelRenderer.domElement for events
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.minDistance = 10;
@@ -88,6 +106,18 @@
             const imageGroup = new THREE.Group();
             planet.add(imageGroup);
 
+            // Create Label
+            const planetDiv = document.createElement('div');
+            planetDiv.className = 'planet-label';
+            planetDiv.textContent = data.name;
+            planetDiv.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent the main canvas click from firing
+                showImagesForPlanet(planet);
+            });
+            const planetLabel = new THREE.CSS2DObject(planetDiv);
+            planetLabel.position.set(0, data.size + 2, 0); // Position above the planet
+            planet.add(planetLabel);
+
             planet.userData = { 
                 ...data, 
                 isPlanet: true, 
@@ -122,24 +152,23 @@
         const mouse = new THREE.Vector2();
         
         function onMouseClick(event) {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+            // Adjust mouse click for the label renderer overlay
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            
             raycaster.setFromCamera(mouse, camera);
 
-            // The 'true' argument makes the raycaster check all descendants of the planets
             const intersects = raycaster.intersectObjects(planets, true);
 
             if (intersects.length > 0) {
                 let clickedObject = intersects[0].object;
                 
-                // If it's an image plane (identified by having an orbitAxis), open fullscreen
                 if (clickedObject.userData.orbitAxis) {
                     document.getElementById('fullscreen-image').src = clickedObject.userData.imageUrl;
                     document.getElementById('fullscreen-overlay').style.display = 'flex';
                     controls.enabled = false;
-                } 
-                // Otherwise, it must be a planet (or saturn's ring). Find the parent planet.
-                else {
+                } else {
                     let parentPlanet = clickedObject;
                     while (parentPlanet.parent && !parentPlanet.userData.isPlanet) {
                         parentPlanet = parentPlanet.parent;
@@ -158,17 +187,13 @@
 
         // --- Core Functions ---
         function showImagesForPlanet(planet) {
-            // If the planet already has an image cloud, do nothing.
-            if (planet.userData.imageGroup.children.length > 0) {
-                return;
-            }
+            if (planet.userData.imageGroup.children.length > 0) return;
 
             const availableUrls = allImageUrls.filter(url => !usedImageUrls.has(url));
             const imagesPerPlanet = 7;
             
-            // If there aren't enough free images, do nothing.
             if (availableUrls.length < imagesPerPlanet) {
-                console.log("Not enough unique images available to create a new cloud.");
+                console.log("Not enough unique images available.");
                 return;
             }
 
@@ -177,7 +202,7 @@
 
             const textureLoader = new THREE.TextureLoader();
             selectedUrls.forEach(url => {
-                usedImageUrls.add(url); // Mark image as used
+                usedImageUrls.add(url);
 
                 const material = new THREE.MeshStandardMaterial({
                     map: textureLoader.load(url),
@@ -224,14 +249,12 @@
             sun.rotation.y += 0.001;
 
             planets.forEach(planet => {
-                // Animate planet's orbit and rotation
                 const data = planet.userData;
                 data.angle += data.speed;
                 planet.position.x = Math.cos(data.angle) * data.distance;
                 planet.position.z = Math.sin(data.angle) * data.distance;
                 planet.rotation.y += 0.01;
 
-                // Animate the image cloud if it exists for this planet
                 planet.userData.imageGroup.children.forEach(image => {
                     image.position.applyAxisAngle(image.userData.orbitAxis, image.userData.orbitSpeed);
                     image.lookAt(new THREE.Vector3(0, 0, 0));
@@ -240,6 +263,7 @@
 
             controls.update();
             renderer.render(scene, camera);
+            labelRenderer.render(scene, camera); // Render labels
         }
 
         // --- Event Listeners & Initial Calls ---
@@ -247,7 +271,9 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight); // Resize label renderer
         }, false);
+        
         window.addEventListener('click', onMouseClick, false);
 
         // Hide loader and start
