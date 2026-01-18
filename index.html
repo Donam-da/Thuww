@@ -736,7 +736,7 @@
                 messageSuffix = "chúc bạn một ngày tốt lành!";
             }
 
-            const text = `Bây giờ là ${currentTime}, ${messageSuffix}`;
+            const text = `Giờ là ${currentTime}, ${messageSuffix}`;
 
             // Create canvas texture for the text
             const canvas = document.createElement('canvas');
@@ -777,6 +777,7 @@
             positionVector.multiplyScalar(distance);
             positionVector.add(camera.position);
             sunMessageMesh.position.copy(positionVector);
+            sunMessageMesh.position.y += planeHeight / 2 + 300; // Đẩy dòng chữ lên cao hơn nữa để tránh bị che khuất
             sunMessageMesh.quaternion.copy(camera.quaternion);
 
             scene.add(sunMessageMesh);
