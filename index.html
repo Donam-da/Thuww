@@ -304,15 +304,29 @@
         let isViewLocked = false; // Flag to indicate if view is locked
         let lastTouchTimestamp = 0;
 
-        // New variables for camera animation
+        // Variables for two-stage camera animation
         let isCameraAnimating = false;
         let cameraAnimationStartTime = 0;
-        const cameraAnimationDuration = 1500; // milliseconds
+        // 0: idle, 1: return to home view, 2: move to target planet
+        let cameraAnimationPhase = 0;
+        const returnToHomeDuration = 1000; // milliseconds for returning to initial view
+        const moveToTargetDuration = 1500; // milliseconds for moving to target planet
+
         let startCameraPosition = new THREE.Vector3();
         let startControlsTarget = new THREE.Vector3();
-        let endCameraPosition = new THREE.Vector3();
-        let endControlsTarget = new THREE.Vector3();
+        // Define the "home" view (initial camera position and target)
+        const homeCameraPosition = new THREE.Vector3(0, 100, 250);
+        const homeControlsTarget = new THREE.Vector3(0, 0, 0);
+        let finalCameraPosition = new THREE.Vector3();       // Final camera position near planet
+        let finalControlsTarget = new THREE.Vector3();        // Final controls target (planet's world position)
         const TOUCH_DELAY = 300; // Milliseconds to prevent ghost clicks
+
+        // Easing function for smoother animations
+        function easeInOutSine(t) {
+            return 0.5 - 0.5 * Math.cos(t * Math.PI);
+        }
+
+
 
         function onInteraction(event) {
             console.log('onInteraction called, event type:', event.type); // Debugging line
@@ -497,37 +511,42 @@
             if (lockView) {
                 lockedPlanet = targetPlanet;
                 isViewLocked = true;
-                controls.enablePan = false; // Ngăn không cho người dùng kéo camera ra khỏi hành tinh
-                controls.minDistance = targetPlanet.userData.size * 3; // Giữ camera gần hành tinh
-                controls.maxDistance = targetPlanet.userData.size * 15; // Không cho camera đi quá xa
-                unlockViewBtn.style.display = 'block'; // Show the unlock button
+                controls.enablePan = false;
+                controls.minDistance = targetPlanet.userData.size * 3;
+                controls.maxDistance = targetPlanet.userData.size * 15;
+                // Note: unlockViewBtn is not defined in the provided HTML, so its usage is commented out.
             } else {
                 lockedPlanet = null;
                 isViewLocked = false;
                 restoreDefaultControls();
-                unlockViewBtn.style.display = 'none'; // Hide the unlock button
+                // Note: unlockViewBtn is not defined in the provided HTML, so its usage is commented out.
             }
 
-            // Store current camera and controls target for animation start
+            // Store current camera and controls target as the starting point for the first phase
             startCameraPosition.copy(camera.position);
             startControlsTarget.copy(controls.target);
 
             // Calculate target position for controls (planet's world position)
             const planetWorldPosition = new THREE.Vector3();
             targetPlanet.getWorldPosition(planetWorldPosition);
-            endControlsTarget.copy(planetWorldPosition);
+            finalControlsTarget.copy(planetWorldPosition);
 
             // Calculate target position for camera (offset from planet)
-            const offsetDistance = targetPlanet.userData.size * 8 + 10; // Giảm khoảng cách để camera gần hơn
-            endCameraPosition.copy(planetWorldPosition).add(new THREE.Vector3(0, offsetDistance / 2, offsetDistance));
+            const offsetDistance = targetPlanet.userData.size * 8 + 10;
+            finalCameraPosition.copy(planetWorldPosition).add(new THREE.Vector3(0, offsetDistance / 2, offsetDistance));
 
             isCameraAnimating = true;
+            cameraAnimationPhase = 1; // Start with the "return to home view" phase
             cameraAnimationStartTime = Date.now();
         }
         
         document.getElementById('close-btn').addEventListener('click', closeFullscreen);
         document.getElementById('close-btn').addEventListener('touchend', closeFullscreen);
 
+        // If you intend to have an unlock view button, you would add it to your HTML and uncomment/implement its logic here.
+        // Example:
+        // const unlockViewBtn = document.getElementById('unlock-view-btn');
+        // if (unlockViewBtn) unlockViewBtn.addEventListener('click', () => { isViewLocked = false; lockedPlanet = null; restoreDefaultControls(); unlockViewBtn.style.display = 'none'; });
         function closeFullscreen(event) {
             event.preventDefault(); // Prevent potential double-triggering on touch devices
             document.getElementById('fullscreen-overlay').style.display = 'none';
@@ -677,27 +696,51 @@
                 }
             }
 
-            // Camera animation update
+            // Two-stage Camera animation update
             if (isCameraAnimating) {
                 const elapsedTime = Date.now() - cameraAnimationStartTime;
-                const progress = Math.min(elapsedTime / cameraAnimationDuration, 1);
-
-                // Simple linear interpolation
-                camera.position.lerpVectors(startCameraPosition, endCameraPosition, progress);
-                controls.target.lerpVectors(startControlsTarget, endControlsTarget, progress);
                 
-                // Ensure camera always looks at the interpolated target during animation
-                camera.lookAt(controls.target);
+                if (cameraAnimationPhase === 1) { // Phase 1: Return to Home View
+                    const progress = Math.min(elapsedTime / returnToHomeDuration, 1);
+                    const easedProgress = easeInOutSine(progress); // Apply easing function
 
-                if (progress === 1) {
-                    isCameraAnimating = false;
-                    controls.enabled = true; // Re-enable controls after animation
+                    // Lerp camera position from current to home position
+                    camera.position.lerpVectors(startCameraPosition, homeCameraPosition, easedProgress);
+                    // Lerp controls target from current to home target (0,0,0)
+                    controls.target.lerpVectors(startControlsTarget, homeControlsTarget, easedProgress);
+                    
+                    if (progress === 1) {
+                        // Transition to the next phase
+                        cameraAnimationPhase = 2;
+                        cameraAnimationStartTime = Date.now(); // Reset timer for the next phase
+                        // Update start positions for the next phase
+                        // Đảm bảo vị trí cuối cùng chính xác trước khi bắt đầu giai đoạn tiếp theo
+                        startCameraPosition.copy(homeCameraPosition); 
+                        startControlsTarget.copy(homeControlsTarget);
+                    }
+                } else if (cameraAnimationPhase === 2) { // Phase 2: Move to Target Planet
+                    const progress = Math.min(elapsedTime / moveToTargetDuration, 1);
+                    const easedProgress = easeInOutSine(progress); // Apply easing function
+
+                    // Lerp camera position from current (after zoom out) to final
+                    camera.position.lerpVectors(startCameraPosition, finalCameraPosition, easedProgress);
+                    // Lerp controls target from current (original target) to final (planet's world position)
+                    controls.target.lerpVectors(startControlsTarget, finalControlsTarget, easedProgress);
+
+                    if (progress === 1) {
+                        isCameraAnimating = false;
+                        cameraAnimationPhase = 0; // Animation finished
+                        controls.enabled = true; // Re-enable controls after animation
+                        // Ensure camera and controls target are exactly at their final positions
+                        camera.position.copy(finalCameraPosition);
+                        controls.target.copy(finalControlsTarget);
+                    }
                 }
+                camera.lookAt(controls.target); // Ensure camera always looks at the interpolated target
             }
             if (stars) {
                 stars.rotation.y += 0.0001;
             }
-
             sun.rotation.y += 0.001;
 
             planets.forEach(planet => {
