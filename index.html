@@ -233,6 +233,7 @@
             
             const imageGroup = new THREE.Group();
             planet.add(imageGroup);
+            sun.userData.imageGroup = new THREE.Group(); // Initialize imageGroup for sun
 
             // Create Label
             const planetDiv = document.createElement('div');
@@ -240,13 +241,13 @@
             planetDiv.textContent = data.name;
             planetDiv.addEventListener('click', (event) => {
                 event.stopPropagation();
-                showImagesForPlanet(planet);
+                handlePlanetClick(planet); // Call handlePlanetClick directly
             });
             // Thêm lắng nghe sự kiện touchend cho nhãn để đảm bảo tương tác chạm trên di động
             planetDiv.addEventListener('touchend', (event) => {
                 event.preventDefault(); // Ngăn chặn hành vi mặc định của trình duyệt (ví dụ: ghost click)
                 event.stopPropagation(); // Ngăn chặn sự kiện lan truyền thêm (ví dụ: đến OrbitControls hoặc onInteraction)
-                showImagesForPlanet(planet);
+                handlePlanetClick(planet); // Call handlePlanetClick directly
             });
             const planetLabel = new THREE.CSS2DObject(planetDiv);
             planetLabel.position.set(0, data.size + 2, 0);
@@ -266,7 +267,8 @@
             planet.userData = { 
                 ...data, 
                 isPlanet: true, 
-                angle: Math.random() * Math.PI * 2,
+                angle: Math.random() * Math.PI * 2, // Initial orbital angle
+                interactionState: 0, // 0: default, 1: images shown & locked, 2: images shown & unlocked, 3: images hidden & unlocked
                 imageGroup: imageGroup
             };
             
@@ -303,7 +305,6 @@
         let lockedPlanet = null; // Stores the planet object to follow
         let isViewLocked = false; // Flag to indicate if view is locked
         let lastTouchTimestamp = 0;
-
         // Variables for two-stage camera animation
         let isCameraAnimating = false;
         let cameraAnimationStartTime = 0;
@@ -325,8 +326,6 @@
         function easeInOutSine(t) {
             return 0.5 - 0.5 * Math.cos(t * Math.PI);
         }
-
-
 
         function onInteraction(event) {
             console.log('onInteraction called, event type:', event.type); // Debugging line
@@ -381,7 +380,7 @@
                 let clickedObject = intersects[0].object;
 
                 if (clickedObject.userData.isHitbox) {
-                    showImagesForPlanet(clickedObject.userData.parentPlanet);
+                    handlePlanetClick(clickedObject.userData.parentPlanet); // Use new handler for direct planet clicks
                     return; // Process hitbox click, then exit
                 }
 
@@ -399,7 +398,7 @@
                         parentPlanet = parentPlanet.parent;
                     }
                     if (parentPlanet.userData.isPlanet) {
-                        showImagesForPlanet(parentPlanet);
+                        handlePlanetClick(parentPlanet); // Use new handler for direct planet clicks
                     }
                 }
             } else {
@@ -468,7 +467,7 @@
             sunListItem.addEventListener('mouseenter', () => sunListItem.style.backgroundColor = 'rgba(0,0,0,0.7)'); // Darker on hover
             sunListItem.addEventListener('mouseleave', () => sunListItem.style.backgroundColor = 'rgba(0,0,0,0.5)'); // Restore original
             sunListItem.addEventListener('click', () => {
-                animateCameraToPlanet(sun, true); // Khóa chế độ xem vào Mặt trời
+                handlePlanetClick(sun); // Use handlePlanetClick for sun
                 event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
                 hidePlanetList();
             });
@@ -488,9 +487,9 @@
                 `;
                 listItem.textContent = planet.userData.name;
                 listItem.addEventListener('mouseenter', () => listItem.style.backgroundColor = 'rgba(0,0,0,0.7)'); // Darker on hover
-                listItem.addEventListener('mouseleave', () => listItem.style.backgroundColor = 'rgba(0,0,0,0.5)'); // Restore original
+                listItem.addEventListener('mouseleave', () => listItem.style.backgroundColor = 'rgba(0,0,0,0.5)'); // Restore original background
                 listItem.addEventListener('click', () => {
-                    animateCameraToPlanet(planet, true); // Khóa chế độ xem vào hành tinh
+                    handlePlanetClick(planet); // Use handlePlanetClick for planets
                     event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
                     hidePlanetList();
                 });
@@ -502,25 +501,17 @@
             controls.enablePan = true;
             controls.minDistance = 10;
             controls.maxDistance = 1500;
+            // Also ensure controls are enabled if not animating
+            if (!isCameraAnimating) {
+                controls.enabled = true;
+            }
         }
 
-        function animateCameraToPlanet(targetPlanet, lockView = false) {
+        function animateCameraToPlanet(targetPlanet) { // Removed lockView parameter
             // Disable controls during animation
             controls.enabled = false;
 
-            if (lockView) {
-                lockedPlanet = targetPlanet;
-                isViewLocked = true;
-                controls.enablePan = false;
-                controls.minDistance = targetPlanet.userData.size * 3;
-                controls.maxDistance = targetPlanet.userData.size * 15;
-                // Note: unlockViewBtn is not defined in the provided HTML, so its usage is commented out.
-            } else {
-                lockedPlanet = null;
-                isViewLocked = false;
-                restoreDefaultControls();
-                // Note: unlockViewBtn is not defined in the provided HTML, so its usage is commented out.
-            }
+            // The locking state should be managed by handlePlanetClick BEFORE calling this.
 
             // Store current camera and controls target as the starting point for the first phase
             startCameraPosition.copy(camera.position);
@@ -540,6 +531,99 @@
             cameraAnimationStartTime = Date.now();
         }
         
+        // New functions for managing planet images
+        function addImagesToPlanet(planet) {
+            if (planet.userData.isSun) { // Sun doesn't have images
+                return;
+            }
+
+            if (planet.userData.imageGroup.children.length > 0) {
+                // Images already exist, just make sure they are visible
+                planet.userData.imageGroup.visible = true;
+                return;
+            }
+
+            const availableUrls = allImageUrls.filter(url => !usedImageUrls.has(url));
+            const imagesPerPlanet = 7;
+            
+            if (availableUrls.length < imagesPerPlanet) {
+                console.warn("Not enough unique images available to display.");
+                return;
+            }
+
+            const shuffled = availableUrls.sort(() => 0.5 - Math.random());
+            let selectedUrls = shuffled.slice(0, imagesPerPlanet);
+
+            selectedUrls.forEach(url => {
+                usedImageUrls.add(url);
+
+                const material = new THREE.MeshBasicMaterial({
+                    map: textureCache[url],
+                    side: THREE.DoubleSide,
+                    transparent: true
+                });
+                const plane = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), material);
+                
+                const baseRadius = planet.userData.size + 10;
+                const radius = baseRadius + (Math.random() * 5);
+                const phi = Math.acos(-1 + (2 * Math.random()));
+                const theta = Math.random() * 2 * Math.PI;
+                plane.position.setFromSphericalCoords(radius, phi, theta);
+                
+                plane.rotation.x = Math.random() * Math.PI * 2;
+                plane.rotation.y = Math.random() * Math.PI * 2;
+                plane.rotation.z = Math.random() * Math.PI * 2;
+                
+                plane.userData = { 
+                    isImagePlane: true, imageUrl: url,
+                    selfRotationSpeedX: (Math.random() - 0.5) * 0.005, selfRotationSpeedY: (Math.random() - 0.5) * 0.005, selfRotationSpeedZ: (Math.random() - 0.5) * 0.005,
+                    orbitAxis: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(), orbitSpeed: (Math.random() + 0.2) * 0.004
+                };
+                planet.userData.imageGroup.add(plane);
+            });
+            planet.userData.imageGroup.visible = true; // Ensure the group is visible
+        }
+
+        function removeImagesFromPlanet(planet) {
+            planet.userData.imageGroup.children.forEach(image => {
+                if (image.userData.imageUrl) usedImageUrls.delete(image.userData.imageUrl);
+                image.geometry.dispose(); if (image.material.map) image.material.map.dispose(); image.material.dispose();
+            });
+            planet.userData.imageGroup.clear();
+            planet.userData.imageGroup.visible = false;
+        }
+
+        // New handler for planet clicks to manage state
+        function handlePlanetClick(planet) {
+            if (planet.userData.interactionState === undefined) {
+                planet.userData.interactionState = 0;
+            }
+
+            // If a different planet is currently locked, unlock it and hide its images
+            if (lockedPlanet && lockedPlanet !== planet) {
+                if (lockedPlanet.userData.imageGroup.visible) {
+                    removeImagesFromPlanet(lockedPlanet);
+                }
+                lockedPlanet.userData.interactionState = 0; // Reset state of previously locked planet
+                // No need to call restoreDefaultControls here, as the new planet's animation will override
+            }
+
+            planet.userData.interactionState = (planet.userData.interactionState % 3) + 1; // Cycle 1, 2, 3
+
+            switch (planet.userData.interactionState) {
+                case 1: // State 1: Show images, Lock view, Animate camera
+                    addImagesToPlanet(planet);
+                    isViewLocked = true; // Set lock state here
+                    lockedPlanet = planet; // Set locked planet here
+                    animateCameraToPlanet(planet); // Call without lockView param
+                    break;
+                case 2: // State 2: Unlock view, Images remain
+                    isViewLocked = false; lockedPlanet = null; restoreDefaultControls(); break;
+                case 3: // State 3: Hide images, View remains unlocked
+                    removeImagesFromPlanet(planet); /* View is already unlocked from state 2, or if it was unlocked manually */ break;
+            }
+        }
+
         document.getElementById('close-btn').addEventListener('click', closeFullscreen);
         document.getElementById('close-btn').addEventListener('touchend', closeFullscreen);
 
@@ -617,58 +701,6 @@
                 fadeOut: 1000
             };
         }
-
-        function showImagesForPlanet(planet) {
-            if (planet.userData.imageGroup.children.length > 0) return;
-
-            const availableUrls = allImageUrls.filter(url => !usedImageUrls.has(url));
-            const imagesPerPlanet = 7;
-            
-            if (availableUrls.length < imagesPerPlanet) {
-                console.warn("Not enough unique images available to display.");
-                return;
-            }
-
-            const shuffled = availableUrls.sort(() => 0.5 - Math.random());
-            let selectedUrls = shuffled.slice(0, imagesPerPlanet);
-
-            selectedUrls.forEach(url => {
-                usedImageUrls.add(url);
-
-                const material = new THREE.MeshBasicMaterial({
-                    map: textureCache[url],
-                    side: THREE.DoubleSide,
-                    transparent: true
-                });
-                const plane = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), material); // Quay trở lại kích thước 4x4
-                
-                const baseRadius = planet.userData.size + 10; // Khoảng cách cơ sở từ tâm hành tinh
-                const radius = baseRadius + (Math.random() * 5); // Thêm một khoảng ngẫu nhiên (0-5) để tạo dải bán kính
-                const phi = Math.acos(-1 + (2 * Math.random()));
-                const theta = Math.random() * 2 * Math.PI;
-                plane.position.setFromSphericalCoords(radius, phi, theta);
-                
-                // Định hướng ban đầu ngẫu nhiên hoàn toàn trên mọi mặt phẳng
-                plane.rotation.x = Math.random() * Math.PI * 2;
-                plane.rotation.y = Math.random() * Math.PI * 2;
-                plane.rotation.z = Math.random() * Math.PI * 2;
-                
-                plane.userData = { 
-                    isImagePlane: true,
-                    imageUrl: url,
-                    // Tốc độ tự xoay ngẫu nhiên cho từng trục
-                    selfRotationSpeedX: (Math.random() - 0.5) * 0.005,
-                    selfRotationSpeedY: (Math.random() - 0.5) * 0.005,
-                    selfRotationSpeedZ: (Math.random() - 0.5) * 0.005,
-                    // Restore individual orbit properties for chaotic movement
-                    orbitAxis: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(),
-                    orbitSpeed: (Math.random() + 0.2) * 0.004
-                };
-                planet.userData.imageGroup.add(plane);
-            });
-        }
-
-
 
         // --- Animation Loop ---
         function animate() {
@@ -750,6 +782,10 @@
                 planet.position.z = Math.sin(data.angle) * data.distance;
                 planet.rotation.y += 0.001;
 
+                // Only update image movement if the image group is visible
+                if (!planet.userData.imageGroup.visible) {
+                    return; // Skip if images are hidden (correct way to exit forEach callback)
+                }
                 // Revert to individual, chaotic rotation for each image
                 planet.userData.imageGroup.children.forEach(image => {
                     image.position.applyAxisAngle(image.userData.orbitAxis, image.userData.orbitSpeed);
@@ -792,10 +828,13 @@
         // Tự động mở khóa chế độ xem nếu người dùng tương tác thủ công với controls
         controls.addEventListener('start', () => {
             if (isViewLocked && !isCameraAnimating) {
+                const previouslyLockedPlanet = lockedPlanet; // Store before nulling
+                // If user manually interacts, unlock view
                 lockedPlanet = null;
                 isViewLocked = false;
                 restoreDefaultControls(); // Khôi phục cài đặt điều khiển mặc định
                 console.log('Chế độ xem đã được mở khóa do người dùng tương tác.');
+                if (previouslyLockedPlanet && previouslyLockedPlanet.userData.interactionState === 1) previouslyLockedPlanet.userData.interactionState = 2;
             }
         });
 
