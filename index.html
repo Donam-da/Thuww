@@ -310,12 +310,21 @@
                 opacity: 0
             });
 
-            const planeHeight = 50;
+            const planeHeight = 150;
             const planeWidth = planeHeight * (canvas.width / canvas.height);
             const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
 
             sunMessageMesh = new THREE.Mesh(geometry, material);
-            sunMessageMesh.position.set(0, 130, -700);
+
+            // Position the message directly in front of the camera, but much further away
+            const distance = 1500; 
+            const positionVector = new THREE.Vector3();
+            camera.getWorldDirection(positionVector);
+            positionVector.multiplyScalar(distance);
+            positionVector.add(camera.position);
+            sunMessageMesh.position.copy(positionVector);
+            sunMessageMesh.quaternion.copy(camera.quaternion);
+
             scene.add(sunMessageMesh);
 
             sunMessageAnimation = {
