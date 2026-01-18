@@ -282,11 +282,10 @@
             selectedUrls.forEach(url => {
                 usedImageUrls.add(url);
 
-                const material = new THREE.MeshStandardMaterial({
+                const material = new THREE.MeshBasicMaterial({
                     map: textureLoader.load(url),
                     side: THREE.DoubleSide,
-                    transparent: true,
-                    opacity: 0.95
+                    transparent: true
                 });
                 const plane = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), material);
                 
