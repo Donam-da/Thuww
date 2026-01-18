@@ -58,6 +58,7 @@
         // --- Image & Planet Data ---
         const totalImages = 62;
         const allImageUrls = Array.from({length: totalImages}, (_, i) => `images/${i + 1}.png`);
+        const usedImageUrls = new Set();
         const planets = [];
         const planetData = [
             { name: 'Mercury', distance: 20, size: 1, color: 0xaaaaaa, speed: 0.005 },
@@ -69,9 +70,6 @@
             { name: 'Uranus', distance: 180, size: 2.5, color: 0xa8e0ea, speed: 0.0004 },
             { name: 'Neptune', distance: 220, size: 2.4, color: 0x5c84f5, speed: 0.0002 }
         ];
-
-        let imageGroup = new THREE.Group();
-        scene.add(imageGroup);
 
         // --- Sun ---
         const sunGeometry = new THREE.SphereGeometry(10, 32, 32);
@@ -86,7 +84,16 @@
             const planetGeometry = new THREE.SphereGeometry(data.size, 32, 32);
             const planetMaterial = new THREE.MeshStandardMaterial({ color: data.color });
             const planet = new THREE.Mesh(planetGeometry, planetMaterial);
-            planet.userData = { ...data, isPlanet: true, angle: Math.random() * Math.PI * 2 };
+            
+            const imageGroup = new THREE.Group();
+            planet.add(imageGroup);
+
+            planet.userData = { 
+                ...data, 
+                isPlanet: true, 
+                angle: Math.random() * Math.PI * 2,
+                imageGroup: imageGroup
+            };
             
             const orbitGeometry = new THREE.RingGeometry(data.distance - 0.1, data.distance + 0.1, 128);
             const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, opacity: 0.2, transparent: true });
@@ -94,7 +101,6 @@
             orbit.rotation.x = -Math.PI / 2;
             scene.add(orbit);
             
-            // Special case for Saturn's rings
             if (data.name === 'Saturn') {
                 const ringGeometry = new THREE.RingGeometry(data.size * 1.5, data.size * 2.5, 64);
                 const ringMaterial = new THREE.MeshBasicMaterial({ color: 0xead5a8, side: THREE.DoubleSide, opacity: 0.7, transparent: true });
@@ -120,19 +126,27 @@
             mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
 
-            const planetIntersects = raycaster.intersectObjects(planets);
-            if (planetIntersects.length > 0) {
-                showImagesForPlanet(planetIntersects[0].object);
-                return;
-            }
+            // The 'true' argument makes the raycaster check all descendants of the planets
+            const intersects = raycaster.intersectObjects(planets, true);
 
-            const imageIntersects = raycaster.intersectObjects(imageGroup.children);
-            if (imageIntersects.length > 0) {
-                const obj = imageIntersects[0].object;
-                if (obj.userData.imageUrl) {
-                    document.getElementById('fullscreen-image').src = obj.userData.imageUrl;
+            if (intersects.length > 0) {
+                let clickedObject = intersects[0].object;
+                
+                // If it's an image plane (identified by having an orbitAxis), open fullscreen
+                if (clickedObject.userData.orbitAxis) {
+                    document.getElementById('fullscreen-image').src = clickedObject.userData.imageUrl;
                     document.getElementById('fullscreen-overlay').style.display = 'flex';
                     controls.enabled = false;
+                } 
+                // Otherwise, it must be a planet (or saturn's ring). Find the parent planet.
+                else {
+                    let parentPlanet = clickedObject;
+                    while (parentPlanet.parent && !parentPlanet.userData.isPlanet) {
+                        parentPlanet = parentPlanet.parent;
+                    }
+                    if (parentPlanet.userData.isPlanet) {
+                        showImagesForPlanet(parentPlanet);
+                    }
                 }
             }
         }
@@ -143,21 +157,28 @@
         });
 
         // --- Core Functions ---
-        let activePlanet = null;
         function showImagesForPlanet(planet) {
-            activePlanet = planet;
-            // Clear existing images
-            while(imageGroup.children.length > 0){ 
-                const old_image = imageGroup.children[0];
-                imageGroup.remove(old_image); 
+            // If the planet already has an image cloud, do nothing.
+            if (planet.userData.imageGroup.children.length > 0) {
+                return;
             }
 
-            // Select random images
-            const shuffled = allImageUrls.sort(() => 0.5 - Math.random());
-            let selectedUrls = shuffled.slice(0, 12); // Show 12 images for a fuller cloud
+            const availableUrls = allImageUrls.filter(url => !usedImageUrls.has(url));
+            const imagesPerPlanet = 7;
+            
+            // If there aren't enough free images, do nothing.
+            if (availableUrls.length < imagesPerPlanet) {
+                console.log("Not enough unique images available to create a new cloud.");
+                return;
+            }
+
+            const shuffled = availableUrls.sort(() => 0.5 - Math.random());
+            let selectedUrls = shuffled.slice(0, imagesPerPlanet);
 
             const textureLoader = new THREE.TextureLoader();
-            selectedUrls.forEach((url, i) => {
+            selectedUrls.forEach(url => {
+                usedImageUrls.add(url); // Mark image as used
+
                 const material = new THREE.MeshStandardMaterial({
                     map: textureLoader.load(url),
                     side: THREE.DoubleSide,
@@ -167,8 +188,6 @@
                 const plane = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), material);
                 
                 const radius = planet.userData.size + 7 + (Math.random() * 5);
-                
-                // Get a random point on a sphere
                 const phi = Math.acos(-1 + (2 * Math.random()));
                 const theta = Math.random() * 2 * Math.PI;
 
@@ -179,7 +198,7 @@
                     orbitAxis: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(),
                     orbitSpeed: (Math.random() + 0.2) * 0.005
                 };
-                imageGroup.add(plane);
+                planet.userData.imageGroup.add(plane);
             });
         }
 
@@ -202,28 +221,22 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            const time = Date.now();
             sun.rotation.y += 0.001;
 
             planets.forEach(planet => {
+                // Animate planet's orbit and rotation
                 const data = planet.userData;
                 data.angle += data.speed;
                 planet.position.x = Math.cos(data.angle) * data.distance;
                 planet.position.z = Math.sin(data.angle) * data.distance;
                 planet.rotation.y += 0.01;
-            });
 
-            if (activePlanet) {
-                // Move image group to the active planet's position
-                imageGroup.position.copy(activePlanet.position);
-                
-                // Animate each image individually for a chaotic orbit
-                imageGroup.children.forEach(image => {
+                // Animate the image cloud if it exists for this planet
+                planet.userData.imageGroup.children.forEach(image => {
                     image.position.applyAxisAngle(image.userData.orbitAxis, image.userData.orbitSpeed);
-                    // Keep the image facing the planet (which is at the group's origin)
                     image.lookAt(new THREE.Vector3(0, 0, 0));
                 });
-            }
+            });
 
             controls.update();
             renderer.render(scene, camera);
