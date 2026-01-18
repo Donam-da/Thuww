@@ -5,21 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Image Gallery</title>
     <style>
-        body { margin: 0; background-color: #000; }
+        body { margin: 0; background-color: #000; overflow: hidden; }
         canvas { display: block; }
-        #progress-container {
+        
+        #loader-overlay {
             position: fixed;
-            bottom: 10px;
-            right: 10px;
-            padding: 5px 10px;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            border-radius: 5px;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            z-index: 2000;
-            display: none; /* Initially hidden, shown by JS */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            transition: opacity 0.5s ease;
         }
+        .progress-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(#39a2db 0deg, #2a2a2a 0deg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .progress-circle-inner {
+            width: 130px;
+            height: 130px;
+            background-color: #000;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #progress-percent-text {
+            font-size: 28px;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
         #fullscreen-overlay {
             position: fixed;
             top: 0;
@@ -58,8 +83,12 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-    <div id="progress-container">
-        <div id="progress-text">Loading: 0%</div>
+    <div id="loader-overlay">
+        <div class="progress-circle">
+            <div class="progress-circle-inner">
+                <span id="progress-percent-text">0%</span>
+            </div>
+        </div>
     </div>
     <div id="fullscreen-overlay">
         <span id="close-btn">&times;</span>
@@ -71,14 +100,15 @@
         // --- Scene Setup ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.domElement.style.display = 'none'; // Hide canvas initially
         document.body.appendChild(renderer.domElement);
 
         // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
         directionalLight.position.set(5, 10, 7.5);
         scene.add(directionalLight);
 
@@ -89,90 +119,85 @@
 
         // --- Image "Planets" & Loading ---
         const numberOfImages = 62;
-        const imageUrls = Array.from({length: numberOfImages}, (_, i) => `images/${i + 1}.png`);
         const imageObjects = [];
         const bounds = 25;
-
-        const progressContainer = document.getElementById('progress-container');
-        const progressText = document.getElementById('progress-text');
-        progressContainer.style.display = 'block';
 
         // --- Loading Manager ---
         const loadingManager = new THREE.LoadingManager();
         const textureLoader = new THREE.TextureLoader(loadingManager);
 
+        const progressCircle = document.querySelector('.progress-circle');
+        const progressPercentText = document.getElementById('progress-percent-text');
+
         loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
-            const progress = (itemsLoaded / itemsTotal) * 100;
-            progressText.textContent = `Loading: ${Math.round(progress)}%`;
+            const progress = Math.round((itemsLoaded / itemsTotal) * 100);
+            progressPercentText.textContent = `${progress}%`;
+            progressCircle.style.background = `conic-gradient(#39a2db ${progress * 3.6}deg, #2a2a2a 0deg)`;
         };
 
         loadingManager.onLoad = () => {
-            // Hide progress bar after a short delay
+            const loaderOverlay = document.getElementById('loader-overlay');
+            loaderOverlay.style.opacity = '0';
+
             setTimeout(() => {
-                progressContainer.style.display = 'none';
-            }, 500);
+                loaderOverlay.style.display = 'none';
+                renderer.domElement.style.display = 'block';
+                
+                renderer.domElement.style.opacity = '0';
+                requestAnimationFrame(() => {
+                    renderer.domElement.style.transition = 'opacity 0.5s ease';
+                    renderer.domElement.style.opacity = '1';
+                });
+            }, 500); // Wait for loader fade-out
         };
         
         loadingManager.onError = (url) => {
             console.error('There was an error loading ' + url);
         };
 
-        // --- Create and Reorder Image URLs for Loading ---
+        // --- Create and Reorder Image URLs ---
         const originalUrls = Array.from({length: numberOfImages}, (_, i) => `images/${i + 1}.png`);
         const orderedUrls = [];
         const usedUrls = new Set();
-
+        
         let i = 0;
         let j = Math.floor(numberOfImages / 2);
         let k = numberOfImages - 1;
 
         while (orderedUrls.length < numberOfImages) {
-            // Add from the beginning
             if (i < Math.floor(numberOfImages / 2)) {
                 const url = originalUrls[i];
-                if (!usedUrls.has(url)) {
-                    orderedUrls.push(url);
-                    usedUrls.add(url);
-                }
+                if (!usedUrls.has(url)) { orderedUrls.push(url); usedUrls.add(url); }
             }
             i++;
-
-            // Add from the middle
             if (j < numberOfImages) {
                 const url = originalUrls[j];
-                if (!usedUrls.has(url)) {
-                    orderedUrls.push(url);
-                    usedUrls.add(url);
-                }
+                if (!usedUrls.has(url)) { orderedUrls.push(url); usedUrls.add(url); }
             }
             j++;
-            
-            // Add from the end
             if (k >= Math.floor(numberOfImages / 2)) {
                 const url = originalUrls[k];
-                if (!usedUrls.has(url)) {
-                    orderedUrls.push(url);
-                    usedUrls.add(url);
-                }
+                if (!usedUrls.has(url)) { orderedUrls.push(url); usedUrls.add(url); }
             }
             k--;
         }
 
-        // --- Create Image Planes ---
-        orderedUrls.forEach((url) => {
-            const geometry = new THREE.PlaneGeometry(2, 2);
-            // Load texture and assign it in the callback
+        // --- Create All Plane Objects ---
+        // We create the objects and associate them with textures. The loading manager
+        // will track the texture loads automatically.
+        const planeGeometry = new THREE.PlaneGeometry(2, 2);
+        orderedUrls.forEach(url => {
             const material = new THREE.MeshStandardMaterial({
-                map: textureLoader.load(url), // Start loading in the new order
+                map: textureLoader.load(url), // This triggers the load
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 1 // Start with full opacity
+                opacity: 1
             });
-            const plane = new THREE.Mesh(geometry, material);
+            
+            const plane = new THREE.Mesh(planeGeometry, material);
 
             plane.userData.imageUrl = url;
-            plane.userData.isLoaded = true; // We consider it "loaded" for animation purposes
-
+            
             plane.position.set(
                 (Math.random() - 0.5) * bounds * 2,
                 (Math.random() - 0.5) * bounds * 2,
@@ -199,7 +224,7 @@
         // --- Camera Position ---
         camera.position.z = 40;
         camera.lookAt(scene.position);
-
+        
         // --- Raycasting for Click Events ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
@@ -207,9 +232,27 @@
         const fullscreenImage = document.getElementById('fullscreen-image');
         const downloadLink = document.getElementById('download-link');
         const closeBtn = document.getElementById('close-btn');
+        let sceneHasRevealed = false;
+        loadingManager.onLoad = () => {
+             const loaderOverlay = document.getElementById('loader-overlay');
+             loaderOverlay.style.opacity = '0';
+
+             setTimeout(() => {
+                 loaderOverlay.style.display = 'none';
+                 renderer.domElement.style.display = 'block';
+                 sceneHasRevealed = true; // Set flag when scene is visible
+                 
+                 renderer.domElement.style.opacity = '0';
+                 requestAnimationFrame(() => {
+                     renderer.domElement.style.transition = 'opacity 0.5s ease';
+                     renderer.domElement.style.opacity = '1';
+                 });
+             }, 500);
+        };
+
 
         function onMouseClick(event) {
-            if (overlay.style.display !== 'none') {
+            if (overlay.style.display !== 'none' || !sceneHasRevealed) {
                 return;
             }
 
@@ -240,28 +283,31 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            imageObjects.forEach(obj => {
-                obj.mesh.position.add(obj.velocity);
-                obj.mesh.rotation.x += obj.rotationSpeed.x;
-                obj.mesh.rotation.y += obj.rotationSpeed.y;
-                obj.mesh.rotation.z += obj.rotationSpeed.z;
+            if (sceneHasRevealed) {
+                imageObjects.forEach(obj => {
+                    obj.mesh.position.add(obj.velocity);
+                    obj.mesh.rotation.x += obj.rotationSpeed.x;
+                    obj.mesh.rotation.y += obj.rotationSpeed.y;
+                    obj.mesh.rotation.z += obj.rotationSpeed.z;
 
-                // Wall bouncing logic
-                if (Math.abs(obj.mesh.position.x) > bounds) {
-                    obj.velocity.x *= -1;
-                    obj.mesh.position.x += obj.velocity.x * 2; 
-                }
-                if (Math.abs(obj.mesh.position.y) > bounds) {
-                    obj.velocity.y *= -1;
-                    obj.mesh.position.y += obj.velocity.y * 2;
-                }
-                if (Math.abs(obj.mesh.position.z) > bounds) {
-                    obj.velocity.z *= -1;
-                    obj.mesh.position.z += obj.velocity.z * 2;
-                }
-            });
+                    // Wall bouncing logic
+                    if (Math.abs(obj.mesh.position.x) > bounds) {
+                        obj.velocity.x *= -1;
+                        obj.mesh.position.x += obj.velocity.x * 2; 
+                    }
+                    if (Math.abs(obj.mesh.position.y) > bounds) {
+                        obj.velocity.y *= -1;
+                        obj.mesh.position.y += obj.velocity.y * 2;
+                    }
+                    if (Math.abs(obj.mesh.position.z) > bounds) {
+                        obj.velocity.z *= -1;
+                        obj.mesh.position.z += obj.velocity.z * 2;
+                    }
+                });
 
-            controls.update();
+                controls.update();
+            }
+
             renderer.render(scene, camera);
         }
 
