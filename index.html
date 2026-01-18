@@ -589,7 +589,7 @@
                     side: THREE.DoubleSide,
                     transparent: true
                 });
-                const plane = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), material);
+                const plane = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), material); // Quay trở lại kích thước 4x4
                 
                 const radius = planet.userData.size + 9; // Fixed radius for all images
                 const phi = Math.acos(-1 + (2 * Math.random()));
