@@ -257,11 +257,6 @@
                 }
             }
 
-            if (event.type === 'touchend') {
-                event.preventDefault(); // Prevent default browser touch behavior (scrolling, zooming, synthetic click)
-                event.stopPropagation(); // Stop event from propagating further (e.g., to OrbitControls)
-            }
-
             if (event.target.closest('.planet-label')) {
                 console.log('Tapped on planet label, ignoring raycast.'); // Debugging line
                 return;
@@ -294,6 +289,11 @@
             const intersects = raycaster.intersectObjects(scene.children, true);
 
             if (intersects.length > 0) {
+                // Nếu một đối tượng được nhấn, ngăn chặn OrbitControls xử lý chạm này như một thao tác camera
+                if (event.type === 'touchend') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
                 console.log('Raycaster hit something!', intersects[0].object); // Debugging line
                 let clickedObject = intersects[0].object;
 
