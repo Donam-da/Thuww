@@ -115,8 +115,11 @@
             }, 500);
         };
         
-        // --- Preload all images ---
-        allImageUrls.forEach(url => textureLoader.load(url));
+        // --- Preload all images and cache them---
+        const textureCache = {};
+        allImageUrls.forEach(url => {
+            textureCache[url] = textureLoader.load(url);
+        });
 
         // --- Scene Setup ---
         const scene = new THREE.Scene();
@@ -283,7 +286,7 @@
                 usedImageUrls.add(url);
 
                 const material = new THREE.MeshBasicMaterial({
-                    map: textureLoader.load(url),
+                    map: textureCache[url],
                     side: THREE.DoubleSide,
                     transparent: true
                 });
