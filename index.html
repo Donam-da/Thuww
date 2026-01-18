@@ -403,6 +403,7 @@
                     document.getElementById('fullscreen-image').src = clickedObject.userData.imageUrl;
                     document.getElementById('fullscreen-overlay').style.display = 'flex';
                     document.getElementById('download-btn').href = clickedObject.userData.imageUrl;
+                    document.getElementById('select-planet-btn').style.display = 'none'; // Ẩn nút "Chọn hành tinh"
                     document.getElementById('download-btn').style.display = 'block'; // Hiển thị nút tải xuống
                     if (!isViewLocked) { // Only disable controls if view is NOT locked
                         controls.enabled = false;
@@ -701,6 +702,7 @@
             if (!isViewLocked) { // Only re-enable controls if view was NOT locked
                 controls.enabled = true;
             }
+            document.getElementById('select-planet-btn').style.display = 'block'; // Hiển thị lại nút "Chọn hành tinh"
             downloadBtn.style.display = 'none'; // Ẩn nút tải xuống khi đóng overlay
         }
 
