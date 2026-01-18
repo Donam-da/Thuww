@@ -175,6 +175,7 @@
         const sunGeometry = new THREE.SphereGeometry(10, 32, 32);
         const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffdd00 });
         const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+        sun.userData = { isSun: true }; // Identifier for the sun
         scene.add(sun);
         const sunLight = new THREE.PointLight(0xffffff, 1.5, 2000);
         sun.add(sunLight);
@@ -232,6 +233,9 @@
         // --- Raycasting for Clicks ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
+        let sunMessage = null; // To track the sun message label
+        let sunMessageMesh = null;
+        let sunMessageAnimation = { active: false };
         
         function onMouseClick(event) {
             if (event.target.closest('.planet-label')) return;
@@ -245,8 +249,10 @@
 
             if (intersects.length > 0) {
                 let clickedObject = intersects[0].object;
-                
-                if (clickedObject.userData.isImagePlane) {
+
+                if (clickedObject.userData.isSun) {
+                    showMessageOnSun();
+                } else if (clickedObject.userData.isImagePlane) {
                     document.getElementById('fullscreen-image').src = clickedObject.userData.imageUrl;
                     document.getElementById('fullscreen-overlay').style.display = 'flex';
                     controls.enabled = false;
@@ -268,6 +274,52 @@
         });
 
         // --- Core Functions ---
+        function showMessageOnSun() {
+            if (sunMessageMesh) return;
+
+            // Create canvas texture for the text
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const fontSize = 90;
+            const text = 'Nay nhớ đi ngủ sớm đó nhaaaa';
+            
+            context.font = `bold ${fontSize}px Arial, sans-serif`;
+            const textMetrics = context.measureText(text);
+            canvas.width = textMetrics.width + 40;
+            canvas.height = fontSize * 1.5;
+
+            context.font = `bold ${fontSize}px Arial, sans-serif`;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillStyle = 'rgba(255, 255, 220, 1)';
+            context.shadowColor = 'rgba(255, 255, 0, 0.7)';
+            context.shadowBlur = 25;
+            context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                opacity: 0
+            });
+
+            const planeHeight = 50;
+            const planeWidth = planeHeight * (canvas.width / canvas.height);
+            const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+
+            sunMessageMesh = new THREE.Mesh(geometry, material);
+            sunMessageMesh.position.set(0, 130, -700);
+            scene.add(sunMessageMesh);
+
+            sunMessageAnimation = {
+                active: true,
+                startTime: Date.now(),
+                duration: 5000,
+                fadeIn: 1000,
+                fadeOut: 1000
+            };
+        }
+
         function showImagesForPlanet(planet) {
             if (planet.userData.imageGroup.children.length > 0) return;
 
@@ -314,6 +366,28 @@
         // --- Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
+
+            if (sunMessageAnimation.active && sunMessageMesh) {
+                const elapsedTime = Date.now() - sunMessageAnimation.startTime;
+                if (elapsedTime >= sunMessageAnimation.duration) {
+                    scene.remove(sunMessageMesh);
+                    sunMessageMesh.geometry.dispose();
+                    sunMessageMesh.material.map.dispose();
+                    sunMessageMesh.material.dispose();
+                    sunMessageMesh = null;
+                    sunMessageAnimation.active = false;
+                } else {
+                    let opacity = 0;
+                    if (elapsedTime < sunMessageAnimation.fadeIn) {
+                        opacity = elapsedTime / sunMessageAnimation.fadeIn;
+                    } else if (elapsedTime < sunMessageAnimation.duration - sunMessageAnimation.fadeOut) {
+                        opacity = 1;
+                    } else {
+                        opacity = (sunMessageAnimation.duration - elapsedTime) / sunMessageAnimation.fadeOut;
+                    }
+                    sunMessageMesh.material.opacity = Math.max(0, opacity);
+                }
+            }
 
             if (stars) {
                 stars.rotation.y += 0.0001;
