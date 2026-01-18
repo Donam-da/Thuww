@@ -80,14 +80,14 @@
         const usedImageUrls = new Set();
         const planets = [];
         const planetData = [
-            { name: 'Mercury', distance: 20, size: 1, color: 0xaaaaaa, speed: 0.005 },
-            { name: 'Venus', distance: 35, size: 1.5, color: 0xe8ab6f, speed: 0.003 },
-            { name: 'Earth', distance: 50, size: 1.6, color: 0x6f94e8, speed: 0.002 },
-            { name: 'Mars', distance: 70, size: 1.2, color: 0xe86f6f, speed: 0.0015 },
-            { name: 'Jupiter', distance: 100, size: 4, color: 0xd8caa0, speed: 0.0008 },
-            { name: 'Saturn', distance: 140, size: 3.5, color: 0xead5a8, speed: 0.0006 },
-            { name: 'Uranus', distance: 180, size: 2.5, color: 0xa8e0ea, speed: 0.0004 },
-            { name: 'Neptune', distance: 220, size: 2.4, color: 0x5c84f5, speed: 0.0002 }
+            { name: 'Mercury', distance: 20, size: 1, color: 0xaaaaaa, speed: 0.0005 },
+            { name: 'Venus', distance: 35, size: 1.5, color: 0xe8ab6f, speed: 0.0003 },
+            { name: 'Earth', distance: 50, size: 1.6, color: 0x6f94e8, speed: 0.0002 },
+            { name: 'Mars', distance: 70, size: 1.2, color: 0xe86f6f, speed: 0.00015 },
+            { name: 'Jupiter', distance: 100, size: 4, color: 0xd8caa0, speed: 0.00008 },
+            { name: 'Saturn', distance: 140, size: 3.5, color: 0xead5a8, speed: 0.00006 },
+            { name: 'Uranus', distance: 180, size: 2.5, color: 0xa8e0ea, speed: 0.00004 },
+            { name: 'Neptune', distance: 220, size: 2.4, color: 0x5c84f5, speed: 0.00002 }
         ];
 
         // --- Loading Manager ---
@@ -276,7 +276,7 @@
                     isImagePlane: true,
                     imageUrl: url,
                     orbitAxis: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(),
-                    orbitSpeed: (Math.random() + 0.2) * 0.005
+                    orbitSpeed: (Math.random() + 0.2) * 0.0001
                 };
                 planet.userData.imageGroup.add(plane);
             });
@@ -295,7 +295,7 @@
                 data.angle += data.speed;
                 planet.position.x = Math.cos(data.angle) * data.distance;
                 planet.position.z = Math.sin(data.angle) * data.distance;
-                planet.rotation.y += 0.01;
+                planet.rotation.y += 0.001;
 
                 planet.userData.imageGroup.children.forEach(image => {
                     image.position.applyAxisAngle(image.userData.orbitAxis, image.userData.orbitSpeed);
