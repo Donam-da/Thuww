@@ -591,7 +591,8 @@
                 });
                 const plane = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), material); // Quay trở lại kích thước 4x4
                 
-                const radius = planet.userData.size + 9; // Fixed radius for all images
+                const baseRadius = planet.userData.size + 10; // Khoảng cách cơ sở từ tâm hành tinh
+                const radius = baseRadius + (Math.random() * 5); // Thêm một khoảng ngẫu nhiên (0-5) để tạo dải bán kính
                 const phi = Math.acos(-1 + (2 * Math.random()));
                 const theta = Math.random() * 2 * Math.PI;
                 plane.position.setFromSphericalCoords(radius, phi, theta);
