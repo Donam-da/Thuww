@@ -238,8 +238,10 @@
         let sunMessageAnimation = { active: false };
         let lastTouchTimestamp = 0;
         const TOUCH_DELAY = 300; // Milliseconds to prevent ghost clicks
-        
+
         function onInteraction(event) {
+            console.log('onInteraction called, event type:', event.type); // Debugging line
+
             // Prevent ghost clicks on mobile: if a click event happens very soon after a touchend, ignore it.
             if (event.type === 'touchend') {
                 lastTouchTimestamp = Date.now();
@@ -249,7 +251,15 @@
                 }
             }
 
-            if (event.target.closest('.planet-label')) return;
+            if (event.type === 'touchend') {
+                event.preventDefault(); // Prevent default browser touch behavior (scrolling, zooming, synthetic click)
+                event.stopPropagation(); // Stop event from propagating further (e.g., to OrbitControls)
+            }
+
+            if (event.target.closest('.planet-label')) {
+                console.log('Tapped on planet label, ignoring raycast.'); // Debugging line
+                return;
+            }
 
             // Determine the correct clientX and clientY for both mouse and touch events
             const rect = renderer.domElement.getBoundingClientRect();
@@ -267,6 +277,7 @@
 
             if (typeof clientX === 'undefined' || typeof clientY === 'undefined') {
                 // No valid coordinates found, exit
+                console.log('No valid coordinates found, exiting onInteraction.'); // Debugging line
                 return;
             }
 
@@ -277,6 +288,7 @@
             const intersects = raycaster.intersectObjects(scene.children, true);
 
             if (intersects.length > 0) {
+                console.log('Raycaster hit something!', intersects[0].object); // Debugging line
                 let clickedObject = intersects[0].object;
 
                 if (clickedObject.userData.isSun) {
@@ -294,6 +306,8 @@
                         showImagesForPlanet(parentPlanet);
                     }
                 }
+            } else {
+                console.log('Raycaster hit nothing.'); // Debugging line
             }
         }
         
@@ -474,8 +488,8 @@
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
         }, false);
         
-        labelRenderer.domElement.addEventListener('click', onInteraction, false);
-        labelRenderer.domElement.addEventListener('touchend', onInteraction, false); // Add touchend listener for mobile
+        labelRenderer.domElement.addEventListener('click', onInteraction, true); // Use capturing phase for click
+        labelRenderer.domElement.addEventListener('touchend', onInteraction, true); // Use capturing phase for touchend
         
         // Note: The animate() call is now in loadingManager.onLoad
     </script>
