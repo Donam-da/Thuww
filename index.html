@@ -277,17 +277,24 @@
         function showMessageOnSun() {
             if (sunMessageMesh) return;
 
+            // Get current time and create the dynamic message
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const currentTime = `${hours}:${minutes}`;
+            const text = `Bây giờ là ${currentTime}, sắp đến giờ đi ngủ rồi đó!`;
+
             // Create canvas texture for the text
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             const fontSize = 90;
-            const text = 'Nay nhớ đi ngủ sớm đó nhaaaa';
             
             context.font = `bold ${fontSize}px Arial, sans-serif`;
             const textMetrics = context.measureText(text);
             canvas.width = textMetrics.width + 40;
             canvas.height = fontSize * 1.5;
 
+            // Redraw text with final settings
             context.font = `bold ${fontSize}px Arial, sans-serif`;
             context.textAlign = 'center';
             context.textBaseline = 'middle';
@@ -344,18 +351,20 @@
                 });
                 const plane = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), material);
                 
-                const radius = planet.userData.size + 7 + (Math.random() * 5);
+                const radius = planet.userData.size + 9; // Fixed radius for all images
                 const phi = Math.acos(-1 + (2 * Math.random()));
                 const theta = Math.random() * 2 * Math.PI;
 
                 plane.position.setFromSphericalCoords(radius, phi, theta);
-                plane.lookAt(planet.position);
+                plane.lookAt(new THREE.Vector3(0, 0, 0)); // Look at the planet's local center
                 
                 plane.userData = { 
                     isImagePlane: true,
                     imageUrl: url,
+                    selfRotationSpeed: (Math.random() - 0.5) * 0.04,
+                    // Restore individual orbit properties for chaotic movement
                     orbitAxis: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(),
-                    orbitSpeed: (Math.random() + 0.2) * 0.0001
+                    orbitSpeed: (Math.random() + 0.2) * 0.004
                 };
                 planet.userData.imageGroup.add(plane);
             });
@@ -402,9 +411,11 @@
                 planet.position.z = Math.sin(data.angle) * data.distance;
                 planet.rotation.y += 0.001;
 
+                // Revert to individual, chaotic rotation for each image
                 planet.userData.imageGroup.children.forEach(image => {
                     image.position.applyAxisAngle(image.userData.orbitAxis, image.userData.orbitSpeed);
-                    image.lookAt(planet.position);
+                    image.lookAt(new THREE.Vector3(0,0,0));
+                    image.rotation.z += image.userData.selfRotationSpeed;
                 });
             });
 
