@@ -5,16 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Image Gallery</title>
     <style>
-        body { margin: 0; }
+        body { margin: 0; background-color: #000; }
         canvas { display: block; }
+        #progress-container {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            z-index: 2000;
+            display: none; /* Initially hidden, shown by JS */
+        }
+        #fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #fullscreen-image {
+            max-width: 90%;
+            max-height: 80%;
+        }
+        #close-btn, #download-link {
+            position: absolute;
+            top: 20px;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            text-decoration: none;
+            font-family: Arial, sans-serif;
+        }
+        #close-btn {
+            right: 30px;
+        }
+        #download-link {
+            right: 80px;
+            font-size: 24px;
+            top: 23px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-    <script>
-        // Three.js and OrbitControls are now loaded globally from the head tag, so no imports are needed.
+    <div id="progress-container">
+        <div id="progress-text">Loading: 0%</div>
+    </div>
+    <div id="fullscreen-overlay">
+        <span id="close-btn">&times;</span>
+        <a id="download-link" href="#" download>&#x2913; Download</a>
+        <img id="fullscreen-image" src="" alt="fullscreen-image" />
+    </div>
 
+    <script>
         // --- Scene Setup ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -34,57 +87,69 @@
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
 
-        // --- "Sun" (Central Point) ---
-        // Removing the sun to create a more chaotic scene.
-        // const sunGeometry = new THREE.SphereGeometry(1, 32, 32);
-        // const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-        // const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-        // scene.add(sun);
+        // --- Loading Manager ---
+        const loadingManager = new THREE.LoadingManager();
+        const progressContainer = document.getElementById('progress-container');
+        const progressText = document.getElementById('progress-text');
 
+        loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
+            progressContainer.style.display = 'block';
+        };
+
+        loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
+            const progress = (itemsLoaded / itemsTotal) * 100;
+            progressText.textContent = `Loading: ${Math.round(progress)}%`;
+        };
+
+        loadingManager.onLoad = function() {
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+            }, 1000); // Keep it visible for a second after loading finishes
+        };
+        
         // --- Image "Planets" ---
-        const numberOfImages = 62; // Updated to match the number of files
+        const numberOfImages = 62;
         const imageUrls = Array.from({length: numberOfImages}, (_, i) => `images/${i + 1}.png`);
 
-        const textureLoader = new THREE.TextureLoader();
+        const textureLoader = new THREE.TextureLoader(loadingManager);
         const imageObjects = [];
-        const bounds = 25; // The size of the invisible cube the images will fly in
+        const bounds = 25;
 
         imageUrls.forEach((url, i) => {
-            let plane = null; // Declare plane here for scope
-            const texture = textureLoader.load(url, 
-                () => {},
-                undefined,
-                () => {
-                    console.error(`Could not load texture: ${url}. Using a placeholder.`);
-                    const placeholderCanvas = document.createElement('canvas');
-                    placeholderCanvas.width = 256; placeholder.height = 256;
-                    const context = placeholderCanvas.getContext('2d');
-                    context.fillStyle = '#ccc'; context.fillRect(0, 0, 256, 256);
-                    context.fillStyle = '#333'; context.font = '20px Arial';
-                    context.textAlign = 'center'; context.fillText(`${i + 1}.png not found`, 128, 128);
-                    const placeholderTexture = new THREE.CanvasTexture(placeholderCanvas);
-                    if (plane) {
-                        plane.material.map = placeholderTexture;
-                        plane.material.needsUpdate = true;
-                    }
-                }
-            );
-
             const geometry = new THREE.PlaneGeometry(2, 2);
+            // Material starts transparent
             const material = new THREE.MeshStandardMaterial({
-                map: texture,
-                side: THREE.DoubleSide
+                map: null,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0
             });
-            plane = new THREE.Mesh(geometry, material);
+            const plane = new THREE.Mesh(geometry, material);
 
-            // Assign a random position inside a cube
-            plane.position.x = (Math.random() - 0.5) * bounds * 2;
-            plane.position.y = (Math.random() - 0.5) * bounds * 2;
-            plane.position.z = (Math.random() - 0.5) * bounds * 2;
+            // Store the url for click events
+            plane.userData.imageUrl = url;
+
+            plane.position.set(
+                (Math.random() - 0.5) * bounds * 2,
+                (Math.random() - 0.5) * bounds * 2,
+                (Math.random() - 0.5) * bounds * 2
+            );
             
             scene.add(plane);
 
-            // Store the mesh and its random velocity and rotation
+            // Load texture and fade in
+            textureLoader.load(url, 
+                (texture) => {
+                    plane.material.map = texture;
+                    plane.material.opacity = 1;
+                    plane.material.needsUpdate = true;
+                },
+                undefined,
+                () => {
+                    console.error(`Could not load texture: ${url}.`);
+                }
+            );
+
             imageObjects.push({
                 mesh: plane,
                 velocity: new THREE.Vector3(
@@ -101,24 +166,57 @@
         });
 
         // --- Camera Position ---
-        camera.position.z = 40; // Pulled camera back a bit to see more of the scene
+        camera.position.z = 40;
         camera.lookAt(scene.position);
 
+        // --- Raycasting for Click Events ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const overlay = document.getElementById('fullscreen-overlay');
+        const fullscreenImage = document.getElementById('fullscreen-image');
+        const downloadLink = document.getElementById('download-link');
+        const closeBtn = document.getElementById('close-btn');
+
+        function onMouseClick(event) {
+            if (overlay.style.display !== 'none') {
+                return;
+            }
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Check only against meshes that have loaded (opacity > 0)
+            const visibleObjects = imageObjects.filter(o => o.mesh.material.opacity > 0).map(o => o.mesh);
+            const intersects = raycaster.intersectObjects(visibleObjects);
+
+            if (intersects.length > 0) {
+                const firstIntersected = intersects[0].object;
+                if (firstIntersected.userData.imageUrl) {
+                    fullscreenImage.src = firstIntersected.userData.imageUrl;
+                    downloadLink.href = firstIntersected.userData.imageUrl;
+                    overlay.style.display = 'flex';
+                    controls.enabled = false;
+                }
+            }
+        }
+
+        closeBtn.addEventListener('click', () => {
+            overlay.style.display = 'none';
+            controls.enabled = true;
+        });
 
         // --- Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
 
             imageObjects.forEach(obj => {
-                // Move the image
                 obj.mesh.position.add(obj.velocity);
-
-                // Apply random rotation
                 obj.mesh.rotation.x += obj.rotationSpeed.x;
                 obj.mesh.rotation.y += obj.rotationSpeed.y;
                 obj.mesh.rotation.z += obj.rotationSpeed.z;
 
-                // Bounce off the walls of the invisible cube, with a small push to prevent sticking
                 if (Math.abs(obj.mesh.position.x) > bounds) {
                     obj.velocity.x *= -1;
                     obj.mesh.position.x += obj.velocity.x * 2; 
@@ -137,12 +235,14 @@
             renderer.render(scene, camera);
         }
 
-        // --- Handle Window Resize ---
+        // --- Event Listeners ---
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }, false);
+        
+        window.addEventListener('click', onMouseClick, false);
 
         animate();
     </script>
