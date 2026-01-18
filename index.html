@@ -715,7 +715,28 @@
             const hours = now.getHours().toString().padStart(2, '0');
             const minutes = now.getMinutes().toString().padStart(2, '0');
             const currentTime = `${hours}:${minutes}`;
-            const text = `Bây giờ là ${currentTime}, sắp đến giờ đi ngủ rồi đó!`;
+            let messageSuffix = '';
+
+            // Logic để xác định câu chúc dựa trên giờ hiện tại
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes(); // Lấy phút để xử lý khung giờ 06:30
+
+            if (currentHour >= 22 || currentHour < 5) { // Từ 22:00 đến 04:59 hôm sau
+                messageSuffix = "ngủ đi bé ưi";
+            } else if (currentHour === 5 || (currentHour === 6 && currentMinute < 30)) { // Từ 05:00 đến 06:29
+                messageSuffix = "ăn sáng, xong đi học vui vẻ nhó";
+            } else if (currentHour >= 11 && currentHour < 12) { // Từ 11:00 đến 11:59
+                messageSuffix = "ăn cơm rùi nghỉ ngơi bé";
+            } else if (currentHour >= 12 && currentHour < 13) { // Từ 12:00 đến 12:59
+                messageSuffix = "bé ưi ngủ trưa đi";
+            } else if (currentHour >= 13 && currentHour < 22) { // Từ 13:00 đến 21:59
+                messageSuffix = "em có thấy đẹp ko";
+            } else {
+                // Mặc định cho các khung giờ còn lại (ví dụ: 06:30 - 10:59)
+                messageSuffix = "chúc bạn một ngày tốt lành!";
+            }
+
+            const text = `Bây giờ là ${currentTime}, ${messageSuffix}`;
 
             // Create canvas texture for the text
             const canvas = document.createElement('canvas');
