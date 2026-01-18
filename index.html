@@ -197,6 +197,12 @@
                 event.stopPropagation();
                 showImagesForPlanet(planet);
             });
+            // Thêm lắng nghe sự kiện touchend cho nhãn để đảm bảo tương tác chạm trên di động
+            planetDiv.addEventListener('touchend', (event) => {
+                event.preventDefault(); // Ngăn chặn hành vi mặc định của trình duyệt (ví dụ: ghost click)
+                event.stopPropagation(); // Ngăn chặn sự kiện lan truyền thêm (ví dụ: đến OrbitControls hoặc onInteraction)
+                showImagesForPlanet(planet);
+            });
             const planetLabel = new THREE.CSS2DObject(planetDiv);
             planetLabel.position.set(0, data.size + 2, 0);
             planet.add(planetLabel);
