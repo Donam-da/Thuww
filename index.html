@@ -90,28 +90,47 @@
         // --- Image "Planets" & Loading ---
         const numberOfImages = 62;
         const imageUrls = Array.from({length: numberOfImages}, (_, i) => `images/${i + 1}.png`);
-        const textureLoader = new THREE.TextureLoader(); // No manager here
         const imageObjects = [];
         const bounds = 25;
-        let imagesLoaded = 0;
 
         const progressContainer = document.getElementById('progress-container');
         const progressText = document.getElementById('progress-text');
-        progressContainer.style.display = 'block'; // Show progress from the start
+        progressContainer.style.display = 'block';
 
+        // --- Loading Manager ---
+        const loadingManager = new THREE.LoadingManager();
+        const textureLoader = new THREE.TextureLoader(loadingManager);
+
+        loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+            const progress = (itemsLoaded / itemsTotal) * 100;
+            progressText.textContent = `Loading: ${Math.round(progress)}%`;
+        };
+
+        loadingManager.onLoad = () => {
+            // Hide progress bar after a short delay
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+            }, 500);
+        };
+        
+        loadingManager.onError = (url) => {
+            console.error('There was an error loading ' + url);
+        };
+
+        // --- Create Image Planes ---
         imageUrls.forEach((url, i) => {
             const geometry = new THREE.PlaneGeometry(2, 2);
-            // Material starts transparent, no map initially
+            // Load texture and assign it in the callback
             const material = new THREE.MeshStandardMaterial({
-                map: null,
+                map: textureLoader.load(url), // Start loading immediately
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0
+                opacity: 1 // Start with full opacity
             });
             const plane = new THREE.Mesh(geometry, material);
 
-            plane.userData.imageUrl = url; // Store original URL
-            plane.userData.isLoaded = false; // Flag to track loading state
+            plane.userData.imageUrl = url;
+            plane.userData.isLoaded = true; // We consider it "loaded" for animation purposes
 
             plane.position.set(
                 (Math.random() - 0.5) * bounds * 2,
@@ -135,62 +154,6 @@
                 )
             });
         });
-        
-        // --- Batch Loading Function ---
-        let currentIndex = 0;
-        const batchSize = 5; // Load 5 images at a time
-
-        function loadNextBatch() {
-            if (currentIndex >= numberOfImages) {
-                return; // All images scheduled for loading
-            }
-
-            const batchStartIndex = currentIndex; // Capture the starting index for this batch
-            const batchEnd = Math.min(currentIndex + batchSize, numberOfImages);
-
-            for (let i = batchStartIndex; i < batchEnd; i++) {
-                const plane = imageObjects[i].mesh;
-                const url = plane.userData.imageUrl;
-
-                textureLoader.load(url,
-                    (texture) => {
-                        plane.material.map = texture;
-                        plane.material.opacity = 1;
-                        plane.material.needsUpdate = true;
-                        plane.userData.isLoaded = true;
-                        
-                        // Update progress
-                        imagesLoaded++;
-                        const progress = (imagesLoaded / numberOfImages) * 100;
-                        progressText.textContent = `Loading: ${Math.round(progress)}%`;
-
-                        if (imagesLoaded === numberOfImages) {
-                             setTimeout(() => {
-                                progressContainer.style.display = 'none';
-                            }, 1000); // Hide after a delay
-                        }
-                        
-                        // After the FIRST texture in the batch loads, trigger the next batch.
-                        if (i === batchStartIndex) {
-                           loadNextBatch();
-                        }
-                    },
-                    undefined,
-                    () => {
-                        console.error(`Could not load texture: ${url}.`);
-                        imagesLoaded++; // Still count it to not stall progress
-
-                        // Also trigger next batch on error to prevent getting stuck.
-                         if (i === batchStartIndex) {
-                           loadNextBatch();
-                        }
-                    }
-                );
-            }
-            // Move the index for the *next* call to loadNextBatch
-            currentIndex = batchEnd;
-        }
-
 
         // --- Camera Position ---
         camera.position.z = 40;
@@ -214,9 +177,7 @@
 
             raycaster.setFromCamera(mouse, camera);
 
-            // Check only against meshes that have loaded
-            const visibleObjects = imageObjects.filter(o => o.mesh.userData.isLoaded).map(o => o.mesh);
-            const intersects = raycaster.intersectObjects(visibleObjects);
+            const intersects = raycaster.intersectObjects(scene.children);
 
             if (intersects.length > 0) {
                 const firstIntersected = intersects[0].object;
@@ -239,9 +200,6 @@
             requestAnimationFrame(animate);
 
             imageObjects.forEach(obj => {
-                // Only animate fully loaded objects
-                if (!obj.mesh.userData.isLoaded) return;
-
                 obj.mesh.position.add(obj.velocity);
                 obj.mesh.rotation.x += obj.rotationSpeed.x;
                 obj.mesh.rotation.y += obj.rotationSpeed.y;
@@ -277,7 +235,6 @@
 
         // --- Start Everything ---
         animate(); // Start rendering immediately
-        loadNextBatch(); // Start loading the first batch of images
     </script>
 </body>
 </html>
