@@ -429,7 +429,10 @@
 
         function hidePlanetList() {
             planetListOverlay.style.display = 'none';
-            controls.enabled = true; // Re-enable controls when list is closed
+            // Chỉ kích hoạt lại controls nếu không có hoạt ảnh camera nào đang diễn ra và chế độ xem không bị khóa
+            if (!isCameraAnimating && !isViewLocked) {
+                controls.enabled = true;
+            }
             // Xóa trình lắng nghe sự kiện toàn cục
             document.removeEventListener('click', handleOutsideInteraction);
             document.removeEventListener('touchend', handleOutsideInteraction);
@@ -599,6 +602,10 @@
                 planet.userData.interactionState = 0;
             }
 
+            // Vô hiệu hóa controls ngay lập tức để ngăn chặn xung đột với hoạt ảnh camera
+            // và đảm bảo trạng thái được quản lý bởi logic của hàm này.
+            controls.enabled = false;
+
             // If a different planet is currently locked, unlock it and hide its images
             if (lockedPlanet && lockedPlanet !== planet) {
                 if (lockedPlanet.userData.imageGroup.visible) {
@@ -608,19 +615,60 @@
                 // No need to call restoreDefaultControls here, as the new planet's animation will override
             }
 
-            planet.userData.interactionState = (planet.userData.interactionState % 3) + 1; // Cycle 1, 2, 3
+            // Logic chuyển trạng thái tùy chỉnh theo yêu cầu của người dùng
+            let nextState;
+            switch (planet.userData.interactionState) {
+                case 0: // Trạng thái ban đầu: Ảnh ẩn, bỏ khóa
+                    nextState = 1; // Lần 1: Hiện ảnh, khóa, zoom
+                    break;
+                case 1: // Sau lần 1: Hiện ảnh, khóa, zoom
+                    nextState = 2; // Lần 2: Hiện ảnh, bỏ khóa
+                    break;
+                case 2: // Sau lần 2 hoặc lần 5: Hiện ảnh, bỏ khóa
+                    nextState = 3; // Lần 3: Tắt ảnh, bỏ khóa
+                    break;
+                case 3: // Sau lần 3 hoặc lần 6: Tắt ảnh, bỏ khóa
+                    nextState = 4; // Lần 4: Hiện ảnh, khóa lại
+                    break;
+                case 4: // Sau lần 4: Hiện ảnh, khóa lại
+                    nextState = 2; // Lần 5: Hiện ảnh, bỏ khóa (quay lại trạng thái 2)
+                    break;
+                default: // Trường hợp mặc định, coi như trạng thái ban đầu
+                    nextState = 1;
+            }
+            planet.userData.interactionState = nextState;
 
             switch (planet.userData.interactionState) {
                 case 1: // State 1: Show images, Lock view, Animate camera
                     addImagesToPlanet(planet);
                     isViewLocked = true; // Set lock state here
                     lockedPlanet = planet; // Set locked planet here
-                    animateCameraToPlanet(planet); // Call without lockView param
+                    animateCameraToPlanet(planet);
                     break;
                 case 2: // State 2: Unlock view, Images remain
-                    isViewLocked = false; lockedPlanet = null; restoreDefaultControls(); break;
-                case 3: // State 3: Hide images, View remains unlocked
-                    removeImagesFromPlanet(planet); /* View is already unlocked from state 2, or if it was unlocked manually */ break;
+                    isViewLocked = false;
+                    lockedPlanet = null;
+                    restoreDefaultControls(); // Re-enable controls and reset distances
+                    // Đảm bảo ảnh vẫn hiển thị nếu chúng đã được thêm vào từ trạng thái trước
+                    if (!planet.userData.imageGroup.visible) {
+                        addImagesToPlanet(planet);
+                    }
+                    break;
+                case 3: // State 3: Hide images, Unlock view, Reset (Lần 3: tắt ảnh / Lần 6: tắt ảnh)
+                    removeImagesFromPlanet(planet);
+                    isViewLocked = false;
+                    lockedPlanet = null;
+                    restoreDefaultControls(); // Đảm bảo controls được đặt lại hoàn toàn và kích hoạt
+                    break;
+                case 4: // State 4: Lock view again, Images remain (Lần 4: theo dõi)
+                    addImagesToPlanet(planet); // Đảm bảo ảnh hiển thị
+                    isViewLocked = true;
+                    lockedPlanet = planet; // Re-lock to this planet
+                    // Không cần hoạt ảnh camera, chỉ cần đảm bảo controls theo dõi hành tinh
+                    controls.minDistance = 10; // Giữ khoảng cách gần với hành tinh
+                    controls.maxDistance = 100; // Cho phép zoom ra một chút
+                    controls.enabled = true; // Kích hoạt controls để theo dõi
+                    break;
             }
         }
 
@@ -834,7 +882,11 @@
                 isViewLocked = false;
                 restoreDefaultControls(); // Khôi phục cài đặt điều khiển mặc định
                 console.log('Chế độ xem đã được mở khóa do người dùng tương tác.');
-                if (previouslyLockedPlanet && previouslyLockedPlanet.userData.interactionState === 1) previouslyLockedPlanet.userData.interactionState = 2;
+                // Nếu hành tinh đang ở trạng thái khóa (Trạng thái 1 hoặc Trạng thái 4),
+                // chuyển nó sang trạng thái "hiện ảnh, bỏ khóa" (Trạng thái 2).
+                if (previouslyLockedPlanet && (previouslyLockedPlanet.userData.interactionState === 1 || previouslyLockedPlanet.userData.interactionState === 4)) {
+                    previouslyLockedPlanet.userData.interactionState = 2;
+                }
             }
         });
 
