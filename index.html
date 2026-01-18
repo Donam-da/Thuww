@@ -474,8 +474,8 @@
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
         }, false);
         
-        window.addEventListener('click', onInteraction, false);
-        window.addEventListener('touchend', onInteraction, false); // Add touchend listener for mobile
+        labelRenderer.domElement.addEventListener('click', onInteraction, false);
+        labelRenderer.domElement.addEventListener('touchend', onInteraction, false); // Add touchend listener for mobile
         
         // Note: The animate() call is now in loadingManager.onLoad
     </script>
