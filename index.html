@@ -488,7 +488,7 @@
             endControlsTarget.copy(planetWorldPosition);
 
             // Calculate target position for camera (offset from planet)
-            const offsetDistance = targetPlanet.userData.size * 10 + 20; // Example: 10x planet size + 20 units
+            const offsetDistance = targetPlanet.userData.size * 8 + 10; // Giảm khoảng cách để camera gần hơn
             endCameraPosition.copy(planetWorldPosition).add(new THREE.Vector3(0, offsetDistance / 2, offsetDistance));
 
             isCameraAnimating = true;
