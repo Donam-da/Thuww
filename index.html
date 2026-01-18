@@ -376,7 +376,9 @@
                 } else if (clickedObject.userData.isImagePlane) {
                     document.getElementById('fullscreen-image').src = clickedObject.userData.imageUrl;
                     document.getElementById('fullscreen-overlay').style.display = 'flex';
-                    controls.enabled = false;
+                    if (!isViewLocked) { // Only disable controls if view is NOT locked
+                        controls.enabled = false;
+                    }
                 } else {
                     let parentPlanet = clickedObject;
                     while (parentPlanet.parent && !parentPlanet.userData.isPlanet) {
@@ -498,10 +500,12 @@
                 controls.enablePan = false; // Ngăn không cho người dùng kéo camera ra khỏi hành tinh
                 controls.minDistance = targetPlanet.userData.size * 3; // Giữ camera gần hành tinh
                 controls.maxDistance = targetPlanet.userData.size * 15; // Không cho camera đi quá xa
+                unlockViewBtn.style.display = 'block'; // Show the unlock button
             } else {
                 lockedPlanet = null;
                 isViewLocked = false;
                 restoreDefaultControls();
+                unlockViewBtn.style.display = 'none'; // Hide the unlock button
             }
 
             // Store current camera and controls target for animation start
@@ -527,7 +531,9 @@
         function closeFullscreen(event) {
             event.preventDefault(); // Prevent potential double-triggering on touch devices
             document.getElementById('fullscreen-overlay').style.display = 'none';
-            controls.enabled = true;
+            if (!isViewLocked) { // Only re-enable controls if view was NOT locked
+                controls.enabled = true;
+            }
         }
 
         // --- Core Functions ---
