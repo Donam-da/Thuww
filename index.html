@@ -117,12 +117,53 @@
             console.error('There was an error loading ' + url);
         };
 
+        // --- Create and Reorder Image URLs for Loading ---
+        const originalUrls = Array.from({length: numberOfImages}, (_, i) => `images/${i + 1}.png`);
+        const orderedUrls = [];
+        const usedUrls = new Set();
+
+        let i = 0;
+        let j = Math.floor(numberOfImages / 2);
+        let k = numberOfImages - 1;
+
+        while (orderedUrls.length < numberOfImages) {
+            // Add from the beginning
+            if (i < Math.floor(numberOfImages / 2)) {
+                const url = originalUrls[i];
+                if (!usedUrls.has(url)) {
+                    orderedUrls.push(url);
+                    usedUrls.add(url);
+                }
+            }
+            i++;
+
+            // Add from the middle
+            if (j < numberOfImages) {
+                const url = originalUrls[j];
+                if (!usedUrls.has(url)) {
+                    orderedUrls.push(url);
+                    usedUrls.add(url);
+                }
+            }
+            j++;
+            
+            // Add from the end
+            if (k >= Math.floor(numberOfImages / 2)) {
+                const url = originalUrls[k];
+                if (!usedUrls.has(url)) {
+                    orderedUrls.push(url);
+                    usedUrls.add(url);
+                }
+            }
+            k--;
+        }
+
         // --- Create Image Planes ---
-        imageUrls.forEach((url, i) => {
+        orderedUrls.forEach((url) => {
             const geometry = new THREE.PlaneGeometry(2, 2);
             // Load texture and assign it in the callback
             const material = new THREE.MeshStandardMaterial({
-                map: textureLoader.load(url), // Start loading immediately
+                map: textureLoader.load(url), // Start loading in the new order
                 side: THREE.DoubleSide,
                 transparent: true,
                 opacity: 1 // Start with full opacity
