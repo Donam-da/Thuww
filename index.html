@@ -48,6 +48,44 @@
             cursor: pointer;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
         }
+        #select-planet-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            padding: 10px 15px;
+            background-color: transparent; /* Nền trong suốt */
+            color: white;
+            border: 1px solid #3498db; /* Thêm viền để nút vẫn dễ nhận biết */
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+        }
+        #planet-list-overlay {
+            position: fixed;
+            top: 60px; /* Định vị dưới nút "Chọn hành tinh" (top 20px + padding 10px + border 1px + khoảng cách) */
+            left: 20px; /* Căn chỉnh với lề trái của nút */
+            width: fit-content; /* Chiều rộng vừa với nội dung */
+            min-width: 180px; /* Đảm bảo chiều rộng tối thiểu, có thể điều chỉnh */
+            /* max-height và overflow-y bị loại bỏ để hiển thị tất cả và bỏ thanh cuộn */
+            background-color: transparent; /* Nền của dropmenu trong suốt */
+            padding: 15px; /* Giảm khoảng đệm bên trong dropmenu */
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,255,255,0.5); /* Hiệu ứng đổ bóng cho dropmenu */
+            z-index: 1002;
+            display: none; /* Hidden by default */
+            font-family: Arial, sans-serif;
+        }
+        #close-dropmenu-btn {
+            position: absolute;
+            top: 5px; /* Khoảng cách từ trên xuống */
+            right: 10px; /* Khoảng cách từ phải sang */
+            color: white;
+            font-size: 20px; /* Kích thước chữ X */
+            cursor: pointer;
+            z-index: 1003; /* Đảm bảo nó nằm trên các phần tử khác trong overlay */
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -70,6 +108,13 @@
     </div>
 
     <div id="main-scene">
+        <button id="select-planet-btn">Chọn hành tinh</button>
+        <div id="planet-list-overlay">
+            <span id="close-dropmenu-btn">&times;</span>
+            <ul id="planet-selection-list" style="list-style: none; padding: 0; margin: 0;">
+                <!-- Planet items will be inserted here -->
+            </ul>
+        </div>
         <!-- Canvas and renderers will be appended here by Three.js -->
     </div>
 
@@ -207,6 +252,17 @@
             planetLabel.position.set(0, data.size + 2, 0);
             planet.add(planetLabel);
 
+            // Tạo một hitbox hình cầu vô hình lớn hơn một chút so với hành tinh
+            const hitboxGeometry = new THREE.SphereGeometry(data.size + 0.5, 32, 32); // Lớn hơn hành tinh 0.5 đơn vị
+            const hitboxMaterial = new THREE.MeshBasicMaterial({
+                transparent: true,
+                opacity: 0, // Hoàn toàn vô hình
+                depthWrite: false // Không ghi vào depth buffer để không ảnh hưởng đến các đối tượng khác
+            });
+            const hitboxSphere = new THREE.Mesh(hitboxGeometry, hitboxMaterial);
+            hitboxSphere.userData = { isHitbox: true, parentPlanet: planet }; // Đánh dấu đây là hitbox và liên kết với hành tinh cha
+            planet.add(hitboxSphere); // Thêm hitbox vào hành tinh để nó di chuyển cùng
+
             planet.userData = { 
                 ...data, 
                 isPlanet: true, 
@@ -243,6 +299,15 @@
         let sunMessageMesh = null;
         let sunMessageAnimation = { active: false };
         let lastTouchTimestamp = 0;
+
+        // New variables for camera animation
+        let isCameraAnimating = false;
+        let cameraAnimationStartTime = 0;
+        const cameraAnimationDuration = 1500; // milliseconds
+        let startCameraPosition = new THREE.Vector3();
+        let startControlsTarget = new THREE.Vector3();
+        let endCameraPosition = new THREE.Vector3();
+        let endControlsTarget = new THREE.Vector3();
         const TOUCH_DELAY = 300; // Milliseconds to prevent ghost clicks
 
         function onInteraction(event) {
@@ -297,6 +362,11 @@
                 console.log('Raycaster hit something!', intersects[0].object); // Debugging line
                 let clickedObject = intersects[0].object;
 
+                if (clickedObject.userData.isHitbox) {
+                    showImagesForPlanet(clickedObject.userData.parentPlanet);
+                    return; // Process hitbox click, then exit
+                }
+
                 if (clickedObject.userData.isSun) {
                     showMessageOnSun();
                 } else if (clickedObject.userData.isImagePlane) {
@@ -315,6 +385,71 @@
             } else {
                 console.log('Raycaster hit nothing.'); // Debugging line
             }
+        }
+
+        // --- Planet Selection UI Logic ---
+        const selectPlanetBtn = document.getElementById('select-planet-btn');
+        const planetListOverlay = document.getElementById('planet-list-overlay');
+        const planetSelectionList = document.getElementById('planet-selection-list');
+        const closeDropmenuBtn = document.getElementById('close-dropmenu-btn'); // Đổi tên biến
+
+        selectPlanetBtn.addEventListener('click', showPlanetList);
+        closeDropmenuBtn.addEventListener('click', hidePlanetList); // Gắn sự kiện vào nút X mới
+
+        function showPlanetList() {
+            planetListOverlay.style.display = 'flex';
+            populatePlanetList();
+            controls.enabled = false; // Disable controls when list is open
+        }
+
+        function hidePlanetList() {
+            planetListOverlay.style.display = 'none';
+            controls.enabled = true; // Re-enable controls when list is closed
+        }
+
+        function populatePlanetList() {
+            planetSelectionList.innerHTML = ''; // Clear previous list
+            planets.forEach(planet => {
+                const listItem = document.createElement('li');
+                listItem.style.cssText = `
+                    color: white;
+                    padding: 10px;
+                    margin-bottom: 5px;
+                    background-color: rgba(0,0,0,0.5); /* Semi-transparent background */
+                    border-radius: 4px;
+                    cursor: pointer;
+                    transition: background-color 0.2s ease;
+                `;
+                listItem.textContent = planet.userData.name;
+                listItem.addEventListener('mouseenter', () => listItem.style.backgroundColor = 'rgba(0,0,0,0.7)'); // Darker on hover
+                listItem.addEventListener('mouseleave', () => listItem.style.backgroundColor = 'rgba(0,0,0,0.5)'); // Restore original
+                listItem.addEventListener('click', () => {
+                    animateCameraToPlanet(planet);
+                    hidePlanetList();
+                });
+                planetSelectionList.appendChild(listItem);
+            });
+        }
+
+        function animateCameraToPlanet(targetPlanet) {
+            // Disable controls during animation
+            controls.enabled = false;
+
+            // Store current camera and controls target for animation start
+            startCameraPosition.copy(camera.position);
+            startControlsTarget.copy(controls.target);
+
+            // Calculate target position for controls (planet's world position)
+            const planetWorldPosition = new THREE.Vector3();
+            targetPlanet.getWorldPosition(planetWorldPosition);
+            endControlsTarget.copy(planetWorldPosition);
+
+            // Calculate target position for camera (offset from planet)
+            const offsetDistance = targetPlanet.userData.size * 10 + 20; // Example: 10x planet size + 20 units
+            endCameraPosition.copy(planetWorldPosition).add(new THREE.Vector3(0, offsetDistance / 2, offsetDistance));
+
+            isCameraAnimating = true;
+            cameraAnimationStartTime = Date.now();
         }
         
         document.getElementById('close-btn').addEventListener('click', closeFullscreen);
@@ -460,6 +595,20 @@
                 }
             }
 
+            // Camera animation update
+            if (isCameraAnimating) {
+                const elapsedTime = Date.now() - cameraAnimationStartTime;
+                const progress = Math.min(elapsedTime / cameraAnimationDuration, 1);
+
+                // Simple linear interpolation
+                camera.position.lerpVectors(startCameraPosition, endCameraPosition, progress);
+                controls.target.lerpVectors(startControlsTarget, endControlsTarget, progress);
+
+                if (progress === 1) {
+                    isCameraAnimating = false;
+                    controls.enabled = true; // Re-enable controls after animation
+                }
+            }
             if (stars) {
                 stars.rotation.y += 0.0001;
             }
