@@ -220,7 +220,7 @@
         const sunGeometry = new THREE.SphereGeometry(10, 32, 32);
         const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffdd00 });
         const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-        sun.userData = { isSun: true }; // Identifier for the sun
+        sun.userData = { isSun: true, name: 'Mặt trời', size: 10 }; // Thêm tên và kích thước cho Mặt trời
         scene.add(sun);
         const sunLight = new THREE.PointLight(0xffffff, 1.5, 2000);
         sun.add(sunLight);
@@ -409,6 +409,28 @@
 
         function populatePlanetList() {
             planetSelectionList.innerHTML = ''; // Clear previous list
+
+            // Thêm Mặt trời vào danh sách
+            const sunListItem = document.createElement('li');
+            sunListItem.style.cssText = `
+                color: white;
+                padding: 10px;
+                margin-bottom: 5px;
+                background-color: rgba(0,0,0,0.5); /* Semi-transparent background */
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+            `;
+            sunListItem.textContent = sun.userData.name;
+            sunListItem.addEventListener('mouseenter', () => sunListItem.style.backgroundColor = 'rgba(0,0,0,0.7)'); // Darker on hover
+            sunListItem.addEventListener('mouseleave', () => sunListItem.style.backgroundColor = 'rgba(0,0,0,0.5)'); // Restore original
+            sunListItem.addEventListener('click', () => {
+                animateCameraToPlanet(sun); // Truyền đối tượng sun
+                hidePlanetList();
+            });
+            planetSelectionList.appendChild(sunListItem);
+
+            // Thêm các hành tinh vào danh sách
             planets.forEach(planet => {
                 const listItem = document.createElement('li');
                 listItem.style.cssText = `
