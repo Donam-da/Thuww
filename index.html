@@ -394,17 +394,36 @@
         const closeDropmenuBtn = document.getElementById('close-dropmenu-btn'); // Đổi tên biến
 
         selectPlanetBtn.addEventListener('click', showPlanetList);
-        closeDropmenuBtn.addEventListener('click', hidePlanetList); // Gắn sự kiện vào nút X mới
+        closeDropmenuBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
+            hidePlanetList();
+        });
 
         function showPlanetList() {
             planetListOverlay.style.display = 'flex';
             populatePlanetList();
             controls.enabled = false; // Disable controls when list is open
+            // Thêm trình lắng nghe sự kiện toàn cục để đóng dropmenu khi click/touch bên ngoài
+            document.addEventListener('click', handleOutsideInteraction);
+            document.addEventListener('touchend', handleOutsideInteraction);
         }
 
         function hidePlanetList() {
             planetListOverlay.style.display = 'none';
             controls.enabled = true; // Re-enable controls when list is closed
+            // Xóa trình lắng nghe sự kiện toàn cục
+            document.removeEventListener('click', handleOutsideInteraction);
+            document.removeEventListener('touchend', handleOutsideInteraction);
+        }
+
+        function handleOutsideInteraction(event) {
+            // Kiểm tra xem sự kiện click/touch có nằm ngoài dropmenu và nút "Chọn hành tinh" hay không
+            const isClickInsideOverlay = planetListOverlay.contains(event.target);
+            const isClickOnSelectButton = selectPlanetBtn.contains(event.target);
+
+            if (!isClickInsideOverlay && !isClickOnSelectButton) {
+                hidePlanetList();
+            }
         }
 
         function populatePlanetList() {
@@ -426,6 +445,7 @@
             sunListItem.addEventListener('mouseleave', () => sunListItem.style.backgroundColor = 'rgba(0,0,0,0.5)'); // Restore original
             sunListItem.addEventListener('click', () => {
                 animateCameraToPlanet(sun); // Truyền đối tượng sun
+                event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
                 hidePlanetList();
             });
             planetSelectionList.appendChild(sunListItem);
@@ -447,6 +467,7 @@
                 listItem.addEventListener('mouseleave', () => listItem.style.backgroundColor = 'rgba(0,0,0,0.5)'); // Restore original
                 listItem.addEventListener('click', () => {
                     animateCameraToPlanet(planet);
+                    event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
                     hidePlanetList();
                 });
                 planetSelectionList.appendChild(listItem);
