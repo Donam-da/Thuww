@@ -67,7 +67,10 @@
             cursor: pointer;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
         }
-        #select-planet-btn {
+        .planet-label.hidden {
+            display: none;
+        }
+        #select-planet-btn, #toggle-labels-btn {
             /* Vị trí được quản lý bởi #main-ui-controls */
             z-index: 1001;
             padding: 10px 15px;
@@ -526,7 +529,10 @@
     <div id="main-scene">
         <!-- New container for UI buttons -->
         <div id="main-ui-controls">
-            <button id="select-planet-btn">Hành tinh</button>
+            <div style="display: flex; flex-direction: column; gap: 5px; align-items: center;">
+                <button id="select-planet-btn">Hành tinh</button>
+                <button id="toggle-labels-btn">Ẩn Tên</button>
+            </div>
             <!-- <button id="overview-btn">Toàn cảnh</button> Removed from here -->
             <div id="music-controls-2d" style="display: none;">
                 <div id="music-player-progress-container-2d">
@@ -1009,6 +1015,21 @@
                 planetSelectionList.appendChild(listItem);
             });
         }
+
+        // --- Toggle Planet Labels ---
+        const toggleLabelsBtn = document.getElementById('toggle-labels-btn');
+        toggleLabelsBtn.addEventListener('click', () => {
+            const labels = document.querySelectorAll('.planet-label');
+            // Check the state of the first label to determine the current state
+            const isCurrentlyHidden = labels.length > 0 && labels[0].classList.contains('hidden');
+            
+            labels.forEach(label => {
+                label.classList.toggle('hidden');
+            });
+
+            // Update button text based on the *previous* state
+            toggleLabelsBtn.textContent = isCurrentlyHidden ? 'Ẩn Tên' : 'Hiện Tên';
+        });
         
         // --- Music Player Logic ---
         // --- CẤU HÌNH NHẠC ---
