@@ -1438,6 +1438,15 @@
             titleElement.style.setProperty('--scroll-duration', `${scrollDuration}ms`);
         }
 
+        function updateSongTitle() {
+            if (musicPlayerSongTitle2D && currentSongIndex !== -1 && songs[currentSongIndex]) {
+                // Use a timeout to ensure the element is in the DOM and has dimensions for scrolling
+                setTimeout(() => {
+                    applyScrollingToTitle2D(musicPlayerSongTitle2D, songs[currentSongIndex].name);
+                }, 100);
+            }
+        }
+
         // Function to show 2D music controls and set up event listeners
         function show2DMusicControls() {
             musicControls2D.style.display = 'flex';
@@ -1475,13 +1484,11 @@
             }
 
             // Ensure the 2D song title is visible and updated with scrolling text
-            if (musicPlayerSongTitle2D && currentSongIndex !== -1 && songs[currentSongIndex]) {
-                // Use a timeout to ensure the element is in the DOM and has dimensions
-                setTimeout(() => {
-                    applyScrollingToTitle2D(musicPlayerSongTitle2D, songs[currentSongIndex].name);
-                }, 100);
+            if (musicPlayerSongTitle2D) {
                 musicPlayerSongTitle2D.style.display = 'block';
             }
+            updateSongTitle();
+
             updateMusicPlayerUI(); // Initial UI update for 2D controls
 
             // Add event listeners for playback mode buttons
@@ -1800,7 +1807,10 @@
         }
         audioPlayer.addEventListener('timeupdate', updateMusicPlayerUI);
         audioPlayer.addEventListener('loadedmetadata', updateMusicPlayerUI);
-        audioPlayer.addEventListener('play', updateMusicPlayerUI);
+        audioPlayer.addEventListener('play', () => {
+            updateMusicPlayerUI();
+            updateSongTitle(); // Recalculate scrolling
+        });
         audioPlayer.addEventListener('pause', updateMusicPlayerUI);        
         audioPlayer.addEventListener('ended', () => {
             let newIndex;
