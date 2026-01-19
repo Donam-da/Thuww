@@ -999,8 +999,8 @@
             show2DMusicControls(); // Show the 2D controls
             playSong(song.file);
             // Call the function to handle scrolling after the player is in the DOM
-            // and its width can be accurately determined.
-            setTimeout(() => { applyScrollingToTitle(titleDiv, song.name); }, 50); // Small delay
+            // and its width can be accurately determined. Increased delay for better compatibility on deployed environments.
+            setTimeout(() => { applyScrollingToTitle(titleDiv, song.name); }, 200);
         }
 
         function updateMusicPlayerUI() {
