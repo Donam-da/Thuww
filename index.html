@@ -198,6 +198,7 @@
             align-items: center; /* Căn giữa các phần tử con theo chiều ngang */
             gap: 5px; /* Khoảng cách giữa thanh tiến trình và hàng nút */
             background-color: rgba(0,0,0,0.5); /* Semi-transparent background */
+            background-color: transparent; /* Làm nền trong suốt */
             padding: 5px 10px; /* Giữ padding */
             border-radius: 5px;
             border: none; /* Bỏ viền */
@@ -208,6 +209,7 @@
             justify-content: center; /* Căn giữa các nút trong hàng */
             margin-top: 5px; /* Khoảng cách từ thanh tiến trình */
             width: 300px; /* Đặt chiều rộng bằng thanh tiến trình trên desktop */
+            transform: translateX(-5px); /* Dịch sang trái 5px */
             width: 200px; /* Giảm chiều rộng cho cân đối */
         }
         #music-controls-2d button {
@@ -241,8 +243,9 @@
             border-radius: 5px;
             height: 5px;
             cursor: pointer;
-            width: 245px; /* Đặt chiều rộng lên 245px cho desktop */
+            width: 240px; /* Giảm chiều rộng đi 5px cho desktop */
             margin: 0 auto; /* Căn giữa theo chiều ngang trong container cha */
+            transform: translateX(-5px); /* Dịch sang phải 5px (từ vị trí -10px, giờ là -5px) */
         }
         #music-player-progress-bar-2d {
             background-color: #3498db;
@@ -387,10 +390,11 @@
             }
 
             #music-player-progress-container-2d {
-                width: 172px; /* Đặt chiều rộng lên 172px cho mobile */
+                width: 167px; /* Giảm chiều rộng đi 5px cho mobile */
             }
             .music-player-buttons-row {
-                width: 172px; /* Đặt chiều rộng lên 172px cho mobile */
+                width: 167px; /* Giảm chiều rộng đi 5px cho mobile */
+                transform: translateX(-5px); /* Dịch sang trái 5px */
             }
 
             #overview-btn { /* Kiểu dáng mobile cho nút mới */
