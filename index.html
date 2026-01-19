@@ -540,7 +540,6 @@
                     <button id="music-player-next-2d">⏭</button>
                 </div>
             </div>
-            <span id="music-player-song-title-2d" style="display: none;"></span> <!-- Tên bài hát 2D mới -->
             <button id="select-song-btn">Chọn nhạc</button>
         </div>
         <!-- Existing overlays -->
@@ -1514,6 +1513,11 @@
             cameraAnimationStartTime = Date.now();
 
             controls.enabled = false; // Tắt điều khiển trong quá trình hoạt ảnh
+
+            // Ẩn tên bài hát 2D khi chuyển sang chế độ toàn cảnh
+            if (musicPlayerSongTitle2D) {
+                musicPlayerSongTitle2D.style.display = 'none';
+            }
         }
         // New functions for managing planet images
         function addImagesToPlanet(planet) {
