@@ -269,6 +269,13 @@
             font-size: 10px;
             margin-top: 5px;
         }
+        .music-player-visualizer {
+            display: block;
+            margin: 5px auto; /* Center it below the title/time */
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+            border: 1px solid rgba(0, 255, 255, 0.2); /* Thêm viền nhẹ */
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -749,6 +756,13 @@
         const songSelectionList = document.getElementById('song-selection-list');
         const closeSongMenuBtn = document.getElementById('close-song-menu-btn');
         let isSongListOpen = false;
+
+        // Global variables for audio visualization
+        let audioContext = null;
+        let analyser = null;
+        let dataArray = null;
+        let bufferLength = null;
+        let audioSource = null; // To hold the MediaElementSourceNode
         
         // References for the new 2D music controls
         const musicControls2D = document.getElementById('music-controls-2d');
@@ -759,9 +773,30 @@
         const progressBar2D = document.getElementById('music-player-progress-bar-2d');
         // New variables for the 3D music player
         let musicPlayerObject = null;
-        let currentSongIndex = -1;
+        let currentSongIndex = -1;        
+        // References for the visualizer canvas within the 3D player
+        let visualizerCanvas = null;
+        let visualizerCtx = null;
+
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256; // Adjust for desired detail vs. smoothness
+                bufferLength = analyser.frequencyBinCount; // Half of fftSize
+                dataArray = new Uint8Array(bufferLength);
+
+                audioSource = audioContext.createMediaElementSource(audioPlayer);
+                audioSource.connect(analyser);
+                analyser.connect(audioContext.destination);
+            }
+        }
 
         function playSong(file) {
+            initAudioContext(); // Ensure context is initialized
+            if (audioContext.state === 'suspended') {
+                audioContext.resume(); // Resume if suspended
+            }
             audioPlayer.src = file;
             audioPlayer.play().catch(error => {
                 console.log("Phát nhạc bị chặn bởi trình duyệt. Cần người dùng tương tác để bắt đầu.", error);
@@ -911,7 +946,18 @@
             totalTimeSpan.textContent = '0:00'; // Will be updated by loadedmetadata
             timeDiv.append(currentTimeSpan, totalTimeSpan); // Append time spans to the 3D player's time div
 
-            playerContainer.append(closeBtn, title, timeDiv); // Only title and time for 3D player
+            // Create the visualizer canvas
+            const visualizerCanvasElement = document.createElement('canvas');
+            visualizerCanvasElement.className = 'music-player-visualizer';
+            visualizerCanvasElement.width = 230; // Match player width minus padding
+            visualizerCanvasElement.height = 50; // Height for the wave
+
+            // Append elements in the desired order: close, title, visualizer, time
+            playerContainer.append(closeBtn, title, visualizerCanvasElement, timeDiv);
+
+            // Store references for drawing
+            visualizerCanvas = visualizerCanvasElement;
+            visualizerCtx = visualizerCanvas.getContext('2d');
 
             // --- Create and Position 2D Object ---
             musicPlayerObject = new THREE.CSS2DObject(playerContainer);
@@ -921,7 +967,6 @@
             const playerPosition = new THREE.Vector3(0, 100, -15000);
 
             musicPlayerObject.position.copy(playerPosition);
-            musicPlayerScene.add(musicPlayerObject);
             show2DMusicControls(); // Show the 2D controls
             playSong(song.file);
         }
@@ -940,6 +985,34 @@
             if (totalTimeSpan) totalTimeSpan.textContent = formatTime(audioPlayer.duration);
         }
 
+        function drawVisualizer() {
+            if (!analyser || !visualizerCtx || !audioPlayer || audioPlayer.paused || audioPlayer.ended) {
+                // Clear canvas if no audio is playing or analyser is not ready
+                if (visualizerCtx) {
+                    visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+                }
+                return;
+            }
+
+            analyser.getByteFrequencyData(dataArray); // Get frequency data
+
+            visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+
+            const barWidth = (visualizerCanvas.width / bufferLength) * 2.5; // Adjust bar width for visual appeal
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                // Scale height based on frequency data. Max dataArray value is 255.
+                const barHeight = (dataArray[i] / 255) * visualizerCanvas.height;
+
+                const gradient = visualizerCtx.createLinearGradient(0, visualizerCanvas.height, 0, 0);
+                gradient.addColorStop(0, '#3498db'); // Blue
+                gradient.addColorStop(1, '#00ffff'); // Cyan
+                visualizerCtx.fillStyle = gradient;
+                visualizerCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth, barHeight); // Draw from the bottom up
+                x += barWidth + 1; // Add 1px space between bars
+            }
+        }
         audioPlayer.addEventListener('timeupdate', updateMusicPlayerUI);
         audioPlayer.addEventListener('loadedmetadata', updateMusicPlayerUI);
         audioPlayer.addEventListener('play', updateMusicPlayerUI);
@@ -1293,6 +1366,7 @@
                 camera.lookAt(controls.target); // Ensure camera always looks at the interpolated target
             }
             if (stars) {
+                musicPlayerScene.add(musicPlayerObject); // Add the 3D music player to its scene
                 stars.rotation.y += 0.0001;
             }
             sun.rotation.y += 0.001;
@@ -1334,6 +1408,85 @@
             renderer.setClearColor(0x000000, 0); // Xóa nền của scene chính để scene nền có thể nhìn thấy
 
             controls.update();
+            drawVisualizer(); // Call the visualizer drawing function
+            musicPlayerRenderer.render(musicPlayerScene, camera); // Render scene nền (khung nhạc)
+            renderer.render(scene, camera); // Render scene chính (hệ mặt trời)
+            labelRenderer.render(scene, camera); // Render các nhãn của scene chính
+        }
+
+        // --- Event Listeners & Initial Calls ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
+        
+        labelRenderer.domElement.addEventListener('click', onInteraction, true); // Use capturing phase for click
+        labelRenderer.domElement.addEventListener('touchend', onInteraction, true); // Use capturing phase for touchend
+
+        // Tự động mở khóa chế độ xem nếu người dùng tương tác thủ công với controls
+        controls.addEventListener('start', () => {
+            if (isViewLocked && !isCameraAnimating) {
+                const previouslyLockedPlanet = lockedPlanet; // Store before nulling
+                // If user manually interacts, unlock view
+                lockedPlanet = null;
+                isViewLocked = false;
+                restoreDefaultControls(); // Khôi phục cài đặt điều khiển mặc định
+                console.log('Chế độ xem đã được mở khóa do người dùng tương tác.');
+                // Nếu hành tinh đang ở trạng thái khóa (Trạng thái 1 hoặc Trạng thái 4),
+                // chuyển nó sang trạng thái "hiện ảnh, bỏ khóa" (Trạng thái 2).
+                if (previouslyLockedPlanet && (previouslyLockedPlanet.userData.interactionState === 1 || previouslyLockedPlanet.userData.interactionState === 4)) {
+                    previouslyLockedPlanet.userData.interactionState = 2;
+                }
+            }
+        });
+
+        
+        // Note: The animate() call is now in loadingManager.onLoad
+    </script>
+
+</body>
+</html>     sun.rotation.y += 0.001;
+
+            planets.forEach(planet => {
+                const data = planet.userData;
+                data.angle += data.speed;
+                planet.position.x = Math.cos(data.angle) * data.distance;
+                planet.position.z = Math.sin(data.angle) * data.distance;
+                planet.rotation.y += 0.001;
+
+                // Only update image movement if the image group is visible
+                if (!planet.userData.imageGroup.visible) {
+                    return; // Skip if images are hidden (correct way to exit forEach callback)
+                }
+                // Revert to individual, chaotic rotation for each image
+                planet.userData.imageGroup.children.forEach(image => {
+                    image.position.applyAxisAngle(image.userData.orbitAxis, image.userData.orbitSpeed);
+                    image.rotation.x += image.userData.selfRotationSpeedX;
+                    image.rotation.y += image.userData.selfRotationSpeedY;
+                    image.rotation.z += image.userData.selfRotationSpeedZ;
+                });
+            });
+
+            // --- Camera Lock Logic ---
+            if (isViewLocked && lockedPlanet) {
+                // Lấy vị trí thế giới của hành tinh đang bị khóa
+                const targetWorldPosition = new THREE.Vector3();
+                lockedPlanet.getWorldPosition(targetWorldPosition);
+
+                // Cập nhật mục tiêu của controls để camera luôn hướng vào hành tinh
+                controls.target.copy(targetWorldPosition);
+
+                // Nếu không có animation camera đang diễn ra, đảm bảo camera duy trì vị trí tương đối
+                // OrbitControls.update() sẽ tự xử lý việc di chuyển camera tương đối với mục tiêu mới
+                // Không cần đặt camera.position một cách rõ ràng ở đây.
+            }
+
+            renderer.setClearColor(0x000000, 0); // Xóa nền của scene chính để scene nền có thể nhìn thấy
+
+            controls.update();
+            drawVisualizer(); // Call the visualizer drawing function
             musicPlayerRenderer.render(musicPlayerScene, camera); // Render scene nền (khung nhạc)
             renderer.render(scene, camera); // Render scene chính (hệ mặt trời)
             labelRenderer.render(scene, camera); // Render các nhãn của scene chính
