@@ -1918,6 +1918,9 @@
             isViewLocked = false;
             lockedPlanet = null;
 
+            // Di chuyển trình phát nhạc xuống
+            document.getElementById('music-controls-2d').style.transform = 'translateY(20px)';
+
             // Lưu vị trí camera và mục tiêu điều khiển hiện tại làm điểm bắt đầu
             startCameraPosition.copy(camera.position);
             startControlsTarget.copy(controls.target);
@@ -1996,6 +1999,9 @@
 
         // New handler for planet clicks to manage state
         function handlePlanetClick(planet) {
+            // Đặt lại vị trí của trình phát nhạc khi chọn một hành tinh
+            document.getElementById('music-controls-2d').style.transform = '';
+
             if (planet.userData.interactionState === undefined) {
                 planet.userData.interactionState = 0;
             }
