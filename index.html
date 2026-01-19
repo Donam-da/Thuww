@@ -159,6 +159,8 @@
             box-shadow: 0 0 15px rgba(0,255,255,0.5);
             z-index: 1002;
             display: none; /* Hidden by default */
+            max-height: 320px; /* Hiển thị khoảng 7 bài hát */
+            overflow-y: auto; /* Kích hoạt thanh cuộn khi nội dung vượt quá chiều cao tối đa */
             font-family: Arial, sans-serif;
         }
         #close-song-menu-btn {
@@ -1013,20 +1015,39 @@
         // --- CẤU HÌNH NHẠC ---
         // 1. Đặt tên các file nhạc của bạn theo thứ tự: music1.mp3, music2.mp3, ... và đặt chúng vào thư mục 'music'.
         // 2. Cập nhật số `totalMusicFiles` dưới đây cho khớp với tổng số file nhạc bạn có.
-        const totalMusicFiles = 3; // <-- Đã cập nhật lên 3
+        const totalMusicFiles = 25; // <-- Đã cập nhật lên 25
 
         // Tự động tạo danh sách bài hát. Sau này bạn có thể gán tên cụ thể cho từng bài.
         const songs = [];
         for (let i = 1; i <= totalMusicFiles; i++) {
             let songName;
-            if (i === 1) {
-                songName = "Đi Cùng Anh - buitruonglinh (ft. 52Hz)";
-            } else if (i === 2) {
-                songName = "BABY LAVIEM ( #BBLVE ) - BigWind x KA";
-            } else if (i === 3) {
-                songName = "Anh Chưa Từng Hết Yêu / buitruonglinh";
-            } else {
-                songName = `Bài hát ${i}`; // Tên mặc định cho các bài hát khác
+            switch (i) {
+                case 1: songName = "Đi Cùng Anh - buitruonglinh (ft. 52Hz)"; break;
+                case 2: songName = "BABY LAVIEM ( #BBLVE ) - BigWind x KA"; break;
+                case 3: songName = "Anh Chưa Từng Hết Yêu / buitruonglinh"; break;
+                case 4: songName = "Giờ Thì - buitruonglinh"; break;
+                case 5: songName = "Intro (Mong Em Hạnh Phúc Suốt Cuộc Đời Này) - buitruonglinh"; break;
+                case 6: songName = "VƯỚNG VÂN - @conginthewind ft. Clow - OFFICIAL MUSIC VIDEO"; break;
+                case 7: songName = "inari & Côngg - Khiêu Vũ"; break;
+                case 8: songName = "ĐỢI - 52Hz (prod. RIO)"; break;
+                case 9: songName = "AMEE - ĐEN ĐÁ KHÔNG ĐƯỜNG"; break;
+                case 10: songName = "AMEE x B RAY - Exs Hate Me (Part 2)"; break;
+                case 11: songName = "MỘNG YU - AMEE ft. MCK"; break;
+                case 12: songName = "Chờ Anh Về"; break;
+                case 13: songName = "Nghe kể năm 90s - Ân ngờ ft. Suzie MK [ EP- Này Hay ]"; break;
+                case 14: songName = "Obito - Hà Nội ft. VSTRA"; break;
+                case 15: songName = "Obito - Sài Gòn ơi"; break;
+                case 16: songName = "Wrong Times - Puppy &Dangrangto (ft. FOWLEX Snowz)"; break;
+                case 17: songName = "Xích Thêm Chút - XTC Remix - RPT Groovie ft TLinh x RPT MCK"; break;
+                case 18: songName = "RIO - '' vạn vật như muốn ta bên nhau ''"; break;
+                case 19: songName = "08. 50-50 (Interlude) - RPT MCK -"; break;
+                case 20: songName = "kidsai, Niz - GIAYPHUT"; break;
+                case 21: songName = "kidsai , VSTRA - NGÂY THER - OFFICIAL VISUALIZER"; break;
+                case 22: songName = "1-2 - Dangrangto, BIG WIND, Lee À"; break;
+                case 23: songName = "Lil Liem, KIDDI - 0.2 in the end"; break;
+                case 24: songName = "ZAROS & Lil Liem - Chấp Niệm"; break;
+                case 25: songName = "Em đi đi - Lil Liem ft. BIG WIND -- Hoang Long"; break;
+                default: songName = `Bài hát ${i}`; // Fallback for any unexpected index
             }
             songs.push({
                 name: songName,
@@ -1224,6 +1245,34 @@
         closeSongMenuBtn.addEventListener('click', (event) => {
             event.stopPropagation();
             hideSongList();
+        });
+
+        // --- Touch scrolling for song list overlay ---
+        let touchStartY = 0;
+        let touchScrollTop = 0;
+        let isScrolling = false; // Cờ để phát hiện xem có cử chỉ cuộn đang diễn ra không
+
+        songListOverlay.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                touchStartY = e.touches[0].clientY;
+                touchScrollTop = songListOverlay.scrollTop;
+                isScrolling = false; // Đặt lại cờ cuộn
+            }
+        }, { passive: false }); // Sử dụng passive: false để cho phép preventDefault
+
+        songListOverlay.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                const deltaY = touchStartY - e.touches[0].clientY;
+                if (Math.abs(deltaY) > 5 || isScrolling) { // Ngưỡng 5 pixel để phân biệt giữa chạm và cuộn
+                    songListOverlay.scrollTop = touchScrollTop + deltaY;
+                    e.preventDefault(); // Ngăn chặn cuộn tự nhiên của trình duyệt
+                    isScrolling = true;
+                }
+            }
+        }, { passive: false }); // Sử dụng passive: false để cho phép preventDefault
+
+        songListOverlay.addEventListener('touchend', () => {
+            isScrolling = false; // Đặt lại cờ cuộn khi kết thúc chạm
         });
 
         // --- 2D Music Controls Logic ---
