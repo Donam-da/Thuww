@@ -754,36 +754,9 @@
             const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, opacity: 0.8, transparent: true }); // Brighter cyan, higher opacity
             const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
             orbit.rotation.x = -Math.PI / 2;
-            scene.add(orbit);
-
-            // Create glowing equator
-            // Inner, brighter ring
-            const equatorGeometry = new THREE.TorusGeometry(data.size, 0.05, 16, 100);
-            const equatorMaterial = new THREE.MeshBasicMaterial({
-                color: 0x00ffff, // A bright cyan color
-                blending: THREE.AdditiveBlending,
-                transparent: true,
-                opacity: 0.9, // Increased opacity for the core ring
-                depthWrite: false
-            });
-            const equatorRing = new THREE.Mesh(equatorGeometry, equatorMaterial);
-            equatorRing.rotation.x = Math.PI / 2;
-            planet.add(equatorRing);
-
-            // Outer, fainter glow
-            const glowGeometry = new THREE.TorusGeometry(data.size, 0.15, 16, 100); // Wider tube
-            const glowMaterial = new THREE.MeshBasicMaterial({
-                color: 0x00ffff,
-                blending: THREE.AdditiveBlending,
-                transparent: true,
-                opacity: 0.3, // Fainter opacity for the glow
-                depthWrite: false
-            });
-            const equatorGlow = new THREE.Mesh(glowGeometry, glowMaterial);
-            equatorGlow.rotation.x = Math.PI / 2;
-            planet.add(equatorGlow);
-            
-            if (data.name === 'Sao Thổ') {
+                        scene.add(orbit);
+                        
+                        if (data.name === 'Sao Thổ') {
                 const ringGeometry = new THREE.RingGeometry(data.size * 1.5, data.size * 2.5, 64);
                 const ringMaterial = new THREE.MeshBasicMaterial({ color: 0xead5a8, side: THREE.DoubleSide, opacity: 0.7, transparent: true });
                 const ring = new THREE.Mesh(ringGeometry, ringMaterial);
