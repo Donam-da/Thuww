@@ -818,7 +818,7 @@
             // Điều chỉnh padding theo đơn vị thế giới. Giá trị này sẽ ảnh hưởng đến mức độ zoom.
             // Giá trị lớn hơn sẽ zoom ra xa hơn, giá trị nhỏ hơn sẽ zoom gần hơn.
             // Đây là một giá trị heuristic để mô phỏng "cách lề 50px/10px". Để zoom to hơn, giảm giá trị này.
-            const worldPadding = isMobile ? 15 : 40; // Giảm padding để zoom gần hơn: 15 cho mobile, 40 cho desktop
+            const worldPadding = isMobile ? 10 : 30; // Giảm padding để zoom gần hơn: 10 cho mobile, 30 cho desktop
 
             // Kích thước mục tiêu (nửa chiều rộng/chiều cao) mà camera cần nhìn thấy
             const targetHalfWidth = maxPlanetDistance + worldPadding;
