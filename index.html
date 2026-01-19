@@ -284,22 +284,34 @@
             cursor: grab; /* Con trỏ kéo */
         }
         #music-player-song-title-2d { /* Tên bài hát 2D mới */
-            display: none;
-            /* Loại bỏ định vị tuyệt đối để nó hiển thị theo luồng flex-direction: column */
-            /* position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); */
             color: white;
             font-size: 12px;
-            white-space: nowrap;            
             font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 200px; /* Đặt chiều rộng tối đa cho desktop */
             text-align: center; /* Căn giữa văn bản */
             pointer-events: none; /* Cho phép click xuyên qua để tương tác với thanh tiến trình */
             margin: 5px auto; /* Khoảng cách trên dưới và căn giữa ngang */
             background-color: transparent; /* Nền trong suốt */
             padding: 2px 5px;
             border-radius: 3px;
+            /* New styles for scrolling container */
+            position: relative; 
+            overflow: hidden;
+            white-space: nowrap;
+            width: 200px; /* Explicit width */
+            max-width: 200px;
+            height: 15px; /* Fixed height */
+            line-height: 15px;
+        }
+        .music-player-title-scroll-container-2d {
+            display: inline-block;
+            white-space: nowrap;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: transparent;
+        }
+        #music-player-song-title-2d.scrolling .music-player-title-scroll-container-2d {
+            animation: scrollText var(--scroll-duration) linear infinite;
         }
         #music-player-progress-bar-2d {
             background-color: #3498db;
@@ -1371,6 +1383,61 @@
 
         // --- 2D Music Controls Logic ---
 
+        function applyScrollingToTitle2D(titleElement, songName) {
+            // Ensure container is empty
+            while (titleElement.firstChild) {
+                titleElement.removeChild(titleElement.firstChild);
+            }
+
+            // Create new scrolling elements
+            const scrollContainer = document.createElement('div');
+            scrollContainer.className = 'music-player-title-scroll-container-2d';
+            
+            const titleText1 = document.createElement('span');
+            titleText1.textContent = songName;
+            titleText1.style.display = 'inline-block';
+
+            scrollContainer.appendChild(titleText1);
+            titleElement.appendChild(scrollContainer);
+
+            // Clear any previous animation state
+            titleElement.classList.remove('scrolling');
+            titleElement.style.removeProperty('--scroll-start');
+            titleElement.style.removeProperty('--scroll-end');
+            titleElement.style.removeProperty('--scroll-duration');
+            
+            // We need to wait for the DOM to update to get correct widths
+            const containerWidth = titleElement.offsetWidth;
+            const textWidth = titleText1.offsetWidth;
+
+            // Only scroll if text is wider than container
+            if (textWidth <= containerWidth) {
+                // If not scrolling, center the text
+                scrollContainer.style.left = `${(containerWidth - textWidth) / 2}px`;
+                return;
+            }
+            
+            // Duplicate text for seamless scroll
+            const titleText2 = document.createElement('span');
+            titleText2.textContent = songName;
+            titleText2.style.display = 'inline-block';
+            titleText2.style.paddingLeft = '50px'; // Space between texts
+            scrollContainer.appendChild(titleText2);
+
+            const scrollDistance = textWidth + 50; // text width + padding
+            const scrollSpeedPxPerSec = 40;
+            const scrollDuration = (scrollDistance / scrollSpeedPxPerSec) * 1000; // in milliseconds
+
+            // The animation will go from 0 to -scrollDistance, creating a seamless loop
+            const startPos = 0;
+            const endPos = -scrollDistance;
+
+            titleElement.classList.add('scrolling');
+            titleElement.style.setProperty('--scroll-start', `${startPos}px`);
+            titleElement.style.setProperty('--scroll-end', `${endPos}px`);
+            titleElement.style.setProperty('--scroll-duration', `${scrollDuration}ms`);
+        }
+
         // Function to show 2D music controls and set up event listeners
         function show2DMusicControls() {
             musicControls2D.style.display = 'flex';
@@ -1407,9 +1474,12 @@
                 progressHandle2D.addEventListener('touchstart', startProgressDrag, { passive: false });
             }
 
-            // Ensure the 2D song title is visible and updated
+            // Ensure the 2D song title is visible and updated with scrolling text
             if (musicPlayerSongTitle2D && currentSongIndex !== -1 && songs[currentSongIndex]) {
-                musicPlayerSongTitle2D.textContent = songs[currentSongIndex].name;
+                // Use a timeout to ensure the element is in the DOM and has dimensions
+                setTimeout(() => {
+                    applyScrollingToTitle2D(musicPlayerSongTitle2D, songs[currentSongIndex].name);
+                }, 100);
                 musicPlayerSongTitle2D.style.display = 'block';
             }
             updateMusicPlayerUI(); // Initial UI update for 2D controls
@@ -1851,11 +1921,6 @@
             cameraAnimationStartTime = Date.now();
 
             controls.enabled = false; // Tắt điều khiển trong quá trình hoạt ảnh
-
-            // Ẩn tên bài hát 2D khi chuyển sang chế độ toàn cảnh
-            if (musicPlayerSongTitle2D) {
-                musicPlayerSongTitle2D.style.display = 'none';
-            }
         }
         // New functions for managing planet images
         function addImagesToPlanet(planet) {
@@ -2004,12 +2069,6 @@
         // if (unlockViewBtn) unlockViewBtn.addEventListener('click', () => { isViewLocked = false; lockedPlanet = null; restoreDefaultControls(); unlockViewBtn.style.display = 'none'; });
         const downloadBtn = document.getElementById('download-btn');
         function closeFullscreen(event) {
-            // Ẩn tên bài hát 2D khi đóng fullscreen overlay
-            // (Giả định rằng việc đóng fullscreen overlay cũng có thể được coi là "quay góc view hiện lại")
-            if (musicPlayerSongTitle2D) {
-                musicPlayerSongTitle2D.style.display = 'none';
-            }
-
             event.preventDefault(); // Prevent potential double-triggering on touch devices
             document.getElementById('fullscreen-overlay').style.display = 'none';
             if (!isViewLocked) { // Only re-enable controls if view was NOT locked
@@ -2184,6 +2243,16 @@
                         camera.position.copy(finalCameraPosition);
                         controls.target.copy(finalControlsTarget);
                         restoreDefaultControls(); // Đảm bảo min/max distance được đặt lại
+
+                        // Temporarily disable interaction to prevent accidental clicks after overview
+                        labelRenderer.domElement.removeEventListener('click', onInteraction, true);
+                        labelRenderer.domElement.removeEventListener('touchend', onInteraction, true);
+
+                        const reenableInteraction = () => {
+                            labelRenderer.domElement.addEventListener('click', onInteraction, true);
+                            labelRenderer.domElement.addEventListener('touchend', onInteraction, true);
+                        };
+                        controls.addEventListener('change', reenableInteraction, { once: true });
                     }
 
                 }
@@ -2279,11 +2348,6 @@
                 if (previouslyLockedPlanet && (previouslyLockedPlanet.userData.interactionState === 1 || previouslyLockedPlanet.userData.interactionState === 4)) {
                     previouslyLockedPlanet.userData.interactionState = 2;
                 }
-            }
-            // Hiển thị tên bài hát 2D khi bắt đầu tương tác với controls
-            if (musicPlayerSongTitle2D && currentSongIndex !== -1 && songs[currentSongIndex]) {
-                musicPlayerSongTitle2D.textContent = songs[currentSongIndex].name;
-                musicPlayerSongTitle2D.style.display = 'block';
             }
         });
 
