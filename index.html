@@ -440,16 +440,15 @@
             #planet-list-overlay,
             #song-list-overlay {
                 top: auto; /* Remove top positioning */
-                bottom: 70px; /* Position above the bottom control bar */
                 bottom: 60px; /* Đặt vị trí cách lề dưới 60px (để tránh thanh điều khiển chính) */
                 left: 50%; /* Center horizontally */
                 transform: translateX(-50%); /* Center horizontally */
                 width: 90%; /* Take up most of the width */
-                max-width: 250px; /* Max width for larger phones, further reduced */
+                max-width: 250px; /* Max width for larger phones */
                 min-width: 180px; /* Đặt lại min-width để tránh quá nhỏ */
                 padding: 8px; /* Adjust padding */
                 background-color: rgba(0,0,0,0.8); /* Darker background for readability */
-                max-height: calc(100vh - 70px); /* Chiều cao tối đa để không tràn màn hình (100vh - 60px bottom - 10px top margin) */
+                max-height: 220px; /* Adjusted to show approx 7 items */
                 overflow-y: auto; /* Cho phép cuộn nếu nội dung quá dài */
                 box-shadow: 0 0 10px rgba(0,255,255,0.7); /* Slightly stronger shadow */
             }
@@ -2117,11 +2116,28 @@
         }
 
         // --- Event Listeners & Initial Calls ---
-        window.addEventListener('resize', () => {
+        window.addEventListener('resize', () => { 
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            // Recalculate overview position on resize
+            overviewCameraPosition = calculateOverviewCameraPosition();
+            // Nếu đang ở chế độ toàn cảnh, kích hoạt lại hoạt ảnh để cập nhật vị trí
+            if (cameraAnimationPhase === 3) {
+                animateCameraToOverview();
+            }
+
+            // Re-evaluate music player title scrolling on resize
+            if (musicPlayerObject && currentSongIndex !== -1) {
+                const titleDiv = musicPlayerObject.element.querySelector('.music-player-title');
+                if (titleDiv) {
+                    // Give a small delay to ensure DOM elements have settled after resize
+                    setTimeout(() => {
+                        applyScrollingToTitle(titleDiv, songs[currentSongIndex].name);
+                    }, 100);
+                }
+            }
         }, false);
         
         labelRenderer.domElement.addEventListener('click', onInteraction, true); // Use capturing phase for click
@@ -2154,64 +2170,4 @@
     </script>
 
 </body>
-</html>     sun.rotation.y += 0.001;
-
-            planets.forEach(planet => {
-                const data = planet.userData;
-                data.angle += data.speed;
-                planet.position.x = Math.cos(data.angle) * data.distance;
-                planet.position.z = Math.sin(data.angle) * data.distance;
-                planet.rotation.y += 0.001;
-
-                // Only update image movement if the image group is visible
-                if (!planet.userData.imageGroup.visible) {
-                    return; // Skip if images are hidden (correct way to exit forEach callback)
-                }
-                // Revert to individual, chaotic rotation for each image
-                planet.userData.imageGroup.children.forEach(image => {
-                    image.position.applyAxisAngle(image.userData.orbitAxis, image.userData.orbitSpeed);
-                    image.rotation.x += image.userData.selfRotationSpeedX;
-                    image.rotation.y += image.userData.selfRotationSpeedY;
-                    image.rotation.z += image.userData.selfRotationSpeedZ;
-                });
-            });
-
-            // --- Camera Lock Logic ---
-            if (isViewLocked && lockedPlanet) {
-                // Lấy vị trí thế giới của hành tinh đang bị khóa
-                const targetWorldPosition = new THREE.Vector3();
-                lockedPlanet.getWorldPosition(targetWorldPosition);
-
-                // Cập nhật mục tiêu của controls để camera luôn hướng vào hành tinh
-                controls.target.copy(targetWorldPosition);
-
-                // Nếu không có animation camera đang diễn ra, đảm bảo camera duy trì vị trí tương đối
-                // OrbitControls.update() sẽ tự xử lý việc di chuyển camera tương đối với mục tiêu mới
-                // Không cần đặt camera.position một cách rõ ràng ở đây.
-            }
-
-            renderer.setClearColor(0x000000, 0); // Xóa nền của scene chính để scene nền có thể nhìn thấy
-
-            controls.update();
-            drawVisualizer(); // Call the visualizer drawing function
-            musicPlayerRenderer.render(musicPlayerScene, camera); // Render scene nền (khung nhạc)
-            renderer.render(scene, camera); // Render scene chính (hệ mặt trời)
-            labelRenderer.render(scene, camera); // Render các nhãn của scene chính
-        }
-
-        // --- Event Listeners & Initial Calls ---
-        // Gộp listener resize vào đây để tránh trùng lặp
-        window.addEventListener('resize', () => { 
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            labelRenderer.setSize(window.innerWidth, window.innerHeight);
-            // Recalculate overview position on resize
-            overviewCameraPosition = calculateOverviewCameraPosition();
-            // Nếu đang ở chế độ toàn cảnh, kích hoạt lại hoạt ảnh để cập nhật vị trí
-            if (cameraAnimationPhase === 3) {
-                animateCameraToOverview();
-            }
-        }, false);
-        
-        labelRenderer.domElement.addEventListener('click', onInteraction, true); // Use capturing phase for click
+</html>
