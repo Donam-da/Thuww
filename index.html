@@ -231,16 +231,16 @@
 
         /* --- 3D Music Player Styles --- */
         .music-player-container-3d {
-            background-color: rgba(10, 20, 30, 0.8);
-            border: 1px solid rgba(0, 255, 255, 0.5);
+            background-color: transparent; /* Nền hoàn toàn trong suốt */
+            border: none; /* Bỏ viền */
             border-radius: 10px;
             padding: 10px;
             width: 250px;
             color: white;
             font-family: Arial, sans-serif;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
+            box-shadow: none; /* Bỏ hiệu ứng đổ bóng */
+            backdrop-filter: none; /* Bỏ hiệu ứng làm mờ nền */
+            -webkit-backdrop-filter: none; /* Bỏ hiệu ứng làm mờ nền cho trình duyệt Webkit */
             position: relative;
             pointer-events: auto; /* Allow interaction with the player */
         }
@@ -270,11 +270,11 @@
             margin-top: 5px;
         }
         .music-player-visualizer {
-            display: block;
-            margin: 5px auto; /* Center it below the title/time */
-            background-color: rgba(0, 0, 0, 0.3);
+            display: block; /* Đảm bảo canvas là block element để căn giữa */
+            margin: 5px auto; /* Căn giữa bên dưới tiêu đề/thời gian */
+            background-color: transparent; /* Nền trong suốt */
             border-radius: 3px;
-            border: 1px solid rgba(0, 255, 255, 0.2); /* Thêm viền nhẹ */
+            border: none; /* Bỏ viền */
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -782,7 +782,7 @@
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256; // Adjust for desired detail vs. smoothness
+                analyser.fftSize = 512; // Tăng kích thước FFT để sóng mượt mà và chi tiết hơn
                 bufferLength = analyser.frequencyBinCount; // Half of fftSize
                 dataArray = new Uint8Array(bufferLength);
 
@@ -967,6 +967,7 @@
             const playerPosition = new THREE.Vector3(0, 100, -15000);
 
             musicPlayerObject.position.copy(playerPosition);
+            musicPlayerScene.add(musicPlayerObject); // Thêm trình phát nhạc 3D vào scene nền
             show2DMusicControls(); // Show the 2D controls
             playSong(song.file);
         }
@@ -998,20 +999,51 @@
 
             visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
 
-            const barWidth = (visualizerCanvas.width / bufferLength) * 2.5; // Adjust bar width for visual appeal
+            const centerY = visualizerCanvas.height / 2;
+            const sliceWidth = visualizerCanvas.width * 1.0 / bufferLength; // Chiều rộng cho mỗi điểm dữ liệu
+
+            // Tạo gradient màu sắc sống động cho phần điền (fill) của sóng, từ trên xuống dưới
+            const gradient = visualizerCtx.createLinearGradient(0, 0, 0, visualizerCanvas.height);
+            gradient.addColorStop(0, 'rgba(255, 0, 255, 0.8)');    // Magenta
+            gradient.addColorStop(0.25, 'rgba(0, 0, 255, 0.8)');   // Blue
+            gradient.addColorStop(0.5, 'rgba(0, 255, 255, 0.8)');  // Cyan
+            gradient.addColorStop(0.75, 'rgba(0, 255, 0, 0.8)');   // Green
+            gradient.addColorStop(1, 'rgba(255, 255, 0, 0.8)');    // Yellow
+            visualizerCtx.fillStyle = gradient;
+
+            // Thêm hiệu ứng đổ bóng (glow) tinh tế
+            visualizerCtx.shadowBlur = 15; // Tăng độ mờ để có hiệu ứng glow mạnh hơn
+            visualizerCtx.shadowColor = 'rgba(0, 255, 255, 0.9)'; // Màu glow xanh lam sáng
+
+            visualizerCtx.beginPath();
+            visualizerCtx.moveTo(0, centerY); // Bắt đầu từ giữa bên trái
+
             let x = 0;
-
             for (let i = 0; i < bufferLength; i++) {
-                // Scale height based on frequency data. Max dataArray value is 255.
-                const barHeight = (dataArray[i] / 255) * visualizerCanvas.height;
-
-                const gradient = visualizerCtx.createLinearGradient(0, visualizerCanvas.height, 0, 0);
-                gradient.addColorStop(0, '#3498db'); // Blue
-                gradient.addColorStop(1, '#00ffff'); // Cyan
-                visualizerCtx.fillStyle = gradient;
-                visualizerCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth, barHeight); // Draw from the bottom up
-                x += barWidth + 1; // Add 1px space between bars
+                // Chuẩn hóa dữ liệu tần số về khoảng 0-1, sau đó áp dụng hàm mũ (power)
+                // để làm nổi bật các âm thanh mạnh hơn và giảm bớt các âm thanh yếu,
+                // tạo ra một cái nhìn động và chuyên nghiệp hơn.
+                const v = Math.pow(dataArray[i] / 255.0, 1.5); // Normalize to 0-1, sau đó mũ 1.5 để nhấn mạnh
+                const y = centerY - (v * centerY * 0.9); // Điều chỉnh chiều cao, 0.9 để chừa một khoảng trống nhỏ ở viền
+                visualizerCtx.lineTo(x, y);
+                x += sliceWidth;
             }
+
+            // Vẽ nửa dưới, đối xứng với nửa trên
+            x = visualizerCanvas.width; // Bắt đầu từ bên phải
+            for (let i = bufferLength - 1; i >= 0; i--) {
+                const v = Math.pow(dataArray[i] / 255.0, 1.5);
+                const y = centerY + (v * centerY * 0.9);
+                visualizerCtx.lineTo(x, y);
+                x -= sliceWidth;
+            }
+
+            visualizerCtx.closePath(); // Đóng đường dẫn để tạo thành một hình dạng kín
+            visualizerCtx.fill(); // Tô màu cho hình dạng
+
+            // Đặt lại các thuộc tính shadow để không ảnh hưởng đến các bản vẽ khác
+            visualizerCtx.shadowBlur = 0;
+            visualizerCtx.shadowColor = 'transparent';
         }
         audioPlayer.addEventListener('timeupdate', updateMusicPlayerUI);
         audioPlayer.addEventListener('loadedmetadata', updateMusicPlayerUI);
@@ -1366,7 +1398,6 @@
                 camera.lookAt(controls.target); // Ensure camera always looks at the interpolated target
             }
             if (stars) {
-                musicPlayerScene.add(musicPlayerObject); // Add the 3D music player to its scene
                 stars.rotation.y += 0.0001;
             }
             sun.rotation.y += 0.001;
