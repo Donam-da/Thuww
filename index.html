@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Solar System Image Gallery</title>
     <style>
+        /*
+         * To use the "VN Time" font, you need to provide the font file (e.g., VNtime.ttf, VNtime.woff).
+         * Place the font file in a 'fonts' directory (or adjust the path below).
+         * If the font file is not found, the fallback font (Arial, sans-serif) will be used.
+         */
+        @font-face {
+            font-family: 'VN Time';
+            src: url('fonts/VNtime.ttf') format('truetype'); /* Adjust path and format as needed */
+            font-weight: normal; /* Set to specific weights if your font file supports them (e.g., 100, 200, 300) */
+            font-style: normal;
+        }
         body { margin: 0; background-color: #000; overflow: hidden; }
         canvas { display: block; }
         #main-scene {
@@ -23,27 +34,25 @@
             display: flex; justify-content: center; align-items: center;
             margin: 0 auto 20px auto;
         }
-        /* Font Awesome for icons */
-        .fas {
-            font-family: "Font Awesome 5 Free";
-        }
         .progress-circle-inner {
             width: 100px; height: 100px; background-color: #000;
             border-radius: 50%; display: flex; justify-content: center;
             align-items: center;
         }
         .loader-text {
-            font-size: 24px; color: white; font-family: Arial, sans-serif;
+            font-size: 24px; color: white;
+            font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
+            font-weight: 100; /* Thinner font weight */
         }
         #fullscreen-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.85); display: none; justify-content: center;
-            align-items: center; z-index: 1000;
+            font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
+            font-weight: 100; /* Thinner font weight */
         }
-        #fullscreen-image { max-width: 90%; max-height: 80%; }
         #close-btn {
             position: absolute; top: 20px; right: 30px; color: white;
-            font-size: 30px; cursor: pointer; text-decoration: none; font-family: Arial, sans-serif;
+            font-size: 30px; cursor: pointer; text-decoration: none;
+            font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
+            font-weight: 100; /* Thinner font weight */
         }
         #download-btn {
             position: absolute;
@@ -53,13 +62,30 @@
             font-size: 16px;
             cursor: pointer;
             text-decoration: none;
-            font-family: Arial, sans-serif;
+            font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
+            font-weight: 100; /* Thinner font weight */
             padding: 8px 15px; border: 1px solid white; border-radius: 5px;
             display: none; /* Ẩn theo mặc định */
         }
+        /* Font Awesome for icons */
+        .fas {
+            font-family: "Font Awesome 5 Free"; /* Keep Font Awesome font */
+            font-weight: 900; /* Ensure Font Awesome icons display correctly */
+        }
+        #fullscreen-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85); display: none; justify-content: center;
+            align-items: center; z-index: 1000;
+        }
+        #fullscreen-image { max-width: 90%; max-height: 80%; }
+        #close-btn {
+            position: absolute; top: 20px; right: 30px; color: white;
+            font-size: 30px; cursor: pointer; text-decoration: none;
+        }
         .planet-label {
             color: #FFF;
-            font-family: sans-serif;
+            font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
+            font-weight: 100; /* Thinner font weight */
             padding: 2px 5px;
             background: transparent;
             font-size: 7px;
@@ -79,7 +105,8 @@
             border: none; /* Bỏ viền */
             border-radius: 5px;
             cursor: pointer;
-            font-family: Arial, sans-serif;
+            font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
+            font-weight: 100; /* Thinner font weight */
             font-size: 16px;
             /* Đã loại bỏ định vị cố định */
             display: block; /* Đảm bảo nút luôn hiển thị */
@@ -94,8 +121,9 @@
             color: white;
             border: none;
             border-radius: 5px;
-            cursor: pointer;
-            font-family: Arial, sans-serif;
+            cursor: pointer;            
+            font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
+            font-weight: 100; /* Thinner font weight */
             display: block; /* Đảm bảo nút luôn hiển thị */
             font-size: 16px;
         }
@@ -112,8 +140,9 @@
             border-radius: 8px;
             box-shadow: 0 0 15px rgba(0,255,255,0.5); /* Hiệu ứng đổ bóng cho dropmenu */
             z-index: 1002;
-            display: none; /* Hidden by default */
-            font-family: Arial, sans-serif;
+            display: none; /* Hidden by default */            
+            font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
+            font-weight: 100; /* Thinner font weight */
         }
         #close-dropmenu-btn {
             position: absolute;
@@ -154,7 +183,8 @@
             max-height: 320px; /* Hiển thị khoảng 7 bài hát */
             overflow-y: auto; /* Kích hoạt thanh cuộn khi nội dung vượt quá chiều cao tối đa */
             -webkit-overflow-scrolling: touch; /* Giúp cuộn mượt mà trên iOS */
-            font-family: Arial, sans-serif;
+            font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
+            font-weight: 100; /* Thinner font weight */
         }
         #close-song-menu-btn {
             position: absolute;
@@ -216,7 +246,7 @@
             transition: background-color 0.2s;
         }
         .playback-mode-btn.active {
-            border: 2px solid #3498db; /* Vòng tròn màu xanh */
+            border: 5px solid #3498db; /* Vòng tròn màu xanh, đậm hơn một chút */
             box-shadow: 0 0 8px rgba(52, 152, 219, 0.7); /* Hiệu ứng phát sáng nhẹ */
         }
         #music-controls-2d button:hover {
@@ -258,7 +288,8 @@
             /* position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); */
             color: white;
             font-size: 12px;
-            white-space: nowrap;
+            white-space: nowrap;            
+            font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 200px; /* Đặt chiều rộng tối đa cho desktop */
@@ -281,9 +312,10 @@
             border: none; /* Bỏ viền */
             border-radius: 15px;
             padding: 15px;
-            width: 375px;
-            color: white;
-            font-family: Arial, sans-serif;
+            width: 375px;            
+            color: white;            
+            font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
+            font-weight: 100; /* Thinner font weight */
             box-shadow: none; /* Bỏ hiệu ứng đổ bóng */
             backdrop-filter: none; /* Bỏ hiệu ứng làm mờ nền */
             -webkit-backdrop-filter: none; /* Bỏ hiệu ứng làm mờ nền cho trình duyệt Webkit */
