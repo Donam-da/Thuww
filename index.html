@@ -274,7 +274,6 @@
             background-color: rgba(0, 0, 0, 0.6); /* Nền hơi tối để dễ đọc */
             padding: 2px 5px;
             border-radius: 3px;
-            display: none; /* Ẩn mặc định */
         }
         #music-player-progress-bar-2d {
             background-color: #3498db;
@@ -390,9 +389,9 @@
                 flex-wrap: wrap; /* Allow items to wrap to the next line */
                 justify-content: center; /* Center items when they wrap */
                 align-items: center; /* Vertically align items within the bar */
-                gap: 10px; /* Add spacing between items/rows when wrapped */
+                gap: 5px; /* Giảm khoảng cách giữa các nút và hàng khi wrap */
                 padding: 5px; /* Add some padding */
-                background-color: transparent; /* Làm nền trong suốt */
+                background-color: rgba(0,0,0,0.5); /* Nền hơi tối để dễ đọc */
                 border-radius: 8px;
                 border: none; /* Bỏ viền */
             }
@@ -400,33 +399,33 @@
             #select-planet-btn,
             #select-song-btn {
                 /* Áp dụng kiểu dáng cụ thể cho mobile */
-                padding: 8px 12px; /* Smaller padding */
-                font-size: 14px; /* Smaller font size */
+                padding: 5px 8px; /* Giảm padding thêm */
+                font-size: 11px; /* Giảm font size thêm */
                 border: none; /* Bỏ viền */
             }
 
             #music-controls-2d {
-                padding: 3px 8px; /* Smaller padding */
-                gap: 5px; /* Smaller gap */
+                padding: 2px 6px; /* Smaller padding */
+                gap: 4px; /* Smaller gap */
                 border: none; /* Bỏ viền */
             }
 
             #music-controls-2d button {
                 /* Kích thước nút đã được giữ nguyên */
-                width: 28px; /* Giữ kích thước */
-                height: 28px; /* Giữ kích thước */
-                font-size: 12px;
+                width: 22px; /* Giảm kích thước thêm */
+                height: 22px; /* Giảm kích thước thêm */
+                font-size: 9px; /* Giảm kích thước chữ thêm */
             }
 
             #music-player-progress-container-2d {
-                width: 167px; /* Giảm chiều rộng đi 5px cho mobile */
+                width: 100px; /* Giảm chiều rộng thêm */
             }
             .music-player-buttons-row {
-                width: 167px; /* Giảm chiều rộng đi 5px cho mobile */
-                transform: translateX(-5px); /* Dịch sang trái 5px */
+                width: 100px; /* Giảm chiều rộng thêm */
+                transform: translateX(0); /* Bỏ dịch chuyển để căn giữa tốt hơn */
             }
             #music-player-song-title-2d { /* Điều chỉnh chiều rộng cho mobile */
-                max-width: 167px;
+                max-width: 100px; /* Giảm chiều rộng thêm */
             }
 
             #overview-btn { /* Kiểu dáng mobile cho nút mới */
@@ -442,16 +441,15 @@
             #song-list-overlay {
                 top: auto; /* Remove top positioning */
                 bottom: 70px; /* Position above the bottom control bar */
-                top: auto;
-                bottom: 57px; /* Đặt vị trí cách lề dưới 57px (5px trên thanh điều khiển chính) */
+                bottom: 60px; /* Đặt vị trí cách lề dưới 60px (để tránh thanh điều khiển chính) */
                 left: 50%; /* Center horizontally */
                 transform: translateX(-50%); /* Center horizontally */
                 width: 90%; /* Take up most of the width */
-                max-width: 300px; /* Max width for larger phones */
-                min-width: unset; /* Remove min-width constraint */
-                padding: 10px; /* Adjust padding */
+                max-width: 250px; /* Max width for larger phones, further reduced */
+                min-width: 180px; /* Đặt lại min-width để tránh quá nhỏ */
+                padding: 8px; /* Adjust padding */
                 background-color: rgba(0,0,0,0.8); /* Darker background for readability */
-                max-height: calc(100vh - 77px); /* Chiều cao tối đa để không tràn màn hình (100vh - 57px bottom - 20px top margin) */
+                max-height: calc(100vh - 70px); /* Chiều cao tối đa để không tràn màn hình (100vh - 60px bottom - 10px top margin) */
                 overflow-y: auto; /* Cho phép cuộn nếu nội dung quá dài */
                 box-shadow: 0 0 10px rgba(0,255,255,0.7); /* Slightly stronger shadow */
             }
@@ -459,14 +457,14 @@
             #close-dropmenu-btn,
             #close-song-menu-btn {
                 top: 5px;
-                right: 5px;
+                right: 8px; /* Điều chỉnh vị trí nút đóng */
                 font-size: 18px;
             }
 
             .planet-list-item,
             .song-list-item {
-                padding: 8px; /* Smaller padding */
-                font-size: 14px;
+                padding: 6px; /* Smaller padding */
+                font-size: 12px;
             }
 
             /* Fullscreen overlay adjustments */
@@ -480,25 +478,25 @@
                 bottom: 10px;
                 right: 10px;
                 padding: 5px 10px;
-                font-size: 14px; /* Giữ kích thước */
+                font-size: 11px; /* Giảm kích thước thêm */
             }
 
             /* 3D Music Player (internal styling) */
             .music-player-container-3d {
-                width: 200px; /* Smaller width for mobile */
-                padding: 8px;
+                width: 150px; /* Smaller width for mobile */
+                padding: 6px;
             }
             .music-player-title {
-                font-size: 12px;
-                height: 1.1em;
-                line-height: 1.1em;
+                font-size: 9px; /* Smaller font size */
+                height: 1.3em; /* Adjust height for new font size */
+                line-height: 1.3em; /* Adjust line height */
             }
             .music-player-time {
-                font-size: 9px;
+                font-size: 7px; /* Smaller font size */
             }
             .music-player-visualizer {
-                width: 180px; /* Adjust visualizer width to match container */
-                height: 40px;
+                width: 110px; /* Adjust visualizer width to match container */
+                height: 25px; /* Adjust height */
             }
         }
     </style>
