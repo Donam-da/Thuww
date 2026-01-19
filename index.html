@@ -608,8 +608,9 @@
                 loaderOverlay.style.display = 'none';
                 // Show the main scene and start the animation
                 document.getElementById('main-scene').style.display = 'block';
-                // Initialize playback mode and potentially shuffle list
-                playbackMode = 'sequential'; // Default to sequential
+                // Khởi tạo chế độ phát nhạc ngẫu nhiên theo yêu cầu
+                playbackMode = 'random'; // Mặc định là phát ngẫu nhiên
+                generateShuffledPlaylist(); // Tạo danh sách phát ngẫu nhiên ban đầu
                 updatePlaybackModeUI(); // Set initial button state
                 const randomIndex = Math.floor(Math.random() * songs.length);
                 showMusicPlayer(randomIndex);
@@ -1088,7 +1089,7 @@
                 case 16: songName = "Wrong Times - Puppy &Dangrangto (ft. FOWLEX Snowz)"; break;
                 case 17: songName = "Xích Thêm Chút - XTC Remix - RPT Groovie ft TLinh x RPT MCK"; break;
                 case 18: songName = "RIO - '' vạn vật như muốn ta bên nhau ''"; break;
-                case 19: songName = "08. 50-50 (Interlude) - RPT MCK -"; break;
+                case 19: songName = "50-50 (Interlude) - RPT MCK -"; break;
                 case 20: songName = "kidsai, Niz - GIAYPHUT"; break;
                 case 21: songName = "kidsai , VSTRA - NGÂY THER - OFFICIAL VISUALIZER"; break;
                 case 22: songName = "1-2 - Dangrangto, BIG WIND, Lee À"; break;
