@@ -98,6 +98,18 @@
             cursor: pointer;
             z-index: 1003; /* Đảm bảo nó nằm trên các phần tử khác trong overlay */
         }
+        .planet-list-item {
+            color: white;
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: rgba(0,0,0,0.5); /* Semi-transparent background */
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .planet-list-item:hover {
+            background-color: rgba(0,0,0,0.7); /* Darker on hover */
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -212,7 +224,7 @@
         addStarfield();
 
         // --- Label Renderer Setup ---
-        let labelRenderer = new THREE.CSS2DRenderer();
+        const labelRenderer = new THREE.CSS2DRenderer();
         labelRenderer.setSize(window.innerWidth, window.innerHeight);
         labelRenderer.domElement.style.position = 'absolute';
         labelRenderer.domElement.style.top = '0px';
@@ -326,13 +338,13 @@
         const returnToHomeDuration = 1000; // milliseconds for returning to initial view
         const moveToTargetDuration = 1500; // milliseconds for moving to target planet
 
-        let startCameraPosition = new THREE.Vector3();
-        let startControlsTarget = new THREE.Vector3();
+        const startCameraPosition = new THREE.Vector3();
+        const startControlsTarget = new THREE.Vector3();
         // Define the "home" view (initial camera position and target)
         const homeCameraPosition = new THREE.Vector3(0, 100, 250);
         const homeControlsTarget = new THREE.Vector3(0, 0, 0);
-        let finalCameraPosition = new THREE.Vector3();       // Final camera position near planet
-        let finalControlsTarget = new THREE.Vector3();        // Final controls target (planet's world position)
+        const finalCameraPosition = new THREE.Vector3();       // Final camera position near planet
+        const finalControlsTarget = new THREE.Vector3();        // Final controls target (planet's world position)
         const TOUCH_DELAY = 300; // Milliseconds to prevent ghost clicks
 
         // Easing function for smoother animations
@@ -426,7 +438,7 @@
         const selectPlanetBtn = document.getElementById('select-planet-btn');
         const planetListOverlay = document.getElementById('planet-list-overlay');
         const planetSelectionList = document.getElementById('planet-selection-list');
-        const closeDropmenuBtn = document.getElementById('close-dropmenu-btn'); // Đổi tên biến
+        const closeDropmenuBtn = document.getElementById('close-dropmenu-btn');
 
         selectPlanetBtn.addEventListener('click', showPlanetList);
         closeDropmenuBtn.addEventListener('click', (event) => {
@@ -473,18 +485,8 @@
 
             // Thêm Mặt trời vào danh sách
             const sunListItem = document.createElement('li');
-            sunListItem.style.cssText = `
-                color: white;
-                padding: 10px;
-                margin-bottom: 5px;
-                background-color: rgba(0,0,0,0.5); /* Semi-transparent background */
-                border-radius: 4px;
-                cursor: pointer;
-                transition: background-color 0.2s ease;
-            `;
+            sunListItem.className = 'planet-list-item';
             sunListItem.textContent = sun.userData.name;
-            sunListItem.addEventListener('mouseenter', () => sunListItem.style.backgroundColor = 'rgba(0,0,0,0.7)'); // Darker on hover
-            sunListItem.addEventListener('mouseleave', () => sunListItem.style.backgroundColor = 'rgba(0,0,0,0.5)'); // Restore original
             sunListItem.addEventListener('click', () => {
                 handlePlanetClick(sun); // Use handlePlanetClick for sun
                 event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
@@ -495,18 +497,8 @@
             // Thêm các hành tinh vào danh sách
             planets.forEach(planet => {
                 const listItem = document.createElement('li');
-                listItem.style.cssText = `
-                    color: white;
-                    padding: 10px;
-                    margin-bottom: 5px;
-                    background-color: rgba(0,0,0,0.5); /* Semi-transparent background */
-                    border-radius: 4px;
-                    cursor: pointer;
-                    transition: background-color 0.2s ease;
-                `;
+                listItem.className = 'planet-list-item';
                 listItem.textContent = planet.userData.name;
-                listItem.addEventListener('mouseenter', () => listItem.style.backgroundColor = 'rgba(0,0,0,0.7)'); // Darker on hover
-                listItem.addEventListener('mouseleave', () => listItem.style.backgroundColor = 'rgba(0,0,0,0.5)'); // Restore original background
                 listItem.addEventListener('click', () => {
                     handlePlanetClick(planet); // Use handlePlanetClick for planets
                     event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
