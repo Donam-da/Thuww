@@ -181,13 +181,18 @@
             /* Position handled by #main-ui-controls on desktop */
             /* Removed fixed positioning here */
             /* display: flex; */ /* This will be set by JS when music is active */
-            /* z-index: 1001; */ /* Handled by parent */
-            align-items: center;
-            gap: 10px; /* Space between controls */
+            flex-direction: column; /* Xếp chồng các phần tử con theo chiều dọc */
+            align-items: center; /* Căn giữa các phần tử con theo chiều ngang */
+            gap: 5px; /* Khoảng cách giữa thanh tiến trình và hàng nút */
             background-color: rgba(0,0,0,0.5); /* Semi-transparent background */
             padding: 5px 10px; /* Giữ padding */
             border-radius: 5px;
             border: none; /* Bỏ viền */
+        }
+        .music-player-buttons-row { /* Class mới cho hàng nút điều khiển */
+            display: flex;
+            gap: 10px; /* Khoảng cách giữa các nút */
+            margin-top: 5px; /* Khoảng cách từ thanh tiến trình */
         }
         #music-controls-2d button {
             background: none;
@@ -220,7 +225,7 @@
             border-radius: 5px;
             height: 5px;
             cursor: pointer;
-            width: 80px; /* Fixed width for the progress bar */
+            width: 150px; /* Tăng chiều rộng cho thanh tiến trình trên desktop */
         }
         #music-player-progress-bar-2d {
             background-color: #3498db;
@@ -360,7 +365,7 @@
             }
 
             #music-player-progress-container-2d {
-                width: 60px; /* Smaller progress bar */
+                width: 100px; /* Tăng chiều rộng cho thanh tiến trình trên mobile */
             }
 
             /* Overlays for mobile (positioned above the bottom control bar) */
@@ -455,12 +460,14 @@
         <!-- New container for UI buttons -->
         <div id="main-ui-controls">
             <button id="select-planet-btn">Chọn hành tinh</button>
-            <div id="music-controls-2d" style="display: none;">
-                <button id="music-player-prev-2d">⏮</button>
-                <button id="music-player-play-pause-2d">▶</button>
-                <button id="music-player-next-2d">⏭</button>
+            <div id="music-controls-2d" style="display: none;"> <!-- display: none sẽ được JS thay đổi thành flex -->
                 <div id="music-player-progress-container-2d">
                     <div id="music-player-progress-bar-2d"></div>
+                </div>
+                <div class="music-player-buttons-row"> <!-- Hàng nút điều khiển mới -->
+                    <button id="music-player-prev-2d">⏮</button>
+                    <button id="music-player-play-pause-2d">▶</button>
+                    <button id="music-player-next-2d">⏭</button>
                 </div>
             </div>
             <button id="select-song-btn">Chọn nhạc</button>
