@@ -575,14 +575,14 @@
         // Speeds are calculated relative to Earth's orbital period for a more realistic simulation.
         // The base speed is adjusted for visual appeal.
         const planetData = [
-            { name: 'Sao Thủy', distance: 20, size: 1, color: 0xcccccc, speed: 0.00167, realSpeed: 47.87 },   // Brighter grey
-            { name: 'Sao Kim', distance: 35, size: 1.5, color: 0xffa500, speed: 0.00065, realSpeed: 35.02 },    // Vibrant orange
-            { name: 'Trái Đất', distance: 50, size: 1.6, color: 0x00bfff, speed: 0.0004, realSpeed: 29.78 },     // Deep sky blue
-            { name: 'Sao Hỏa', distance: 70, size: 1.2, color: 0xff4500, speed: 0.00021, realSpeed: 24.08 },    // Orange-red
-            { name: 'Sao Mộc', distance: 100, size: 4, color: 0xffe0b2, speed: 0.000034, realSpeed: 13.07 },   // Light peach
-            { name: 'Sao Thổ', distance: 140, size: 3.5, color: 0xffd700, speed: 0.000014, realSpeed: 9.69 },   // Gold
-            { name: 'Sao Thiên Vương', distance: 180, size: 2.5, color: 0x87ceeb, speed: 0.0000048, realSpeed: 6.81 },// Sky blue
-            { name: 'Sao Hải Vương', distance: 220, size: 2.4, color: 0x1e90ff, speed: 0.0000024, realSpeed: 5.43 } // Dodger blue
+            { name: 'Sao Thủy', distance: 20, size: 2, color: 0xcccccc, speed: 0.00167, realSpeed: 47.87 },   // Brighter grey
+            { name: 'Sao Kim', distance: 35, size: 3, color: 0xffa500, speed: 0.00065, realSpeed: 35.02 },    // Vibrant orange
+            { name: 'Trái Đất', distance: 50, size: 3.2, color: 0x00bfff, speed: 0.0004, realSpeed: 29.78 },     // Deep sky blue
+            { name: 'Sao Hỏa', distance: 70, size: 2.4, color: 0xff4500, speed: 0.00021, realSpeed: 24.08 },    // Orange-red
+            { name: 'Sao Mộc', distance: 100, size: 8, color: 0xffe0b2, speed: 0.000034, realSpeed: 13.07 },   // Light peach
+            { name: 'Sao Thổ', distance: 140, size: 7, color: 0xffd700, speed: 0.000014, realSpeed: 9.69 },   // Gold
+            { name: 'Sao Thiên Vương', distance: 180, size: 5, color: 0x87ceeb, speed: 0.0000048, realSpeed: 6.81 },// Sky blue
+            { name: 'Sao Hải Vương', distance: 220, size: 4.8, color: 0x1e90ff, speed: 0.0000024, realSpeed: 5.43 } // Dodger blue
         ];
 
         // --- Loading Manager ---
@@ -755,6 +755,33 @@
             const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
             orbit.rotation.x = -Math.PI / 2;
             scene.add(orbit);
+
+            // Create glowing equator
+            // Inner, brighter ring
+            const equatorGeometry = new THREE.TorusGeometry(data.size, 0.05, 16, 100);
+            const equatorMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ffff, // A bright cyan color
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                opacity: 0.9, // Increased opacity for the core ring
+                depthWrite: false
+            });
+            const equatorRing = new THREE.Mesh(equatorGeometry, equatorMaterial);
+            equatorRing.rotation.x = Math.PI / 2;
+            planet.add(equatorRing);
+
+            // Outer, fainter glow
+            const glowGeometry = new THREE.TorusGeometry(data.size, 0.15, 16, 100); // Wider tube
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ffff,
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                opacity: 0.3, // Fainter opacity for the glow
+                depthWrite: false
+            });
+            const equatorGlow = new THREE.Mesh(glowGeometry, glowMaterial);
+            equatorGlow.rotation.x = Math.PI / 2;
+            planet.add(equatorGlow);
             
             if (data.name === 'Sao Thổ') {
                 const ringGeometry = new THREE.RingGeometry(data.size * 1.5, data.size * 2.5, 64);
