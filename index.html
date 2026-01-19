@@ -245,12 +245,38 @@
             pointer-events: auto; /* Allow interaction with the player */
         }
         .music-player-title {
+            /* Existing styles */
             font-size: 14px;
             font-weight: bold;
             margin-bottom: 8px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            
+            /* New styles for scrolling */
+            white-space: nowrap; /* Ensure text stays on one line */
+            overflow: hidden; /* Hide anything outside the container */
+            text-overflow: ellipsis; /* Fallback for non-scrolling state */
+            position: relative; /* Needed for positioning inner elements */
+            width: 100%; /* Take full width of parent */
+            height: 1.2em; /* Fixed height to prevent layout shifts */
+            line-height: 1.2em; /* Vertically align text */
+        }
+        .music-player-title-scroll-container {
+            display: inline-block; /* Allows it to be wider than its parent */
+            white-space: nowrap; /* Keeps content on one line */
+            position: absolute; /* Position absolutely within .music-player-title */
+            left: 0;
+            top: 0;
+        }
+        .music-player-title-text,
+        .music-player-title-text-duplicate {
+            display: inline-block; /* Allows them to sit side-by-side */
+            padding-right: 20px; /* Space between original and duplicate text */
+        }
+        @keyframes scrollText {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(var(--scroll-distance)); } /* Dynamically set scroll distance */
+        }
+        .music-player-title.scrolling .music-player-title-scroll-container {
+            animation: scrollText var(--scroll-duration) linear infinite;
         }
         .music-player-time {
             display: flex;
@@ -727,15 +753,24 @@
         // --- CẤU HÌNH NHẠC ---
         // 1. Đặt tên các file nhạc của bạn theo thứ tự: music1.mp3, music2.mp3, ... và đặt chúng vào thư mục 'music'.
         // 2. Cập nhật số `totalMusicFiles` dưới đây cho khớp với tổng số file nhạc bạn có.
-        const totalMusicFiles = 1; // <-- THAY ĐỔI SỐ NÀY
+        const totalMusicFiles = 3; // <-- Đã cập nhật lên 3
 
         // Tự động tạo danh sách bài hát. Sau này bạn có thể gán tên cụ thể cho từng bài.
         const songs = [];
         for (let i = 1; i <= totalMusicFiles; i++) {
+            let songName;
+            if (i === 1) {
+                songName = "Đi Cùng Anh - buitruonglinh (ft. 52Hz)";
+            } else if (i === 2) {
+                songName = "BABY LAVIEM ( #BBLVE ) - BigWind x KA";
+            } else if (i === 3) {
+                songName = "Anh Chưa Từng Hết Yêu / buitruonglinh";
+            } else {
+                songName = `Bài hát ${i}`; // Tên mặc định cho các bài hát khác
+            }
             songs.push({
-                name: `Bài hát ${i}`, // Tên hiển thị trong menu, ví dụ: "Bài hát 1"
-                // name: "Tên bài hát thực tế", // Bạn có thể thay thế dòng trên bằng dòng này để đặt tên cụ thể
-                file: `music/music${i}.mp3` // Đường dẫn đến file
+                name: songName,
+                file: `music/music${i}.mp3`
             });
         }
 
@@ -915,10 +950,17 @@
             const playerContainer = document.createElement('div');
             playerContainer.className = 'music-player-container-3d';
 
-            const title = document.createElement('div');
-            title.className = 'music-player-title';
-            title.textContent = song.name;
-            title.title = song.name;
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'music-player-title';
+            titleDiv.title = song.name; // Tooltip for full name
+
+            const scrollContainer = document.createElement('div');
+            scrollContainer.className = 'music-player-title-scroll-container';
+
+            const titleText = document.createElement('span');
+            titleText.className = 'music-player-title-text';
+            titleText.textContent = song.name;
+            scrollContainer.appendChild(titleText);
 
             const timeDiv = document.createElement('div');
             timeDiv.className = 'music-player-time';
@@ -937,7 +979,9 @@
             visualizerCanvasElement.height = 50; // Height for the wave
 
             // Append elements in the desired order: close, title, visualizer, time
-            playerContainer.append(title, visualizerCanvasElement, timeDiv); // Bỏ nút đóng
+            titleDiv.appendChild(scrollContainer); // Add scroll container to title div
+            playerContainer.append(titleDiv, visualizerCanvasElement, timeDiv); // Bỏ nút đóng
+
 
             // Store references for drawing
             visualizerCanvas = visualizerCanvasElement;
@@ -954,6 +998,9 @@
             musicPlayerScene.add(musicPlayerObject); // Thêm trình phát nhạc 3D vào scene nền
             show2DMusicControls(); // Show the 2D controls
             playSong(song.file);
+            // Call the function to handle scrolling after the player is in the DOM
+            // and its width can be accurately determined.
+            setTimeout(() => { applyScrollingToTitle(titleDiv, song.name); }, 50); // Small delay
         }
 
         function updateMusicPlayerUI() {
@@ -1038,6 +1085,50 @@
             showMusicPlayer(newIndex);
         });
 
+        function applyScrollingToTitle(titleElement, songName) {
+            const scrollContainer = titleElement.querySelector('.music-player-title-scroll-container');
+            const titleText = titleElement.querySelector('.music-player-title-text');
+            if (!scrollContainer || !titleText) return;
+
+            // Clear any previous duplicate and animation
+            let duplicateText = titleElement.querySelector('.music-player-title-text-duplicate');
+            if (duplicateText) {
+                duplicateText.remove();
+            }
+            titleElement.classList.remove('scrolling');
+            titleElement.style.removeProperty('--scroll-distance');
+            titleElement.style.removeProperty('--scroll-duration');
+            titleText.textContent = songName; // Ensure original text is set
+
+            // Measure the actual width of the text content
+            // Temporarily set overflow to visible to get the true content width
+            const originalOverflow = titleElement.style.overflow;
+            titleElement.style.overflow = 'visible';
+            const textWidth = titleText.offsetWidth;
+            titleElement.style.overflow = originalOverflow; // Restore overflow
+
+            const containerWidth = titleElement.offsetWidth; // This should be 230px (250 - 2*10 padding)
+
+            if (textWidth > containerWidth) {
+                // Add duplicate text for continuous scrolling
+                duplicateText = document.createElement('span');
+                duplicateText.className = 'music-player-title-text-duplicate';
+                duplicateText.textContent = songName;
+                scrollContainer.appendChild(duplicateText);
+
+                // Calculate scroll distance: width of the original text + padding-right
+                // The animation scrolls the entire scrollContainer.
+                // The scroll-distance should be the width of the *first* titleText span,
+                // including its padding-right (20px).
+                const scrollDistance = titleText.offsetWidth;
+                const scrollSpeedPxPerSec = 30; // Adjust scroll speed (pixels per second)
+                const scrollDuration = (scrollDistance / scrollSpeedPxPerSec) * 1000; // in milliseconds
+
+                titleElement.classList.add('scrolling');
+                titleElement.style.setProperty('--scroll-distance', `-${scrollDistance}px`);
+                titleElement.style.setProperty('--scroll-duration', `${scrollDuration}ms`);
+            }
+        }
         function restoreDefaultControls() {
             controls.enablePan = true;
             controls.minDistance = 10;
