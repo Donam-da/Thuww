@@ -1216,6 +1216,7 @@
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 128; // Giảm FFT size để có ít thanh hơn, mỗi thanh rộng hơn và rõ ràng hơn
+                analyser.smoothingTimeConstant = 0.85; // Tăng độ mượt của sóng (giảm tốc độ rung gắt)
                 bufferLength = analyser.frequencyBinCount; // Half of fftSize
                 dataArray = new Uint8Array(bufferLength);
 
@@ -1601,49 +1602,57 @@
 
             visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
 
-            // --- Kiểu sóng mới: Các thanh đối xứng từ trung tâm ra hai bên ---
+            // --- New Style: Electric Jagged Waveform (Red Neon) ---
 
-            const canvasWidth = visualizerCanvas.width;
-            const canvasHeight = visualizerCanvas.height;
-            const centerY = canvasHeight / 2;
-            
-            const numBarsPerSide = bufferLength;
+            const width = visualizerCanvas.width;
+            const height = visualizerCanvas.height;
+            const centerY = height / 2;
 
-            // Initialize barHues if not already done or if bufferLength changes
-            if (barHues.length !== numBarsPerSide) {
-                barHues = new Array(numBarsPerSide).fill(0).map(() => Math.random() * 360);
-                lastColorChangeTime = Date.now(); // Reset timer
+            visualizerCtx.lineWidth = 0.6;
+            visualizerCtx.strokeStyle = '#00ffff'; // Cyan (Màu giống viền dropmenu)
+            visualizerCtx.shadowBlur = 15; // Strong Neon Glow
+            visualizerCtx.shadowColor = '#00ffff';
+            visualizerCtx.lineJoin = 'round';
+            visualizerCtx.lineCap = 'round';
+
+            visualizerCtx.beginPath();
+            visualizerCtx.moveTo(0, centerY);
+
+            // Step size for jaggedness (smaller = more jagged/detailed)
+            const step = 4;
+
+            for (let x = 0; x <= width; x += step) {
+                // Calculate distance from center (0.0 at center, 1.0 at edges)
+                const distFromCenter = Math.abs(x - width / 2) / (width / 2);
+                
+                // Tapering: 1.0 at center, 0.0 at edges. 
+                // Using power function to concentrate energy in the center
+                const taper = Math.pow(1 - distFromCenter, 2);
+
+                // Map x position to frequency data index
+                // Center corresponds to low frequencies (index 0), edges to high frequencies
+                const dataIndex = Math.floor(distFromCenter * (bufferLength - 1));
+                
+                // Get audio value (0-255)
+                const value = dataArray[dataIndex];
+
+                // Random noise factor (-1 to 1) for electric effect
+                const noise = (Math.random() - 0.5) * 2;
+
+                // Calculate amplitude
+                // value/255: normalized intensity
+                // height/2: max possible deviation from center
+                // taper: apply envelope
+                const amplitude = (value / 255) * (height / 2) * taper;
+
+                // Calculate Y position with noise
+                // Giảm hệ số nhân từ 1.5 xuống 0.8 để sóng rung nhẹ hơn, bớt gắt hơn
+                const y = centerY + (noise * amplitude * 0.8);
+
+                visualizerCtx.lineTo(x, y);
             }
 
-            // Update bar hues periodically
-            if (Date.now() - lastColorChangeTime > colorChangeIntervalMs) {
-                for (let i = 0; i < numBarsPerSide; i++) {
-                    barHues[i] = Math.random() * 360;
-                }
-                lastColorChangeTime = Date.now();
-            }
-            const barWidth = (canvasWidth / 2) / numBarsPerSide; // Chiều rộng thực của mỗi thanh
-
-            for (let i = 0; i < numBarsPerSide; i++) {
-                const hue = barHues[i]; // Use the pre-calculated hue
-                const lightness = 40 + (dataArray[i] / 255) * 30; // Thay đổi độ sáng dựa trên cường độ âm thanh (từ 40% đến 70%)
-                // Chuẩn hóa dữ liệu tần số về khoảng 0-1, sau đó áp dụng hàm mũ (power)
-                // để làm nổi bật các âm thanh mạnh hơn và giảm bớt các âm thanh yếu,
-                // tạo ra một cái nhìn động và chuyên nghiệp hơn.
-                const v = Math.pow(dataArray[i] / 255.0, 2.0); // Tăng cường độ phản ứng cho các thanh nổi bật hơn
-                const barHeight = v * (canvasHeight / 2) * 0.9; // Chiều cao tối đa là 90% của nửa chiều cao canvas
-
-                // Tính toán vị trí x cho thanh ở bên phải của trung tâm
-                const xRight = (canvasWidth / 2) + (i * barWidth);
-                // Tính toán vị trí x cho thanh ở bên trái của trung tâm (vẽ từ phải sang trái)
-                const xLeft = (canvasWidth / 2) - ((i + 1) * barWidth);
-
-                visualizerCtx.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`; // Đặt màu cho thanh hiện tại
-                visualizerCtx.fillRect(xRight, centerY - barHeight, barWidth, barHeight);
-                visualizerCtx.fillRect(xRight, centerY, barWidth, barHeight);
-                visualizerCtx.fillRect(xLeft, centerY - barHeight, barWidth, barHeight);
-                visualizerCtx.fillRect(xLeft, centerY, barWidth, barHeight);
-            }
+            visualizerCtx.stroke();
         }
         audioPlayer.addEventListener('timeupdate', updateMusicPlayerUI);
         audioPlayer.addEventListener('loadedmetadata', updateMusicPlayerUI);
