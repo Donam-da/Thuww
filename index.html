@@ -239,7 +239,7 @@
             pointer-events: none; /* Cho phép click xuyên qua để tương tác với scene chính */
         }
         #music-player-progress-container-2d {
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: transparent;
             border-radius: 5px;
             height: 5px;
             cursor: pointer;
@@ -389,9 +389,9 @@
                 flex-wrap: wrap; /* Allow items to wrap to the next line */
                 justify-content: center; /* Center items when they wrap */
                 align-items: center; /* Vertically align items within the bar */
-                gap: 5px; /* Giảm khoảng cách giữa các nút và hàng khi wrap */
+                gap: 5px; /* Giảm khoảng cách giữa các nút và hàng khi wrap */ /* Nền hơi tối để dễ đọc */
                 padding: 5px; /* Add some padding */
-                background-color: rgba(0,0,0,0.5); /* Nền hơi tối để dễ đọc */
+                background-color: transparent;
                 border-radius: 8px;
                 border: none; /* Bỏ viền */
             }
@@ -571,18 +571,18 @@
         const totalImages = 62;
         const allImageUrls = Array.from({length: totalImages}, (_, i) => `images/${i + 1}.png`);
         const usedImageUrls = new Set();
-        const planets = [];
+        const planets = []; // Khai báo biến planets ở đây
         // Speeds are calculated relative to Earth's orbital period for a more realistic simulation.
         // The base speed is adjusted for visual appeal.
         const planetData = [
-            { name: 'Sao Thủy', distance: 20, size: 1, color: 0xaaaaaa, speed: 0.00167, realSpeed: 47.87 },   // Period: 0.24 Earth years
-            { name: 'Sao Kim', distance: 35, size: 1.5, color: 0xe8ab6f, speed: 0.00065, realSpeed: 35.02 },    // Period: 0.62 Earth years
-            { name: 'Trái Đất', distance: 50, size: 1.6, color: 0x6f94e8, speed: 0.0004, realSpeed: 29.78 },     // Period: 1.00 Earth years
-            { name: 'Sao Hỏa', distance: 70, size: 1.2, color: 0xe86f6f, speed: 0.00021, realSpeed: 24.08 },    // Period: 1.88 Earth years
-            { name: 'Sao Mộc', distance: 100, size: 4, color: 0xd8caa0, speed: 0.000034, realSpeed: 13.07 },   // Period: 11.86 Earth years
-            { name: 'Sao Thổ', distance: 140, size: 3.5, color: 0xead5a8, speed: 0.000014, realSpeed: 9.69 },   // Period: 29.46 Earth years
-            { name: 'Sao Thiên Vương', distance: 180, size: 2.5, color: 0xa8e0ea, speed: 0.0000048, realSpeed: 6.81 },// Period: 84.01 Earth years
-            { name: 'Sao Hải Vương', distance: 220, size: 2.4, color: 0x5c84f5, speed: 0.0000024, realSpeed: 5.43 } // Period: 164.8 Earth years
+            { name: 'Sao Thủy', distance: 20, size: 1, color: 0xcccccc, speed: 0.00167, realSpeed: 47.87 },   // Brighter grey
+            { name: 'Sao Kim', distance: 35, size: 1.5, color: 0xffa500, speed: 0.00065, realSpeed: 35.02 },    // Vibrant orange
+            { name: 'Trái Đất', distance: 50, size: 1.6, color: 0x00bfff, speed: 0.0004, realSpeed: 29.78 },     // Deep sky blue
+            { name: 'Sao Hỏa', distance: 70, size: 1.2, color: 0xff4500, speed: 0.00021, realSpeed: 24.08 },    // Orange-red
+            { name: 'Sao Mộc', distance: 100, size: 4, color: 0xffe0b2, speed: 0.000034, realSpeed: 13.07 },   // Light peach
+            { name: 'Sao Thổ', distance: 140, size: 3.5, color: 0xffd700, speed: 0.000014, realSpeed: 9.69 },   // Gold
+            { name: 'Sao Thiên Vương', distance: 180, size: 2.5, color: 0x87ceeb, speed: 0.0000048, realSpeed: 6.81 },// Sky blue
+            { name: 'Sao Hải Vương', distance: 220, size: 2.4, color: 0x1e90ff, speed: 0.0000024, realSpeed: 5.43 } // Dodger blue
         ];
 
         // --- Loading Manager ---
@@ -751,7 +751,7 @@
             };
             
             const orbitGeometry = new THREE.TorusGeometry(data.distance, 0.1, 16, 128); // Use TorusGeometry for a 3D tube shape
-            const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.6, transparent: true });
+            const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, opacity: 0.8, transparent: true }); // Brighter cyan, higher opacity
             const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
             orbit.rotation.x = -Math.PI / 2;
             scene.add(orbit);
