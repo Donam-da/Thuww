@@ -23,6 +23,10 @@
             display: flex; justify-content: center; align-items: center;
             margin: 0 auto 20px auto;
         }
+        /* Font Awesome for icons */
+        .fas {
+            font-family: "Font Awesome 5 Free";
+        }
         .progress-circle-inner {
             width: 100px; height: 100px; background-color: #000;
             border-radius: 50%; display: flex; justify-content: center;
@@ -215,6 +219,10 @@
             align-items: center;
             justify-content: center;
             transition: background-color 0.2s;
+        }
+        .playback-mode-btn.active {
+            border: 2px solid #3498db; /* Vòng tròn màu xanh */
+            box-shadow: 0 0 8px rgba(52, 152, 219, 0.7); /* Hiệu ứng phát sáng nhẹ */
         }
         #music-controls-2d button:hover {
             background-color: rgba(0,0,0,0.7);
@@ -496,6 +504,7 @@
 </head>
 <body>
     <div id="music-player-scene-container"></div>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
     <div id="loader-overlay">
         <div class="loader-container">
@@ -529,6 +538,11 @@
                     <button id="music-player-play-pause-2d">▶</button>
                     <button id="music-player-next-2d">⏭</button>
                 </div>
+                <div id="playback-mode-controls">
+                    <button id="repeat-one-btn" class="playback-mode-btn" title="Lặp lại một bài"><i class="fas fa-redo-alt"></i><span class="repeat-one-indicator">1</span></button>
+                    <button id="sequential-btn" class="playback-mode-btn active" title="Phát tuần tự"><i class="fas fa-stream"></i></button>
+                    <button id="shuffle-btn" class="playback-mode-btn" title="Phát ngẫu nhiên"><i class="fas fa-random"></i></button>
+                </div>
             </div>
             <button id="select-song-btn">Chọn nhạc</button>
         </div>
@@ -549,7 +563,7 @@
         <!-- Canvas and renderers will be appended here by Three.js -->
     </div>
 
-    <audio id="background-music" loop></audio>
+    <audio id="background-music"></audio>
 
     <script>
         // --- Image & Planet Data ---
@@ -591,7 +605,9 @@
                 loaderOverlay.style.display = 'none';
                 // Show the main scene and start the animation
                 document.getElementById('main-scene').style.display = 'block';
-                // Tự động chạy một bài hát ngẫu nhiên khi tải xong
+                // Initialize playback mode and potentially shuffle list
+                playbackMode = 'sequential'; // Default to sequential
+                updatePlaybackModeUI(); // Set initial button state
                 const randomIndex = Math.floor(Math.random() * songs.length);
                 showMusicPlayer(randomIndex);
                 // Nút "Toàn cảnh" giờ đã được đặt đúng vị trí và có CSS display: block, nên không cần setTimeout hay console.log nữa.
@@ -1094,6 +1110,10 @@
         // New variables for the 3D music player
         let musicPlayerObject = null;
         let currentSongIndex = -1;        
+        // Playback mode variables
+        let playbackMode = 'sequential'; // 'repeat-one', 'sequential', 'random'
+        let shuffledSongIndices = [];
+        let currentShuffledIndex = -1;
         // References for the visualizer canvas within the 3D player
         let visualizerCanvas = null;
         let visualizerCtx = null;
@@ -1121,16 +1141,38 @@
             audioPlayer.play().then(() => { // This .then() block is executed if autoplay is successful
                 console.log("Autoplay successful.");
                 songToPlayAfterInteraction = null; // Clear if successful
+                // Ensure AudioContext is running if play was successful
+                if (audioContext && audioContext.state !== 'running') {
+                    audioContext.resume().catch(error => {
+                        console.error("Failed to resume AudioContext after successful play:", error);
+                    });
+                }
             }).catch(error => {
                 // This .catch() block is executed if autoplay is blocked or fails
                 // This is where we queue the song for later interaction
                 console.log("Autoplay blocked or failed. Queuing for first user interaction.", error);
-                songToPlayAfterInteraction = file; // Queue the current song file
-                // The attemptPlayQueuedSong will handle resuming AudioContext if needed
-                // and retrying play() on the first user interaction.
+                if (!hasUserInteracted) {
+                    songToPlayAfterInteraction = file; // Only queue if no user interaction has happened yet
+                } else {
+                    // If play fails even after user interaction (e.g., from 'ended' event),
+                    // it might be due to AudioContext being suspended again.
+                    console.error(`[playSong] Play failed for ${file} even after user interaction. Attempting to resume AudioContext and retry.`, error);
+                    if (audioContext && audioContext.state !== 'running') {
+                        audioContext.resume().then(() => {
+                            console.log("[playSong] AudioContext resumed, retrying play.");
+                            audioPlayer.play().catch(retryError => console.error("[playSong] Retry play failed after AudioContext resume:", retryError));
+                        }).catch(resumeError => console.error("[playSong] Failed to resume AudioContext during retry:", resumeError));
+                    } else {
+                        console.warn("[playSong] AudioContext not suspended, but play failed after user interaction. Browser might be blocking for other reasons.");
+                    }
+                }
             });
         }
 
+        // --- Song List Overlay Logic ---
+        const repeatOneBtn = document.getElementById('repeat-one-btn');
+        const sequentialBtn = document.getElementById('sequential-btn');
+        const shuffleBtn = document.getElementById('shuffle-btn');
         function populateSongList() {
             songSelectionList.innerHTML = ''; // Clear previous list
             songs.forEach(song => {
@@ -1184,6 +1226,9 @@
             hideSongList();
         });
 
+        // --- 2D Music Controls Logic ---
+
+        // Function to show 2D music controls and set up event listeners
         function show2DMusicControls() {
             musicControls2D.style.display = 'flex';
 
@@ -1214,13 +1259,62 @@
                 }
             };
             // Thêm lắng nghe sự kiện cho chấm kéo mới
-            progressHandle2D.addEventListener('mousedown', startProgressDrag);
-            progressHandle2D.addEventListener('touchstart', startProgressDrag, { passive: false });
+            if (progressHandle2D) {
+                progressHandle2D.addEventListener('mousedown', startProgressDrag);
+                progressHandle2D.addEventListener('touchstart', startProgressDrag, { passive: false });
+            }
 
-            // Đảm bảo tên bài hát 2D ẩn khi trình phát nhạc 2D hiển thị lần đầu
-            if (musicPlayerSongTitle2D) {
-                musicPlayerSongTitle2D.style.display = 'none';
-            } /* This line is now removed as the song title should be visible by default when controls are shown */
+            // Ensure the 2D song title is visible and updated
+            if (musicPlayerSongTitle2D && currentSongIndex !== -1 && songs[currentSongIndex]) {
+                musicPlayerSongTitle2D.textContent = songs[currentSongIndex].name;
+                musicPlayerSongTitle2D.style.display = 'block';
+            }
+            updateMusicPlayerUI(); // Initial UI update for 2D controls
+
+            // Add event listeners for playback mode buttons
+            if (repeatOneBtn) repeatOneBtn.onclick = () => togglePlaybackMode('repeat-one');
+            if (sequentialBtn) sequentialBtn.onclick = () => togglePlaybackMode('sequential');
+            if (shuffleBtn) shuffleBtn.onclick = () => togglePlaybackMode('random');
+            updatePlaybackModeUI(); // Update button states
+        }
+
+        function hide2DMusicControls() {
+            musicControls2D.style.display = 'none';
+        }
+
+        // --- Playback Mode Functions ---
+        function generateShuffledPlaylist() {
+            shuffledSongIndices = Array.from({ length: songs.length }, (_, i) => i); // [0, 1, 2, ...]
+            // Fisher-Yates (Knuth) shuffle algorithm
+            for (let i = shuffledSongIndices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledSongIndices[i], shuffledSongIndices[j]] = [shuffledSongIndices[j], shuffledSongIndices[i]];
+            }
+            // Optional: Ensure the current song isn't the very next one if possible
+            if (currentSongIndex !== -1 && shuffledSongIndices[0] === currentSongIndex && songs.length > 1) {
+                // Find a different index to swap with
+                let swapIndex = 1;
+                if (shuffledSongIndices.length > 2 && shuffledSongIndices[1] === currentSongIndex) { // Avoid swapping with itself if only 2 songs
+                    swapIndex = 2;
+                }
+                [shuffledSongIndices[0], shuffledSongIndices[swapIndex]] = [shuffledSongIndices[swapIndex], shuffledSongIndices[0]];
+            }
+        }
+
+        function updatePlaybackModeUI() {
+            if (repeatOneBtn) repeatOneBtn.classList.toggle('active', playbackMode === 'repeat-one');
+            if (sequentialBtn) sequentialBtn.classList.toggle('active', playbackMode === 'sequential');
+            if (shuffleBtn) shuffleBtn.classList.toggle('active', playbackMode === 'random');
+        }
+
+        function togglePlaybackMode(mode) {
+            playbackMode = mode;
+            updatePlaybackModeUI();
+            if (playbackMode === 'random') {
+                generateShuffledPlaylist();
+                currentShuffledIndex = -1; // Reset to pick the first from shuffled list on next song end
+            }
+            /* The line `musicPlayerSongTitle2D.style.display = 'none';` was removed from here as it was causing unintended hiding of the song title. */
             updateMusicPlayerUI(); // Initial UI update for 2D controls
         }
 
@@ -1270,9 +1364,6 @@
             document.removeEventListener('touchmove', doProgressDrag);
             document.removeEventListener('touchend', endProgressDrag);
         }
-        function hide2DMusicControls() {
-            musicControls2D.style.display = 'none';
-        }
 
         // --- 3D Music Player Functions ---
         function formatTime(seconds) {
@@ -1298,6 +1389,23 @@
                 hideMusicPlayer();
             }
 
+            // If playbackMode is random, ensure shuffledSongIndices is set up
+            // and currentShuffledIndex points to the current song within it.
+            if (playbackMode === 'random') {
+                if (shuffledSongIndices.length === 0 || !shuffledSongIndices.includes(songIndex)) {
+                    generateShuffledPlaylist();
+                    currentShuffledIndex = shuffledSongIndices.indexOf(songIndex);
+                    if (currentShuffledIndex === -1) { // Fallback if for some reason it's not found (shouldn't happen)
+                        currentShuffledIndex = 0;
+                        songIndex = shuffledSongIndices[0]; // Use the first song in the new shuffled list
+                    }
+                } else {
+                    // If the current song is already in the shuffled list, just update currentShuffledIndex
+                    currentShuffledIndex = shuffledSongIndices.indexOf(songIndex);
+                }
+            }
+
+            // Set the current song index based on the (potentially adjusted) songIndex
             currentSongIndex = songIndex;
             const song = songs[currentSongIndex];
             if (!song) return;
@@ -1442,10 +1550,29 @@
         audioPlayer.addEventListener('timeupdate', updateMusicPlayerUI);
         audioPlayer.addEventListener('loadedmetadata', updateMusicPlayerUI);
         audioPlayer.addEventListener('play', updateMusicPlayerUI);
-        audioPlayer.addEventListener('pause', updateMusicPlayerUI);
+        audioPlayer.addEventListener('pause', updateMusicPlayerUI);        
         audioPlayer.addEventListener('ended', () => {
-            const newIndex = (currentSongIndex + 1) % songs.length;
-            showMusicPlayer(newIndex);
+            let newIndex;
+            if (playbackMode === 'repeat-one') {
+                audioPlayer.currentTime = 0;
+                audioPlayer.play();
+                return; // Don't proceed to showMusicPlayer
+            } else if (playbackMode === 'sequential') {
+                newIndex = (currentSongIndex + 1) % songs.length;
+            } else if (playbackMode === 'random') {
+                // If shuffled list is empty or we've played all shuffled songs, regenerate
+                if (shuffledSongIndices.length === 0 || currentShuffledIndex >= shuffledSongIndices.length - 1) {
+                    generateShuffledPlaylist();
+                    currentShuffledIndex = 0; // Start from the beginning of the new shuffled list
+                } else {
+                    currentShuffledIndex++;
+                }
+                newIndex = shuffledSongIndices[currentShuffledIndex];
+            }
+            // Ensure newIndex is valid before calling showMusicPlayer
+            if (newIndex !== undefined && newIndex >= 0 && newIndex < songs.length) {
+                showMusicPlayer(newIndex);
+            }
         });
 
         function applyScrollingToTitle(titleElement, songName) {
