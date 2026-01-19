@@ -74,14 +74,27 @@
             pointer-events: none; /* Make it non-interactive */
         }
         #select-planet-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
+            /* Vị trí được quản lý bởi #main-ui-controls */
             z-index: 1001;
             padding: 10px 15px;
             background-color: transparent; /* Nền trong suốt */
             color: white; /* Giữ màu chữ */
             border: none; /* Bỏ viền */
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            /* Đã loại bỏ định vị cố định */
+        }
+        #overview-btn { /* Kiểu dáng cho nút mới */
+            position: fixed; /* Định vị cố định */
+            bottom: 20px; /* Mặc định ở góc dưới bên phải cho desktop */
+            right: 20px;
+            z-index: 1001;
+            padding: 10px 15px;
+            background-color: transparent;
+            color: white;
+            border: none;
             border-radius: 5px;
             cursor: pointer;
             font-family: Arial, sans-serif;
@@ -128,10 +141,8 @@
         /* --- Music Player Styles --- */
         #select-song-btn {
             position: fixed;
-            top: 20px;
-            right: 20px; /* Position on the top right */
+            /* Vị trí được quản lý bởi #main-ui-controls */
             z-index: 1001;
-            padding: 10px 15px;
             background-color: transparent; /* Giữ nền trong suốt */
             color: white; /* Giữ màu chữ */
             border: none; /* Bỏ viền */
@@ -320,6 +331,7 @@
         /* Remove fixed positioning from individual buttons, let flexbox handle it */
         #select-planet-btn,
         #select-song-btn {
+            /* Các nút này giờ là con của #main-ui-controls, nên position: static là phù hợp */
             position: static;
             margin: 0;
         }
@@ -351,6 +363,7 @@
 
             #select-planet-btn,
             #select-song-btn {
+                /* Áp dụng kiểu dáng cụ thể cho mobile */
                 padding: 8px 12px; /* Smaller padding */
                 font-size: 14px; /* Smaller font size */
                 border: none; /* Bỏ viền */
@@ -370,6 +383,14 @@
 
             #music-player-progress-container-2d {
                 width: 200px; /* Tăng chiều rộng lên gấp đôi cho thanh tiến trình trên mobile */
+            }
+
+            #overview-btn { /* Kiểu dáng mobile cho nút mới */
+                top: 20px; /* Di chuyển lên góc trên bên phải cho mobile */
+                bottom: auto; /* Hủy bỏ định vị bottom */
+                padding: 8px 12px; /* Smaller padding */
+                font-size: 14px; /* Smaller font size */
+                border: none; /* Bỏ viền */
             }
 
             /* Overlays for mobile (positioned above the bottom control bar) */
@@ -464,6 +485,7 @@
         <!-- New container for UI buttons -->
         <div id="main-ui-controls">
             <button id="select-planet-btn">Chọn hành tinh</button>
+            <!-- <button id="overview-btn">Toàn cảnh</button> Removed from here -->
             <div id="music-controls-2d" style="display: none;"> <!-- display: none sẽ được JS thay đổi thành flex -->
                 <div id="music-player-progress-container-2d">
                     <div id="music-player-progress-bar-2d"></div>
@@ -489,6 +511,7 @@
                 <!-- Song items will be inserted here -->
             </ul>
 
+        <button id="overview-btn">Toàn cảnh</button> <!-- Moved here -->
         <!-- Canvas and renderers will be appended here by Three.js -->
     </div>
 
@@ -726,6 +749,10 @@
         const homeCameraPosition = new THREE.Vector3(0, 100, 250);
         const homeControlsTarget = new THREE.Vector3(0, 0, 0);
         const finalCameraPosition = new THREE.Vector3();       // Final camera position near planet
+
+        // Định nghĩa chế độ xem "Toàn cảnh"
+        const overviewCameraPosition = new THREE.Vector3(0, 500, 1000); // Điều chỉnh khi cần
+        const overviewControlsTarget = new THREE.Vector3(0, 0, 0);
         const finalControlsTarget = new THREE.Vector3();        // Final controls target (planet's world position)
         const TOUCH_DELAY = 300; // Milliseconds to prevent ghost clicks
 
@@ -1311,6 +1338,35 @@
             cameraAnimationStartTime = Date.now();
         }
         
+        // Hàm mới để hoạt ảnh camera đến chế độ xem toàn cảnh
+        const overviewBtn = document.getElementById('overview-btn');
+        overviewBtn.addEventListener('click', animateCameraToOverview);
+
+        function animateCameraToOverview() {
+            // Nếu một hành tinh hiện đang bị khóa, hãy mở khóa nó và ẩn hình ảnh của nó
+            if (lockedPlanet) {
+                if (lockedPlanet.userData.imageGroup.visible) {
+                    removeImagesFromPlanet(lockedPlanet);
+                }
+                lockedPlanet.userData.interactionState = 0; // Đặt lại trạng thái của hành tinh đã khóa trước đó
+            }
+            isViewLocked = false;
+            lockedPlanet = null;
+
+            // Lưu vị trí camera và mục tiêu điều khiển hiện tại làm điểm bắt đầu
+            startCameraPosition.copy(camera.position);
+            startControlsTarget.copy(controls.target);
+
+            // Đặt vị trí cuối cùng cho chế độ xem toàn cảnh
+            finalCameraPosition.copy(overviewCameraPosition);
+            finalControlsTarget.copy(overviewControlsTarget);
+
+            isCameraAnimating = true;
+            cameraAnimationPhase = 3; // Giai đoạn mới cho chế độ xem toàn cảnh
+            cameraAnimationStartTime = Date.now();
+
+            controls.enabled = false; // Tắt điều khiển trong quá trình hoạt ảnh
+        }
         // New functions for managing planet images
         function addImagesToPlanet(planet) {
             if (planet.userData.isSun) { // Sun doesn't have images
@@ -1617,6 +1673,23 @@
                         camera.position.copy(finalCameraPosition);
                         controls.target.copy(finalControlsTarget);
                     }
+                } else if (cameraAnimationPhase === 3) { // Giai đoạn 3: Di chuyển đến chế độ xem toàn cảnh
+                    const progress = Math.min(elapsedTime / moveToTargetDuration, 1); // Tái sử dụng moveToTargetDuration cho hoạt ảnh toàn cảnh
+                    const easedProgress = easeInOutSine(progress);
+
+                    camera.position.lerpVectors(startCameraPosition, finalCameraPosition, easedProgress);
+                    controls.target.lerpVectors(startControlsTarget, finalControlsTarget, easedProgress);
+
+                    if (progress === 1) {
+                        isCameraAnimating = false;
+                        cameraAnimationPhase = 0; // Hoạt ảnh kết thúc
+                        controls.enabled = true; // Kích hoạt lại điều khiển sau hoạt ảnh
+                        // Đảm bảo camera và mục tiêu điều khiển ở đúng vị trí cuối cùng
+                        camera.position.copy(finalCameraPosition);
+                        controls.target.copy(finalControlsTarget);
+                        restoreDefaultControls(); // Đảm bảo min/max distance được đặt lại
+                    }
+
                 }
                 camera.lookAt(controls.target); // Ensure camera always looks at the interpolated target
             }
