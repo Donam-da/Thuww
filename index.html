@@ -1627,15 +1627,10 @@
             const numBarsPerSide = bufferLength; // Số lượng thanh cho mỗi bên (trái hoặc phải)
             const barWidth = (canvasWidth / 2) / numBarsPerSide; // Chiều rộng thực của mỗi thanh
 
-            // Tạo gradient màu sắc sống động cho các thanh
-            const barGradient = visualizerCtx.createLinearGradient(0, 0, canvasWidth, 0);
-            barGradient.addColorStop(0, '#00FFFF'); // Cyan
-            barGradient.addColorStop(0.5, '#FF00FF'); // Magenta
-            barGradient.addColorStop(1, '#FFFF00'); // Yellow
-            
-            visualizerCtx.fillStyle = barGradient;
-
             for (let i = 0; i < numBarsPerSide; i++) {
+                // Tính toán màu sắc cho từng thanh riêng lẻ
+                const hue = (i / numBarsPerSide) * 360; // Thay đổi màu sắc theo chỉ số thanh (tạo hiệu ứng cầu vồng)
+                const lightness = 40 + (dataArray[i] / 255) * 30; // Thay đổi độ sáng dựa trên cường độ âm thanh (từ 40% đến 70%)
                 // Chuẩn hóa dữ liệu tần số về khoảng 0-1, sau đó áp dụng hàm mũ (power)
                 // để làm nổi bật các âm thanh mạnh hơn và giảm bớt các âm thanh yếu,
                 // tạo ra một cái nhìn động và chuyên nghiệp hơn.
@@ -1647,7 +1642,7 @@
                 // Tính toán vị trí x cho thanh ở bên trái của trung tâm (vẽ từ phải sang trái)
                 const xLeft = (canvasWidth / 2) - ((i + 1) * barWidth);
 
-                // Vẽ thanh mở rộng lên trên và xuống dưới, đối xứng qua trục giữa
+                visualizerCtx.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`; // Đặt màu cho thanh hiện tại
                 visualizerCtx.fillRect(xRight, centerY - barHeight, barWidth, barHeight);
                 visualizerCtx.fillRect(xRight, centerY, barWidth, barHeight);
                 visualizerCtx.fillRect(xLeft, centerY - barHeight, barWidth, barHeight);
