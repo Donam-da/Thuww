@@ -285,9 +285,9 @@
         .music-player-container-3d {
             background-color: transparent; /* Nền hoàn toàn trong suốt */
             border: none; /* Bỏ viền */
-            border-radius: 20px;
-            padding: 20px;
-            width: 500px;
+            border-radius: 15px;
+            padding: 15px;
+            width: 375px;
             color: white;
             font-family: Arial, sans-serif;
             box-shadow: none; /* Bỏ hiệu ứng đổ bóng */
@@ -298,9 +298,9 @@
         }
         .music-player-title {
             /* Existing styles */
-            font-size: 28px;
+            font-size: 21px;
             font-weight: bold;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             
             /* New styles for scrolling */
             white-space: nowrap; /* Ensure text stays on one line */
@@ -321,7 +321,7 @@
         .music-player-title-text,
         .music-player-title-text-duplicate {
             display: inline-block; /* Allows them to sit side-by-side */
-            padding-right: 40px; /* Space between original and duplicate text */
+            padding-right: 30px; /* Space between original and duplicate text */
         }
         @keyframes scrollText {
             0% { transform: translateX(0); }
@@ -333,14 +333,14 @@
         .music-player-time {
             display: flex;
             justify-content: space-between;
-            font-size: 20px;
-            margin-top: 10px;
+            font-size: 15px;
+            margin-top: 8px;
         }
         .music-player-visualizer {
             display: block; /* Đảm bảo canvas là block element để căn giữa */
-            margin: 10px auto; /* Căn giữa bên dưới tiêu đề/thời gian */
+            margin: 8px auto; /* Căn giữa bên dưới tiêu đề/thời gian */
             background-color: transparent; /* Nền trong suốt */
-            border-radius: 6px;
+            border-radius: 4px;
             border: none; /* Bỏ viền */
         }
 
@@ -482,20 +482,20 @@
 
             /* 3D Music Player (internal styling) */
             .music-player-container-3d {
-                width: 300px; /* Smaller width for mobile */
-                padding: 12px;
+                width: 225px; /* Smaller width for mobile */
+                padding: 9px;
             }
             .music-player-title {
-                font-size: 18px; /* Smaller font size */
+                font-size: 14px; /* Smaller font size */
                 height: 1.3em; /* Adjust height for new font size */
                 line-height: 1.3em; /* Adjust line height */
             }
             .music-player-time {
-                font-size: 14px; /* Smaller font size */
+                font-size: 11px; /* Smaller font size */
             }
             .music-player-visualizer {
-                width: 276px; /* Adjust visualizer width to match container */
-                height: 50px; /* Adjust height */
+                width: 207px; /* Adjust visualizer width to match container */
+                height: 38px; /* Adjust height */
             }
         }
     </style>
@@ -1487,8 +1487,8 @@
             // Create the visualizer canvas
             const visualizerCanvasElement = document.createElement('canvas');
             visualizerCanvasElement.className = 'music-player-visualizer';
-            visualizerCanvasElement.width = 460; // Match player width minus padding
-            visualizerCanvasElement.height = 50; // Height for the wave
+            visualizerCanvasElement.width = 345; // Match player width minus padding (375 - 2*15)
+            visualizerCanvasElement.height = 75; // Height for the wave
 
             // Append elements in the desired order: close, title, visualizer, time
             titleDiv.appendChild(scrollContainer); // Add scroll container to title div
@@ -1638,34 +1638,24 @@
             titleElement.style.removeProperty('--scroll-duration');
             titleText.textContent = songName; // Ensure original text is set
 
-            // Measure the actual width of the text content
-            // Temporarily set overflow to visible to get the true content width
-            const originalOverflow = titleElement.style.overflow;
-            titleElement.style.overflow = 'visible';
-            const textWidth = titleText.offsetWidth;
-            titleElement.style.overflow = originalOverflow; // Restore overflow
+            // Always apply scrolling, regardless of text width
+            // Add duplicate text for continuous scrolling
+            duplicateText = document.createElement('span');
+            duplicateText.className = 'music-player-title-text-duplicate';
+            duplicateText.textContent = songName;
+            scrollContainer.appendChild(duplicateText);
 
-            const containerWidth = titleElement.offsetWidth; // This should be 230px (250 - 2*10 padding)
+            // Calculate scroll distance: width of the original text + padding-right
+            // The animation scrolls the entire scrollContainer.
+            // The scroll-distance should be the width of the *first* titleText span,
+            // including its padding-right (30px).
+            const scrollDistance = titleText.offsetWidth;
+            const scrollSpeedPxPerSec = 30; // Adjust scroll speed (pixels per second)
+            const scrollDuration = (scrollDistance / scrollSpeedPxPerSec) * 1000; // in milliseconds
 
-            if (textWidth > containerWidth) {
-                // Add duplicate text for continuous scrolling
-                duplicateText = document.createElement('span');
-                duplicateText.className = 'music-player-title-text-duplicate';
-                duplicateText.textContent = songName;
-                scrollContainer.appendChild(duplicateText);
-
-                // Calculate scroll distance: width of the original text + padding-right
-                // The animation scrolls the entire scrollContainer.
-                // The scroll-distance should be the width of the *first* titleText span,
-                // including its padding-right (20px).
-                const scrollDistance = titleText.offsetWidth;
-                const scrollSpeedPxPerSec = 30; // Adjust scroll speed (pixels per second)
-                const scrollDuration = (scrollDistance / scrollSpeedPxPerSec) * 1000; // in milliseconds
-
-                titleElement.classList.add('scrolling');
-                titleElement.style.setProperty('--scroll-distance', `-${scrollDistance}px`);
-                titleElement.style.setProperty('--scroll-duration', `${scrollDuration}ms`);
-            }
+            titleElement.classList.add('scrolling');
+            titleElement.style.setProperty('--scroll-distance', `-${scrollDistance}px`);
+            titleElement.style.setProperty('--scroll-duration', `${scrollDuration}ms`);
         }
         function restoreDefaultControls() {
             controls.enablePan = true;
