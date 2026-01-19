@@ -1635,10 +1635,6 @@
             
             visualizerCtx.fillStyle = barGradient;
 
-            // Thêm hiệu ứng đổ bóng (glow) tinh tế
-            visualizerCtx.shadowBlur = 8;
-            visualizerCtx.shadowColor = 'rgba(0, 255, 255, 0.7)'; // Màu glow xanh lam
-
             for (let i = 0; i < numBarsPerSide; i++) {
                 // Chuẩn hóa dữ liệu tần số về khoảng 0-1, sau đó áp dụng hàm mũ (power)
                 // để làm nổi bật các âm thanh mạnh hơn và giảm bớt các âm thanh yếu,
@@ -1657,10 +1653,6 @@
                 visualizerCtx.fillRect(xLeft, centerY - barHeight, barWidth, barHeight);
                 visualizerCtx.fillRect(xLeft, centerY, barWidth, barHeight);
             }
-
-            // Đặt lại các thuộc tính shadow để không ảnh hưởng đến các bản vẽ khác
-            visualizerCtx.shadowBlur = 0;
-            visualizerCtx.shadowColor = 'transparent';
         }
         audioPlayer.addEventListener('timeupdate', updateMusicPlayerUI);
         audioPlayer.addEventListener('loadedmetadata', updateMusicPlayerUI);
