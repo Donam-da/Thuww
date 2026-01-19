@@ -63,16 +63,6 @@
             cursor: pointer;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
         }
-        .velocity-label {
-            color: white;
-            font-family: sans-serif;
-            font-weight: 100; /* Lightest font weight for a very thin look */
-            padding: 2px;
-            background: transparent;
-            font-size: 8px;
-            white-space: nowrap;
-            pointer-events: none; /* Make it non-interactive */
-        }
         #select-planet-btn {
             /* Vị trí được quản lý bởi #main-ui-controls */
             z-index: 1001;
@@ -720,14 +710,6 @@
             const planetLabel = new THREE.CSS2DObject(planetDiv);
             planetLabel.position.set(0, data.size + 2, 0);
             planet.add(planetLabel);
-
-            // Create Velocity Label
-            const velocityDiv = document.createElement('div');
-            velocityDiv.className = 'velocity-label';
-            velocityDiv.textContent = `~${data.realSpeed} km/s`;
-            const velocityLabel = new THREE.CSS2DObject(velocityDiv);
-            velocityLabel.position.set(0, -(data.size + 1.5), 0); // Position it below the planet
-            planet.add(velocityLabel);
 
             // Tạo một hitbox hình cầu vô hình lớn hơn một chút so với hành tinh
             const hitboxGeometry = new THREE.SphereGeometry(data.size + 0.5, 32, 32); // Lớn hơn hành tinh 0.5 đơn vị
