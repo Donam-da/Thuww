@@ -191,10 +191,10 @@
         /* --- 2D Music Controls Styles --- */
         #music-controls-2d {
             position: fixed;
-            /* Position handled by #main-ui-controls on desktop */
-            /* Removed fixed positioning here */
+            /* Position handled by #main-ui-controls on desktop */ /* Removed fixed positioning here */
             /* display: flex; */ /* This will be set by JS when music is active */
             flex-direction: column; /* Xếp chồng các phần tử con theo chiều dọc */
+            justify-content: center; /* Căn giữa các phần tử con theo chiều dọc */
             align-items: center; /* Căn giữa các phần tử con theo chiều ngang */
             gap: 5px; /* Khoảng cách giữa thanh tiến trình và hàng nút */
             background-color: rgba(0,0,0,0.5); /* Semi-transparent background */
@@ -258,6 +258,23 @@
             transform: translateY(-50%); /* Dịch chuyển lên trên 50% chiều cao của chính nó */
             left: 0; /* Vị trí ban đầu, sẽ được JS cập nhật */
             cursor: grab; /* Con trỏ kéo */
+        }
+        #music-player-song-title-2d { /* Tên bài hát 2D mới */
+            /* Loại bỏ định vị tuyệt đối để nó hiển thị theo luồng flex-direction: column */
+            /* position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); */
+            color: white;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px; /* Đặt chiều rộng tối đa cho desktop */
+            text-align: center; /* Căn giữa văn bản */
+            pointer-events: none; /* Cho phép click xuyên qua để tương tác với thanh tiến trình */
+            margin: 5px auto; /* Khoảng cách trên dưới và căn giữa ngang */
+            background-color: rgba(0, 0, 0, 0.6); /* Nền hơi tối để dễ đọc */
+            padding: 2px 5px;
+            border-radius: 3px;
+            display: none; /* Ẩn mặc định */
         }
         #music-player-progress-bar-2d {
             background-color: #3498db;
@@ -408,6 +425,9 @@
                 width: 167px; /* Giảm chiều rộng đi 5px cho mobile */
                 transform: translateX(-5px); /* Dịch sang trái 5px */
             }
+            #music-player-song-title-2d { /* Điều chỉnh chiều rộng cho mobile */
+                max-width: 167px;
+            }
 
             #overview-btn { /* Kiểu dáng mobile cho nút mới */
                 top: 20px; /* Di chuyển lên góc trên bên phải cho mobile */
@@ -510,17 +530,19 @@
         <div id="main-ui-controls">
             <button id="select-planet-btn">Hành tinh</button>
             <!-- <button id="overview-btn">Toàn cảnh</button> Removed from here -->
-            <div id="music-controls-2d" style="display: none;"> <!-- display: none sẽ được JS thay đổi thành flex -->
+            <div id="music-controls-2d" style="display: none;">
                 <div id="music-player-progress-container-2d">
                     <div id="music-player-progress-bar-2d"></div>
                     <div id="music-player-progress-handle-2d"></div> <!-- Chấm kéo mới -->
                 </div>
+                <span id="music-player-song-title-2d"></span> <!-- Tên bài hát 2D mới -->
                 <div class="music-player-buttons-row"> <!-- Hàng nút điều khiển mới -->
                     <button id="music-player-prev-2d">⏮</button>
                     <button id="music-player-play-pause-2d">▶</button>
                     <button id="music-player-next-2d">⏭</button>
                 </div>
             </div>
+            <span id="music-player-song-title-2d" style="display: none;"></span> <!-- Tên bài hát 2D mới -->
             <button id="select-song-btn">Chọn nhạc</button>
         </div>
         <!-- Existing overlays -->
@@ -1035,6 +1057,7 @@
         const nextBtn2D = document.getElementById('music-player-next-2d');
         const progressContainer2D = document.getElementById('music-player-progress-container-2d');
         const progressBar2D = document.getElementById('music-player-progress-bar-2d');
+        const musicPlayerSongTitle2D = document.getElementById('music-player-song-title-2d'); // Tham chiếu đến tên bài hát 2D
         const progressHandle2D = document.getElementById('music-player-progress-handle-2d'); // Tham chiếu đến chấm kéo mới
         // New variables for the 3D music player
         let musicPlayerObject = null;
@@ -1126,7 +1149,7 @@
         function show2DMusicControls() {
             musicControls2D.style.display = 'flex';
 
-            playPauseBtn2D.onclick = () => {
+            playPauseBtn2D.onclick = () => { /* Existing code */
                 if (audioPlayer.paused) {
                     audioPlayer.play();
                 } else {
@@ -1156,6 +1179,10 @@
             progressHandle2D.addEventListener('mousedown', startProgressDrag);
             progressHandle2D.addEventListener('touchstart', startProgressDrag, { passive: false });
 
+            // Đảm bảo tên bài hát 2D ẩn khi trình phát nhạc 2D hiển thị lần đầu
+            if (musicPlayerSongTitle2D) {
+                musicPlayerSongTitle2D.style.display = 'none';
+            } /* This line is now removed as the song title should be visible by default when controls are shown */
             updateMusicPlayerUI(); // Initial UI update for 2D controls
         }
 
@@ -1306,7 +1333,7 @@
             if (progressHandle2D) {
                 const containerWidth = progressContainer2D.offsetWidth;
                 const handleWidth = progressHandle2D.offsetWidth;
-                progressHandle2D.style.left = `${(progressPercentage * containerWidth) - (handleWidth / 2)}px`;
+                progressHandle2D.style.left = `${(progressPercentage * containerWidth) - (handleWidth / 2)}px`; /* Existing code */
             }
             // Update 3D player's time display (if it exists)
             const currentTimeSpan = musicPlayerObject ? musicPlayerObject.element.querySelector('#music-player-current-time') : null;
@@ -1637,6 +1664,12 @@
         // if (unlockViewBtn) unlockViewBtn.addEventListener('click', () => { isViewLocked = false; lockedPlanet = null; restoreDefaultControls(); unlockViewBtn.style.display = 'none'; });
         const downloadBtn = document.getElementById('download-btn');
         function closeFullscreen(event) {
+            // Ẩn tên bài hát 2D khi đóng fullscreen overlay
+            // (Giả định rằng việc đóng fullscreen overlay cũng có thể được coi là "quay góc view hiện lại")
+            if (musicPlayerSongTitle2D) {
+                musicPlayerSongTitle2D.style.display = 'none';
+            }
+
             event.preventDefault(); // Prevent potential double-triggering on touch devices
             document.getElementById('fullscreen-overlay').style.display = 'none';
             if (!isViewLocked) { // Only re-enable controls if view was NOT locked
@@ -1889,6 +1922,11 @@
                 if (previouslyLockedPlanet && (previouslyLockedPlanet.userData.interactionState === 1 || previouslyLockedPlanet.userData.interactionState === 4)) {
                     previouslyLockedPlanet.userData.interactionState = 2;
                 }
+            }
+            // Hiển thị tên bài hát 2D khi bắt đầu tương tác với controls
+            if (musicPlayerSongTitle2D && currentSongIndex !== -1 && songs[currentSongIndex]) {
+                musicPlayerSongTitle2D.textContent = songs[currentSongIndex].name;
+                musicPlayerSongTitle2D.style.display = 'block';
             }
         });
 
