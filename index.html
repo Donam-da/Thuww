@@ -806,7 +806,7 @@
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
-                analyser.fftSize = 512; // Tăng kích thước FFT để sóng mượt mà và chi tiết hơn
+                analyser.fftSize = 128; // Giảm FFT size để có ít thanh hơn, mỗi thanh rộng hơn và rõ ràng hơn
                 bufferLength = analyser.frequencyBinCount; // Half of fftSize
                 dataArray = new Uint8Array(bufferLength);
 
@@ -1030,47 +1030,47 @@
 
             visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
 
-            const centerY = visualizerCanvas.height / 2;
-            const sliceWidth = visualizerCanvas.width * 1.0 / bufferLength; // Chiều rộng cho mỗi điểm dữ liệu
+            // --- Kiểu sóng mới: Các thanh đối xứng từ trung tâm ra hai bên ---
 
-            // Tạo gradient màu sắc sống động cho phần điền (fill) của sóng, từ trên xuống dưới
-            const gradient = visualizerCtx.createLinearGradient(0, 0, 0, visualizerCanvas.height);
-            gradient.addColorStop(0, 'rgba(255, 0, 255, 0.8)');    // Magenta
-            gradient.addColorStop(0.25, 'rgba(0, 0, 255, 0.8)');   // Blue
-            gradient.addColorStop(0.5, 'rgba(0, 255, 255, 0.8)');  // Cyan
-            gradient.addColorStop(0.75, 'rgba(0, 255, 0, 0.8)');   // Green
-            gradient.addColorStop(1, 'rgba(255, 255, 0, 0.8)');    // Yellow
-            visualizerCtx.fillStyle = gradient;
+            const canvasWidth = visualizerCanvas.width;
+            const canvasHeight = visualizerCanvas.height;
+            const centerY = canvasHeight / 2;
+
+            // Chúng ta sẽ vẽ `bufferLength` thanh ở mỗi bên của trung tâm.
+            // Do đó, chiều rộng của mỗi thanh sẽ được tính dựa trên một nửa chiều rộng canvas.
+            const numBarsPerSide = bufferLength; // Số lượng thanh cho mỗi bên (trái hoặc phải)
+            const barWidth = (canvasWidth / 2) / numBarsPerSide; // Chiều rộng thực của mỗi thanh
+
+            // Tạo gradient màu sắc sống động cho các thanh
+            const barGradient = visualizerCtx.createLinearGradient(0, 0, canvasWidth, 0);
+            barGradient.addColorStop(0, '#00FFFF'); // Cyan
+            barGradient.addColorStop(0.5, '#FF00FF'); // Magenta
+            barGradient.addColorStop(1, '#FFFF00'); // Yellow
+            
+            visualizerCtx.fillStyle = barGradient;
 
             // Thêm hiệu ứng đổ bóng (glow) tinh tế
-            visualizerCtx.shadowBlur = 15; // Tăng độ mờ để có hiệu ứng glow mạnh hơn
-            visualizerCtx.shadowColor = 'rgba(0, 255, 255, 0.9)'; // Màu glow xanh lam sáng
+            visualizerCtx.shadowBlur = 8;
+            visualizerCtx.shadowColor = 'rgba(0, 255, 255, 0.7)'; // Màu glow xanh lam
 
-            visualizerCtx.beginPath();
-            visualizerCtx.moveTo(0, centerY); // Bắt đầu từ giữa bên trái
-
-            let x = 0;
-            for (let i = 0; i < bufferLength; i++) {
+            for (let i = 0; i < numBarsPerSide; i++) {
                 // Chuẩn hóa dữ liệu tần số về khoảng 0-1, sau đó áp dụng hàm mũ (power)
                 // để làm nổi bật các âm thanh mạnh hơn và giảm bớt các âm thanh yếu,
                 // tạo ra một cái nhìn động và chuyên nghiệp hơn.
-                const v = Math.pow(dataArray[i] / 255.0, 1.5); // Normalize to 0-1, sau đó mũ 1.5 để nhấn mạnh
-                const y = centerY - (v * centerY * 0.9); // Điều chỉnh chiều cao, 0.9 để chừa một khoảng trống nhỏ ở viền
-                visualizerCtx.lineTo(x, y);
-                x += sliceWidth;
-            }
+                const v = Math.pow(dataArray[i] / 255.0, 2.0); // Tăng cường độ phản ứng cho các thanh nổi bật hơn
+                const barHeight = v * (canvasHeight / 2) * 0.9; // Chiều cao tối đa là 90% của nửa chiều cao canvas
 
-            // Vẽ nửa dưới, đối xứng với nửa trên
-            x = visualizerCanvas.width; // Bắt đầu từ bên phải
-            for (let i = bufferLength - 1; i >= 0; i--) {
-                const v = Math.pow(dataArray[i] / 255.0, 1.5);
-                const y = centerY + (v * centerY * 0.9);
-                visualizerCtx.lineTo(x, y);
-                x -= sliceWidth;
-            }
+                // Tính toán vị trí x cho thanh ở bên phải của trung tâm
+                const xRight = (canvasWidth / 2) + (i * barWidth);
+                // Tính toán vị trí x cho thanh ở bên trái của trung tâm (vẽ từ phải sang trái)
+                const xLeft = (canvasWidth / 2) - ((i + 1) * barWidth);
 
-            visualizerCtx.closePath(); // Đóng đường dẫn để tạo thành một hình dạng kín
-            visualizerCtx.fill(); // Tô màu cho hình dạng
+                // Vẽ thanh mở rộng lên trên và xuống dưới, đối xứng qua trục giữa
+                visualizerCtx.fillRect(xRight, centerY - barHeight, barWidth - 1, barHeight);
+                visualizerCtx.fillRect(xRight, centerY, barWidth - 1, barHeight);
+                visualizerCtx.fillRect(xLeft, centerY - barHeight, barWidth - 1, barHeight);
+                visualizerCtx.fillRect(xLeft, centerY, barWidth - 1, barHeight);
+            }
 
             // Đặt lại các thuộc tính shadow để không ảnh hưởng đến các bản vẽ khác
             visualizerCtx.shadowBlur = 0;
