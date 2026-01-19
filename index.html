@@ -334,6 +334,8 @@
             background-color: transparent; /* Nền trong suốt */
             border-radius: 4px;
             border: none; /* Bỏ viền */
+            width: 100%; /* Set width to 100% to match parent */
+            height: 75px; /* Default desktop height */
         }
 
         /* New container for main UI buttons */
@@ -1549,8 +1551,10 @@
             // Create the visualizer canvas
             const visualizerCanvasElement = document.createElement('canvas');
             visualizerCanvasElement.className = 'music-player-visualizer';
-            visualizerCanvasElement.width = 345; // Match player width minus padding (375 - 2*15)
-            visualizerCanvasElement.height = 75; // Height for the wave
+            // Dynamically set canvas width and height attributes based on screen size
+            const isMobile = window.innerWidth <= 768;
+            visualizerCanvasElement.width = isMobile ? 207 : 345; // Content width of 3D player container
+            visualizerCanvasElement.height = isMobile ? 38 : 75; // Height from CSS
 
             // Append elements in the desired order: close, title, visualizer, time
             titleDiv.appendChild(scrollContainer); // Add scroll container to title div
@@ -1647,10 +1651,10 @@
                 const xLeft = (canvasWidth / 2) - ((i + 1) * barWidth);
 
                 // Vẽ thanh mở rộng lên trên và xuống dưới, đối xứng qua trục giữa
-                visualizerCtx.fillRect(xRight, centerY - barHeight, barWidth - 1, barHeight);
-                visualizerCtx.fillRect(xRight, centerY, barWidth - 1, barHeight);
-                visualizerCtx.fillRect(xLeft, centerY - barHeight, barWidth - 1, barHeight);
-                visualizerCtx.fillRect(xLeft, centerY, barWidth - 1, barHeight);
+                visualizerCtx.fillRect(xRight, centerY - barHeight, barWidth, barHeight);
+                visualizerCtx.fillRect(xRight, centerY, barWidth, barHeight);
+                visualizerCtx.fillRect(xLeft, centerY - barHeight, barWidth, barHeight);
+                visualizerCtx.fillRect(xLeft, centerY, barWidth, barHeight);
             }
 
             // Đặt lại các thuộc tính shadow để không ảnh hưởng đến các bản vẽ khác
