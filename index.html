@@ -1210,13 +1210,15 @@
         let barHues = [];
         let lastColorChangeTime = 0;
         const colorChangeIntervalMs = 2000; // Change colors every 2 seconds
+        let lastVisualizerUpdate = 0;
+        let peakData = [];
 
         function initAudioContext() {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 128; // Giảm FFT size để có ít thanh hơn, mỗi thanh rộng hơn và rõ ràng hơn
-                analyser.smoothingTimeConstant = 0.85; // Tăng độ mượt của sóng (giảm tốc độ rung gắt)
+                analyser.smoothingTimeConstant = 0.8; // Giảm độ mượt một chút để sóng phản ứng nhanh và nảy hơn theo nhịp
                 bufferLength = analyser.frequencyBinCount; // Half of fftSize
                 dataArray = new Uint8Array(bufferLength);
 
@@ -1600,58 +1602,52 @@
 
             analyser.getByteFrequencyData(dataArray); // Get frequency data
 
-            visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
-
-            // --- New Style: Electric Jagged Waveform (Red Neon) ---
+            // --- New Style: Single-sided Electric Lightning (Center Source) ---
 
             const width = visualizerCanvas.width;
             const height = visualizerCanvas.height;
             const centerY = height / 2;
 
-            visualizerCtx.lineWidth = 0.6;
-            visualizerCtx.strokeStyle = '#00ffff'; // Cyan (Màu giống viền dropmenu)
-            visualizerCtx.shadowBlur = 15; // Strong Neon Glow
+            visualizerCtx.clearRect(0, 0, width, height); // Xóa canvas để nền trong suốt
+
+            visualizerCtx.lineWidth = 0.3; // Nét mảnh như tia sét
+            visualizerCtx.strokeStyle = '#00ffff'; // Màu Cyan
+            visualizerCtx.shadowBlur = 15; // Hiệu ứng phát sáng mạnh
             visualizerCtx.shadowColor = '#00ffff';
             visualizerCtx.lineJoin = 'round';
             visualizerCtx.lineCap = 'round';
 
+            // Tính toán âm lượng trung bình để điều chỉnh độ rung
+            let sum = 0;
+            for (let i = 0; i < bufferLength; i++) {
+                sum += dataArray[i];
+            }
+            const average = sum / bufferLength;
+            const noiseFactor = Math.min(1.2, Math.max(0.2, average / 50));
+
+            const step = 10; // Khoảng cách giữa các điểm gấp khúc
+
             visualizerCtx.beginPath();
             visualizerCtx.moveTo(0, centerY);
-
-            // Step size for jaggedness (smaller = more jagged/detailed)
-            const step = 4;
 
             for (let x = 0; x <= width; x += step) {
                 // Calculate distance from center (0.0 at center, 1.0 at edges)
                 const distFromCenter = Math.abs(x - width / 2) / (width / 2);
-                
-                // Tapering: 1.0 at center, 0.0 at edges. 
-                // Using power function to concentrate energy in the center
-                const taper = Math.pow(1 - distFromCenter, 2);
-
-                // Map x position to frequency data index
-                // Center corresponds to low frequencies (index 0), edges to high frequencies
+                // Map x position to frequency data index (Center = Low Freq, Edges = High Freq)
                 const dataIndex = Math.floor(distFromCenter * (bufferLength - 1));
-                
-                // Get audio value (0-255)
                 const value = dataArray[dataIndex];
 
-                // Random noise factor (-1 to 1) for electric effect
+                // Biên độ sóng
+                const amplitude = (value / 255) * (height / 2) * 0.9;
+
+                // Tạo nhiễu ngẫu nhiên (-1 đến 1)
                 const noise = (Math.random() - 0.5) * 2;
-
-                // Calculate amplitude
-                // value/255: normalized intensity
-                // height/2: max possible deviation from center
-                // taper: apply envelope
-                const amplitude = (value / 255) * (height / 2) * taper;
-
-                // Calculate Y position with noise
-                // Giảm hệ số nhân từ 1.5 xuống 0.8 để sóng rung nhẹ hơn, bớt gắt hơn
-                const y = centerY + (noise * amplitude * 0.8);
-
-                visualizerCtx.lineTo(x, y);
+                
+                // Độ lệch Y (chỉ lấy giá trị dương để vẽ lên trên)
+                const deltaY = Math.abs(noise * amplitude * noiseFactor);
+                
+                visualizerCtx.lineTo(x, centerY - deltaY);
             }
-
             visualizerCtx.stroke();
         }
         audioPlayer.addEventListener('timeupdate', updateMusicPlayerUI);
