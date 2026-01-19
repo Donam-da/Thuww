@@ -297,7 +297,7 @@
                 imageGroup: imageGroup
             };
             
-            const orbitGeometry = new THREE.RingGeometry(data.distance - 0.1, data.distance + 0.1, 128);
+            const orbitGeometry = new THREE.RingGeometry(data.distance - 0.2, data.distance + 0.2, 128);
             const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, opacity: 0.6, transparent: true });
             const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
             orbit.rotation.x = -Math.PI / 2;
