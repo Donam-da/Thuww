@@ -265,7 +265,7 @@
             text-align: center; /* Căn giữa văn bản */
             pointer-events: none; /* Cho phép click xuyên qua để tương tác với thanh tiến trình */
             margin: 5px auto; /* Khoảng cách trên dưới và căn giữa ngang */
-            background-color: rgba(0, 0, 0, 0.6); /* Nền hơi tối để dễ đọc */
+            background-color: transparent; /* Nền trong suốt */
             padding: 2px 5px;
             border-radius: 3px;
         }
@@ -294,7 +294,8 @@
             /* Existing styles */
             font-size: 21px;
             font-weight: bold;
-            margin-bottom: 12px;
+            margin-bottom: 2px; /* Giảm khoảng cách dưới để sát vào chân chữ */
+            background-color: transparent; /* Đảm bảo nền trong suốt */
             
             /* New styles for scrolling */
             white-space: nowrap; /* Ensure text stays on one line */
@@ -302,8 +303,8 @@
             text-overflow: ellipsis; /* Fallback for non-scrolling state */
             position: relative; /* Needed for positioning inner elements */
             width: 100%; /* Take full width of parent */
-            height: 1.2em; /* Fixed height to prevent layout shifts */
-            line-height: 1.2em; /* Vertically align text */
+            height: 24px; /* Điều chỉnh chiều cao cho vừa khít */
+            line-height: 24px; /* Căn chỉnh dòng */
         }
         .music-player-title-scroll-container {
             display: inline-block; /* Allows it to be wider than its parent */
@@ -311,6 +312,7 @@
             position: absolute; /* Position absolutely within .music-player-title */
             left: 0;
             top: 0;
+            background-color: transparent;
         }
         .music-player-title-text,
         .music-player-title-text-duplicate {
@@ -318,8 +320,8 @@
             padding-right: 30px; /* Space between original and duplicate text */
         }
         @keyframes scrollText {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(var(--scroll-distance)); } /* Dynamically set scroll distance */
+            0% { transform: translateX(var(--scroll-start)); }
+            100% { transform: translateX(var(--scroll-end)); }
         }
         .music-player-title.scrolling .music-player-title-scroll-container {
             animation: scrollText var(--scroll-duration) linear infinite;
@@ -328,7 +330,9 @@
             display: flex;
             justify-content: space-between;
             font-size: 15px;
-            margin-top: 8px;
+            margin-top: -10px; /* Đẩy lên 20px (từ 10px xuống -10px) */
+            line-height: 1; /* Thu gọn chiều cao sát vào số */
+            align-items: center;
         }
         .music-player-visualizer {
             display: block; /* Đảm bảo canvas là block element để căn giữa */
@@ -337,7 +341,7 @@
             border-radius: 4px;
             border: none; /* Bỏ viền */
             width: 100%; /* Set width to 100% to match parent */
-            height: 75px; /* Default desktop height */
+            height: 150px; /* Tăng chiều cao để chứa sóng nhạc lớn hơn */
         }
 
         /* New container for main UI buttons */
@@ -494,7 +498,7 @@
             }
             .music-player-visualizer {
                 width: 207px; /* Adjust visualizer width to match container */
-                height: 38px; /* Adjust height */
+                height: 100px; /* Tăng chiều cao cho mobile */
             }
         }
     </style>
@@ -1543,7 +1547,7 @@
             // Dynamically set canvas width and height attributes based on screen size
             const isMobile = window.innerWidth <= 768;
             visualizerCanvasElement.width = isMobile ? 207 : 345; // Content width of 3D player container
-            visualizerCanvasElement.height = isMobile ? 38 : 75; // Height from CSS
+            visualizerCanvasElement.height = isMobile ? 100 : 150; // Cập nhật chiều cao canvas trong JS
 
             // Append elements in the desired order: close, title, visualizer, time
             titleDiv.appendChild(scrollContainer); // Add scroll container to title div
@@ -1606,7 +1610,7 @@
 
             const width = visualizerCanvas.width;
             const height = visualizerCanvas.height;
-            const centerY = height / 2;
+            const centerY = height - 30; // Đẩy đáy sóng lên 20px
 
             visualizerCtx.clearRect(0, 0, width, height); // Xóa canvas để nền trong suốt
 
@@ -1639,14 +1643,20 @@
 
                 // Biên độ sóng
                 // Dùng hàm mũ (Math.pow) để làm đỉnh sóng nhọn hơn và tách biệt rõ ràng hơn
-                const amplitude = Math.pow(value / 255, 3) * (height / 2) * 3;
+                const amplitude = Math.pow(value / 255, 3) * height * 0.5; // Giảm biên độ xuống một nửa
 
                 // Tạo nhiễu ngẫu nhiên (-1 đến 1)
                 const noise = (Math.random() - 0.5) * 2;
                 
                 // Độ lệch Y (chỉ lấy giá trị dương để vẽ lên trên)
-                const deltaY = Math.abs(noise * amplitude * noiseFactor);
+                let deltaY = Math.abs(noise * amplitude * noiseFactor);
                 
+                // Giới hạn chiều cao sóng để đỉnh cao nhất luôn cách lề trên (tên bài hát) ít nhất 10px
+                const maxWaveHeight = centerY - 20; // Giới hạn chiều cao tối đa của sóng (cách lề trên 20px)
+                if (deltaY > maxWaveHeight) {
+                    deltaY = maxWaveHeight;
+                }
+
                 visualizerCtx.lineTo(x, centerY - deltaY);
             }
             visualizerCtx.stroke();
@@ -1690,27 +1700,26 @@
                 duplicateText.remove();
             }
             titleElement.classList.remove('scrolling');
-            titleElement.style.removeProperty('--scroll-distance');
+            titleElement.style.removeProperty('--scroll-start');
+            titleElement.style.removeProperty('--scroll-end');
             titleElement.style.removeProperty('--scroll-duration');
             titleText.textContent = songName; // Ensure original text is set
 
-            // Always apply scrolling, regardless of text width
-            // Add duplicate text for continuous scrolling
-            duplicateText = document.createElement('span');
-            duplicateText.className = 'music-player-title-text-duplicate';
-            duplicateText.textContent = songName;
-            scrollContainer.appendChild(duplicateText);
+            const containerWidth = titleElement.offsetWidth;
+            const textWidth = titleText.offsetWidth;
 
-            // Calculate scroll distance: width of the original text + padding-right
-            // The animation scrolls the entire scrollContainer.
-            // The scroll-distance should be the width of the *first* titleText span,
-            // including its padding-right (30px).
-            const scrollDistance = titleText.offsetWidth;
-            const scrollSpeedPxPerSec = 30; // Adjust scroll speed (pixels per second)
+            // Start from the right edge of the container
+            const startPos = containerWidth;
+            // End when the text has completely moved out to the left
+            const endPos = -textWidth;
+
+            const scrollDistance = startPos - endPos;
+            const scrollSpeedPxPerSec = 60; // Tăng tốc độ một chút cho mượt
             const scrollDuration = (scrollDistance / scrollSpeedPxPerSec) * 1000; // in milliseconds
 
             titleElement.classList.add('scrolling');
-            titleElement.style.setProperty('--scroll-distance', `-${scrollDistance}px`);
+            titleElement.style.setProperty('--scroll-start', `${startPos}px`);
+            titleElement.style.setProperty('--scroll-end', `${endPos}px`);
             titleElement.style.setProperty('--scroll-duration', `${scrollDuration}ms`);
         }
         function restoreDefaultControls() {
