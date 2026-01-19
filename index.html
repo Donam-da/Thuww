@@ -60,6 +60,16 @@
             cursor: pointer;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
         }
+        .velocity-label {
+            color: white;
+            font-family: sans-serif;
+            font-weight: 100; /* Lightest font weight for a very thin look */
+            padding: 2px;
+            background: transparent;
+            font-size: 8px;
+            white-space: nowrap;
+            pointer-events: none; /* Make it non-interactive */
+        }
         #select-planet-btn {
             position: fixed;
             top: 20px;
@@ -149,15 +159,17 @@
         const allImageUrls = Array.from({length: totalImages}, (_, i) => `images/${i + 1}.png`);
         const usedImageUrls = new Set();
         const planets = [];
+        // Speeds are calculated relative to Earth's orbital period for a more realistic simulation.
+        // The base speed is adjusted for visual appeal.
         const planetData = [
-            { name: 'Sao Thủy', distance: 20, size: 1, color: 0xaaaaaa, speed: 0.0005 },
-            { name: 'Sao Kim', distance: 35, size: 1.5, color: 0xe8ab6f, speed: 0.0003 },
-            { name: 'Trái Đất', distance: 50, size: 1.6, color: 0x6f94e8, speed: 0.0002 },
-            { name: 'Sao Hỏa', distance: 70, size: 1.2, color: 0xe86f6f, speed: 0.00015 },
-            { name: 'Sao Mộc', distance: 100, size: 4, color: 0xd8caa0, speed: 0.00008 },
-            { name: 'Sao Thổ', distance: 140, size: 3.5, color: 0xead5a8, speed: 0.00006 },
-            { name: 'Sao Thiên Vương', distance: 180, size: 2.5, color: 0xa8e0ea, speed: 0.00004 },
-            { name: 'Sao Hải Vương', distance: 220, size: 2.4, color: 0x5c84f5, speed: 0.00002 }
+            { name: 'Sao Thủy', distance: 20, size: 1, color: 0xaaaaaa, speed: 0.00167, realSpeed: 47.87 },   // Period: 0.24 Earth years
+            { name: 'Sao Kim', distance: 35, size: 1.5, color: 0xe8ab6f, speed: 0.00065, realSpeed: 35.02 },    // Period: 0.62 Earth years
+            { name: 'Trái Đất', distance: 50, size: 1.6, color: 0x6f94e8, speed: 0.0004, realSpeed: 29.78 },     // Period: 1.00 Earth years
+            { name: 'Sao Hỏa', distance: 70, size: 1.2, color: 0xe86f6f, speed: 0.00021, realSpeed: 24.08 },    // Period: 1.88 Earth years
+            { name: 'Sao Mộc', distance: 100, size: 4, color: 0xd8caa0, speed: 0.000034, realSpeed: 13.07 },   // Period: 11.86 Earth years
+            { name: 'Sao Thổ', distance: 140, size: 3.5, color: 0xead5a8, speed: 0.000014, realSpeed: 9.69 },   // Period: 29.46 Earth years
+            { name: 'Sao Thiên Vương', distance: 180, size: 2.5, color: 0xa8e0ea, speed: 0.0000048, realSpeed: 6.81 },// Period: 84.01 Earth years
+            { name: 'Sao Hải Vương', distance: 220, size: 2.4, color: 0x5c84f5, speed: 0.0000024, realSpeed: 5.43 } // Period: 164.8 Earth years
         ];
 
         // --- Loading Manager ---
@@ -290,6 +302,14 @@
             const planetLabel = new THREE.CSS2DObject(planetDiv);
             planetLabel.position.set(0, data.size + 2, 0);
             planet.add(planetLabel);
+
+            // Create Velocity Label
+            const velocityDiv = document.createElement('div');
+            velocityDiv.className = 'velocity-label';
+            velocityDiv.textContent = `~${data.realSpeed} km/s`;
+            const velocityLabel = new THREE.CSS2DObject(velocityDiv);
+            velocityLabel.position.set(0, -(data.size + 1.5), 0); // Position it below the planet
+            planet.add(velocityLabel);
 
             // Tạo một hitbox hình cầu vô hình lớn hơn một chút so với hành tinh
             const hitboxGeometry = new THREE.SphereGeometry(data.size + 0.5, 32, 32); // Lớn hơn hành tinh 0.5 đơn vị
