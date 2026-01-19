@@ -563,7 +563,7 @@
         <div id="main-ui-controls">
             <div style="display: flex; flex-direction: column; gap: 5px; align-items: center;">
                 <button id="select-planet-btn">Hành tinh</button>
-                <button id="toggle-labels-btn">Ẩn Tên</button>
+                <button id="toggle-labels-btn">Ẩn tên</button>
             </div>
             <!-- <button id="overview-btn">Toàn cảnh</button> Removed from here -->
             <div id="music-controls-2d" style="display: none;">
@@ -585,7 +585,7 @@
             </div>
             <div style="display: flex; flex-direction: column; gap: 5px; align-items: center;">
                 <button id="select-song-btn">Chọn nhạc</button>
-                <button id="toggle-images-btn">Tắt Ảnh</button>
+                <button id="toggle-images-btn">Tắt ảnh</button>
             </div>
         </div>
         <!-- Existing overlays -->
@@ -1096,7 +1096,7 @@
             });
 
             // Update button text based on the *previous* state
-            toggleLabelsBtn.textContent = isCurrentlyHidden ? 'Ẩn Tên' : 'Hiện Tên';
+            toggleLabelsBtn.textContent = isCurrentlyHidden ? 'Ẩn tên' : 'Hiện tên';
         });
         
         // --- Music Player Logic ---
@@ -1243,11 +1243,15 @@
         let visualizerCtx = null;
 
         // Variables for visualizer color change speed
-        let barHues = [];
-        let lastColorChangeTime = 0;
-        const colorChangeIntervalMs = 2000; // Change colors every 2 seconds
-        let lastVisualizerUpdate = 0;
-        let peakData = [];
+        let lastColorChangeTime = 0; // Thời điểm cuối cùng màu sắc được thay đổi
+        const colorChangeIntervalMs = 2000; // Thời gian giữa các lần bắt đầu chuyển màu (2 giây)
+        const colorTransitionDurationMs = 1000; // Thời gian để hoàn thành một quá trình chuyển màu (1 giây)
+
+        let currentHueValue = 180; // Giá trị sắc độ (hue) hiện tại đang được hiển thị (0-359)
+        let startTransitionHue = 180; // Giá trị sắc độ khi bắt đầu một quá trình chuyển đổi
+        let targetTransitionHue = 180; // Giá trị sắc độ mục tiêu của quá trình chuyển đổi
+        let transitionStartTime = 0; // Thời điểm bắt đầu quá trình chuyển đổi màu
+        let transitionActive = false; // Cờ báo hiệu quá trình chuyển đổi đang diễn ra
 
         function initAudioContext() {
             if (!audioContext) {
@@ -1646,10 +1650,39 @@
 
             visualizerCtx.clearRect(0, 0, width, height); // Xóa canvas để nền trong suốt
 
+            // Kiểm tra xem đã đến lúc bắt đầu một quá trình chuyển màu mới chưa
+            const now = Date.now();
+            if (now - lastColorChangeTime > colorChangeIntervalMs) {
+                lastColorChangeTime = now;
+                startTransitionHue = currentHueValue; // Lấy sắc độ hiện tại làm điểm bắt đầu
+                targetTransitionHue = Math.floor(Math.random() * 360); // Chọn một sắc độ ngẫu nhiên mới làm mục tiêu
+                transitionStartTime = now; // Ghi lại thời điểm bắt đầu chuyển đổi
+                transitionActive = true; // Kích hoạt cờ chuyển đổi
+            }
+
+            // Tính toán sắc độ hiện tại dựa trên tiến độ chuyển đổi
+            if (transitionActive) {
+                const transitionElapsedTime = now - transitionStartTime;
+                if (transitionElapsedTime < colorTransitionDurationMs) {
+                    const progress = transitionElapsedTime / colorTransitionDurationMs;
+
+                    // Nội suy sắc độ, xử lý trường hợp vòng quanh bánh xe màu (ví dụ từ 350 độ đến 10 độ)
+                    let diff = targetTransitionHue - startTransitionHue;
+                    if (diff > 180) diff -= 360; // Đi theo chiều ngắn hơn trên bánh xe màu
+                    if (diff < -180) diff += 360; // Đi theo chiều ngắn hơn trên bánh xe màu
+                    currentHueValue = (startTransitionHue + diff * progress + 360) % 360; // Đảm bảo giá trị hue luôn dương
+                } else {
+                    // Quá trình chuyển đổi đã hoàn tất
+                    currentHueValue = targetTransitionHue;
+                    transitionActive = false;
+                }
+            }
+
+            const waveColor = `hsl(${currentHueValue}, 100%, 50%)`; // Tạo chuỗi màu HSL
             visualizerCtx.lineWidth = 0.3; // Nét mảnh như tia sét
-            visualizerCtx.strokeStyle = '#00ffff'; // Màu Cyan
+            visualizerCtx.strokeStyle = waveColor; // Sử dụng màu sắc động
             visualizerCtx.shadowBlur = 15; // Hiệu ứng phát sáng mạnh
-            visualizerCtx.shadowColor = '#00ffff';
+            visualizerCtx.shadowColor = waveColor; // Sử dụng màu sắc động
             visualizerCtx.lineJoin = 'round';
             visualizerCtx.lineCap = 'round';
 
