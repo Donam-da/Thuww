@@ -87,6 +87,7 @@
             font-family: Arial, sans-serif;
             font-size: 16px;
         }
+        /* Desktop styles for main-ui-controls */
         #planet-list-overlay {
             position: fixed;
             top: 60px; /* Định vị dưới nút "Chọn hành tinh" (top 20px + padding 10px + border 1px + khoảng cách) */
@@ -94,7 +95,7 @@
             width: fit-content; /* Chiều rộng vừa với nội dung */
             min-width: 180px; /* Đảm bảo chiều rộng tối thiểu, có thể điều chỉnh */
             /* max-height và overflow-y bị loại bỏ để hiển thị tất cả và bỏ thanh cuộn */
-            background-color: transparent; /* Nền của dropmenu trong suốt */
+            background-color: rgba(0,0,0,0.7); /* Nền của dropmenu */
             padding: 15px; /* Giảm khoảng đệm bên trong dropmenu */
             border-radius: 8px;
             box-shadow: 0 0 15px rgba(0,255,255,0.5); /* Hiệu ứng đổ bóng cho dropmenu */
@@ -145,7 +146,7 @@
             right: 20px; /* Align with the button */
             width: fit-content;
             min-width: 220px; /* Increased width for longer names */
-            background-color: transparent;
+            background-color: rgba(0,0,0,0.7);
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 0 15px rgba(0,255,255,0.5);
@@ -177,10 +178,10 @@
         /* --- 2D Music Controls Styles --- */
         #music-controls-2d {
             position: fixed;
-            top: 20px;
-            right: 150px; /* Position to the left of "Chọn nhạc" button */
-            z-index: 1001;
-            display: flex;
+            /* Position handled by #main-ui-controls on desktop */
+            /* Removed fixed positioning here */
+            /* display: flex; */ /* This will be set by JS when music is active */
+            /* z-index: 1001; */ /* Handled by parent */
             align-items: center;
             gap: 10px; /* Space between controls */
             background-color: rgba(0,0,0,0.5); /* Semi-transparent background */
@@ -291,6 +292,135 @@
             border-radius: 3px;
             border: none; /* Bỏ viền */
         }
+
+        /* New container for main UI buttons */
+        #main-ui-controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px; /* Extends across the top */
+            z-index: 1001;
+            display: flex;
+            justify-content: space-between; /* Distribute items */
+            align-items: center;
+            pointer-events: none; /* Allow clicks to pass through to the scene by default */
+        }
+
+        #main-ui-controls > * {
+            pointer-events: auto; /* Make children interactive */
+        }
+
+        /* Remove fixed positioning from individual buttons, let flexbox handle it */
+        #select-planet-btn,
+        #select-song-btn {
+            position: static;
+            margin: 0;
+        }
+
+        /* Remove fixed positioning from 2D music controls */
+        #music-controls-2d {
+            position: static;
+            margin: 0;
+        }
+
+        /* Mobile Layout (max-width: 768px) */
+        @media (max-width: 768px) {
+            /* Main UI Controls Bar at the bottom */
+            #main-ui-controls {
+                top: auto; /* Remove top positioning */
+                bottom: 10px; /* Position at the bottom */
+                left: 10px;
+                right: 10px;
+                justify-content: space-around; /* Evenly space buttons */
+                padding: 5px; /* Add some padding */
+                background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background for the bar */
+                border-radius: 8px;
+                border: 1px solid #3498db;
+            }
+
+            #select-planet-btn,
+            #select-song-btn {
+                padding: 8px 12px; /* Smaller padding */
+                font-size: 14px; /* Smaller font size */
+                border: 1px solid #3498db; /* Ensure border is visible */
+            }
+
+            #music-controls-2d {
+                padding: 3px 8px; /* Smaller padding */
+                gap: 5px; /* Smaller gap */
+                border: 1px solid #3498db; /* Ensure border is visible */
+            }
+
+            #music-controls-2d button {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+
+            #music-player-progress-container-2d {
+                width: 60px; /* Smaller progress bar */
+            }
+
+            /* Overlays for mobile (positioned above the bottom control bar) */
+            #planet-list-overlay,
+            #song-list-overlay {
+                top: auto; /* Remove top positioning */
+                bottom: 70px; /* Position above the bottom control bar */
+                left: 50%; /* Center horizontally */
+                transform: translateX(-50%); /* Center horizontally */
+                width: 90%; /* Take up most of the width */
+                max-width: 300px; /* Max width for larger phones */
+                min-width: unset; /* Remove min-width constraint */
+                padding: 10px; /* Adjust padding */
+                background-color: rgba(0,0,0,0.8); /* Darker background for readability */
+                box-shadow: 0 0 10px rgba(0,255,255,0.7); /* Slightly stronger shadow */
+            }
+
+            #close-dropmenu-btn,
+            #close-song-menu-btn {
+                top: 5px;
+                right: 5px;
+                font-size: 18px;
+            }
+
+            .planet-list-item,
+            .song-list-item {
+                padding: 8px; /* Smaller padding */
+                font-size: 14px;
+            }
+
+            /* Fullscreen overlay adjustments */
+            #close-btn {
+                top: 10px;
+                right: 10px;
+                font-size: 24px;
+            }
+
+            #download-btn {
+                bottom: 10px;
+                right: 10px;
+                padding: 5px 10px;
+                font-size: 14px;
+            }
+
+            /* 3D Music Player (internal styling) */
+            .music-player-container-3d {
+                width: 200px; /* Smaller width for mobile */
+                padding: 8px;
+            }
+            .music-player-title {
+                font-size: 12px;
+                height: 1.1em;
+                line-height: 1.1em;
+            }
+            .music-player-time {
+                font-size: 9px;
+            }
+            .music-player-visualizer {
+                width: 180px; /* Adjust visualizer width to match container */
+                height: 40px;
+            }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -316,8 +446,20 @@
     </div>
 
     <div id="main-scene">
-        <button id="select-planet-btn">Chọn hành tinh</button>
-        <button id="select-song-btn">Chọn nhạc</button>
+        <!-- New container for UI buttons -->
+        <div id="main-ui-controls">
+            <button id="select-planet-btn">Chọn hành tinh</button>
+            <div id="music-controls-2d" style="display: none;">
+                <button id="music-player-prev-2d">⏮</button>
+                <button id="music-player-play-pause-2d">▶</button>
+                <button id="music-player-next-2d">⏭</button>
+                <div id="music-player-progress-container-2d">
+                    <div id="music-player-progress-bar-2d"></div>
+                </div>
+            </div>
+            <button id="select-song-btn">Chọn nhạc</button>
+        </div>
+        <!-- Existing overlays -->
         <div id="planet-list-overlay">
             <span id="close-dropmenu-btn">&times;</span>
             <ul id="planet-selection-list" style="list-style: none; padding: 0; margin: 0;">
@@ -329,17 +471,6 @@
             <ul id="song-selection-list" style="list-style: none; padding: 0; margin: 0;">
                 <!-- Song items will be inserted here -->
             </ul>
-        </div>
-        <div id="music-controls-2d" style="display: none;">
-            <button id="music-player-prev-2d">⏮</button>
-            <button id="music-player-play-pause-2d">▶</button>
-            <button id="music-player-next-2d">⏭</button>
-            <div id="music-player-progress-container-2d">
-                <div id="music-player-progress-bar-2d"></div>
-            </div>
-        </div>
-
-
 
         <!-- Canvas and renderers will be appended here by Three.js -->
     </div>
