@@ -202,11 +202,24 @@
         let stars;
         function addStarfield() {
             const starGeometry = new THREE.BufferGeometry();
+
+            // Create a circular texture for the stars to make them round instead of square
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const context = canvas.getContext('2d');
+            context.beginPath();
+            context.arc(16, 16, 16, 0, 2 * Math.PI); // Draw a circle
+            context.fillStyle = 'white';
+            context.fill();
+            const starTexture = new THREE.CanvasTexture(canvas);
+
             const starMaterial = new THREE.PointsMaterial({
-                color: 0xffffff,
-                size: 1.2,
+                map: starTexture,
+                size: 1.5, // Slightly increased size for better visibility
                 transparent: true,
-                blending: THREE.AdditiveBlending
+                blending: THREE.AdditiveBlending,
+                depthWrite: false // Prevents rendering issues with transparency
             });
 
             const starVertices = [];
