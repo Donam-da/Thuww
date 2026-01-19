@@ -1204,6 +1204,11 @@
         let visualizerCanvas = null;
         let visualizerCtx = null;
 
+        // Variables for visualizer color change speed
+        let barHues = [];
+        let lastColorChangeTime = 0;
+        const colorChangeIntervalMs = 2000; // Change colors every 2 seconds
+
         function initAudioContext() {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -1622,15 +1627,26 @@
             const canvasWidth = visualizerCanvas.width;
             const canvasHeight = visualizerCanvas.height;
             const centerY = canvasHeight / 2;
+            
+            const numBarsPerSide = bufferLength;
 
-            // Chúng ta sẽ vẽ `bufferLength` thanh ở mỗi bên của trung tâm.
-            // Do đó, chiều rộng của mỗi thanh sẽ được tính dựa trên một nửa chiều rộng canvas.
-            const numBarsPerSide = bufferLength; // Số lượng thanh cho mỗi bên (trái hoặc phải)
+            // Initialize barHues if not already done or if bufferLength changes
+            if (barHues.length !== numBarsPerSide) {
+                barHues = new Array(numBarsPerSide).fill(0).map(() => Math.random() * 360);
+                lastColorChangeTime = Date.now(); // Reset timer
+            }
+
+            // Update bar hues periodically
+            if (Date.now() - lastColorChangeTime > colorChangeIntervalMs) {
+                for (let i = 0; i < numBarsPerSide; i++) {
+                    barHues[i] = Math.random() * 360;
+                }
+                lastColorChangeTime = Date.now();
+            }
             const barWidth = (canvasWidth / 2) / numBarsPerSide; // Chiều rộng thực của mỗi thanh
 
             for (let i = 0; i < numBarsPerSide; i++) {
-                // Tính toán màu sắc cho từng thanh riêng lẻ
-                const hue = (i / numBarsPerSide) * 360; // Thay đổi màu sắc theo chỉ số thanh (tạo hiệu ứng cầu vồng)
+                const hue = barHues[i]; // Use the pre-calculated hue
                 const lightness = 40 + (dataArray[i] / 255) * 30; // Thay đổi độ sáng dựa trên cường độ âm thanh (từ 40% đến 70%)
                 // Chuẩn hóa dữ liệu tần số về khoảng 0-1, sau đó áp dụng hàm mũ (power)
                 // để làm nổi bật các âm thanh mạnh hơn và giảm bớt các âm thanh yếu,
