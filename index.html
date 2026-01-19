@@ -85,6 +85,7 @@
             font-family: Arial, sans-serif;
             font-size: 16px;
             /* Đã loại bỏ định vị cố định */
+            display: block; /* Đảm bảo nút luôn hiển thị */
         }
         #overview-btn { /* Kiểu dáng cho nút mới */
             position: fixed; /* Định vị cố định */
@@ -98,6 +99,7 @@
             border-radius: 5px;
             cursor: pointer;
             font-family: Arial, sans-serif;
+            display: block; /* Đảm bảo nút luôn hiển thị */
             font-size: 16px;
         }
         /* Desktop styles for main-ui-controls */
@@ -510,7 +512,7 @@
             <ul id="song-selection-list" style="list-style: none; padding: 0; margin: 0;">
                 <!-- Song items will be inserted here -->
             </ul>
-
+        </div> <!-- Đóng thẻ div cho song-list-overlay -->
         <button id="overview-btn">Toàn cảnh</button> <!-- Moved here -->
         <!-- Canvas and renderers will be appended here by Three.js -->
     </div>
@@ -557,6 +559,8 @@
                 loaderOverlay.style.display = 'none';
                 // Show the main scene and start the animation
                 document.getElementById('main-scene').style.display = 'block';
+                // Nút "Toàn cảnh" giờ đã được đặt đúng vị trí và có CSS display: block, nên không cần setTimeout hay console.log nữa.
+                // console.log('Main scene displayed. Overview button display:', document.getElementById('overview-btn').style.display); // Debugging (có thể xóa)
                 animate();
             }, 500);
         };
@@ -750,8 +754,6 @@
         const homeControlsTarget = new THREE.Vector3(0, 0, 0);
         const finalCameraPosition = new THREE.Vector3();       // Final camera position near planet
 
-        // Định nghĩa chế độ xem "Toàn cảnh"
-        const overviewCameraPosition = new THREE.Vector3(0, 500, 1000); // Điều chỉnh khi cần
         const overviewControlsTarget = new THREE.Vector3(0, 0, 0);
         const finalControlsTarget = new THREE.Vector3();        // Final controls target (planet's world position)
         const TOUCH_DELAY = 300; // Milliseconds to prevent ghost clicks
@@ -760,6 +762,46 @@
         function easeInOutSine(t) {
             return 0.5 - 0.5 * Math.cos(t * Math.PI);
         }
+
+        // Định nghĩa chế độ xem "Toàn cảnh"
+        const maxPlanetDistance = planetData[planetData.length - 1].distance; // Lấy khoảng cách của hành tinh ngoài cùng
+        let overviewCameraPosition; // Khai báo là 'let' để có thể gán lại
+
+        function calculateOverviewCameraPosition() {
+            const isMobile = window.innerWidth <= 768;
+            // Điều chỉnh padding theo đơn vị thế giới. Giá trị này sẽ ảnh hưởng đến mức độ zoom.
+            // Giá trị lớn hơn sẽ zoom ra xa hơn, giá trị nhỏ hơn sẽ zoom gần hơn.
+            // Đây là một giá trị heuristic để mô phỏng "cách lề 50px/10px".
+            const worldPadding = isMobile ? 30 : 70; // Giảm padding để zoom gần hơn: 30 cho mobile, 70 cho desktop
+
+            // Kích thước mục tiêu (nửa chiều rộng/chiều cao) mà camera cần nhìn thấy
+            const targetHalfWidth = maxPlanetDistance + worldPadding;
+            const targetHalfHeight = maxPlanetDistance + worldPadding;
+
+            // Tính toán FOV ngang dựa trên FOV dọc và tỷ lệ khung hình
+            const vFovRad = THREE.MathUtils.degToRad(camera.fov);
+            const hFovRad = 2 * Math.atan(Math.tan(vFovRad / 2) * camera.aspect);
+
+            // Tính toán Z cần thiết để vừa với chiều ngang
+            // Z = (chiều rộng mục tiêu / 2) / tan(hFov / 2)
+            let zHorizontal = targetHalfWidth / Math.tan(hFovRad / 2);
+            
+            // Tính toán Z cần thiết để vừa với chiều dọc
+            // Z = (chiều cao mục tiêu / 2) / tan(vFov / 2)
+            let zVertical = targetHalfHeight / Math.tan(vFovRad / 2);
+
+            // Lấy giá trị Z lớn hơn để đảm bảo cả hai chiều đều vừa
+            let finalZ = Math.max(zHorizontal, zVertical);
+
+            // Điều chỉnh Y để duy trì góc nhìn tương tự như vị trí ban đầu (0, 500, 1000)
+            // Tỷ lệ ban đầu: Y/Z = 500/1000 = 0.5
+            const finalY = finalZ * 0.5; // Giữ tỷ lệ Y/Z nhất quán
+
+            return new THREE.Vector3(0, finalY, finalZ);
+        }
+
+        // Khởi tạo vị trí camera toàn cảnh ban đầu
+        overviewCameraPosition = calculateOverviewCameraPosition();
 
         function onInteraction(event) {
             console.log('onInteraction called, event type:', event.type); // Debugging line
@@ -1820,36 +1862,18 @@
         }
 
         // --- Event Listeners & Initial Calls ---
-        window.addEventListener('resize', () => {
+        // Gộp listener resize vào đây để tránh trùng lặp
+        window.addEventListener('resize', () => { 
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            // Recalculate overview position on resize
+            overviewCameraPosition = calculateOverviewCameraPosition();
+            // Nếu đang ở chế độ toàn cảnh, kích hoạt lại hoạt ảnh để cập nhật vị trí
+            if (cameraAnimationPhase === 3) {
+                animateCameraToOverview();
+            }
         }, false);
         
         labelRenderer.domElement.addEventListener('click', onInteraction, true); // Use capturing phase for click
-        labelRenderer.domElement.addEventListener('touchend', onInteraction, true); // Use capturing phase for touchend
-
-        // Tự động mở khóa chế độ xem nếu người dùng tương tác thủ công với controls
-        controls.addEventListener('start', () => {
-            if (isViewLocked && !isCameraAnimating) {
-                const previouslyLockedPlanet = lockedPlanet; // Store before nulling
-                // If user manually interacts, unlock view
-                lockedPlanet = null;
-                isViewLocked = false;
-                restoreDefaultControls(); // Khôi phục cài đặt điều khiển mặc định
-                console.log('Chế độ xem đã được mở khóa do người dùng tương tác.');
-                // Nếu hành tinh đang ở trạng thái khóa (Trạng thái 1 hoặc Trạng thái 4),
-                // chuyển nó sang trạng thái "hiện ảnh, bỏ khóa" (Trạng thái 2).
-                if (previouslyLockedPlanet && (previouslyLockedPlanet.userData.interactionState === 1 || previouslyLockedPlanet.userData.interactionState === 4)) {
-                    previouslyLockedPlanet.userData.interactionState = 2;
-                }
-            }
-        });
-
-        
-        // Note: The animate() call is now in loadingManager.onLoad
-    </script>
-
-</body>
-</html>
