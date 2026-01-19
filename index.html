@@ -205,7 +205,10 @@
         .music-player-buttons-row { /* Class mới cho hàng nút điều khiển */
             display: flex;
             gap: 10px; /* Khoảng cách giữa các nút */
+            justify-content: center; /* Căn giữa các nút trong hàng */
             margin-top: 5px; /* Khoảng cách từ thanh tiến trình */
+            width: 300px; /* Đặt chiều rộng bằng thanh tiến trình trên desktop */
+            width: 200px; /* Giảm chiều rộng cho cân đối */
         }
         #music-controls-2d button {
             background: none;
@@ -237,10 +240,9 @@
             background-color: rgba(255, 255, 255, 0.2);
             border-radius: 5px;
             height: 5px;
-            height: 10px; /* Tăng độ dày lên gấp đôi */
             cursor: pointer;
-            width: 150px; /* Tăng chiều rộng cho thanh tiến trình trên desktop */
-            width: 300px; /* Tăng chiều dài lên gấp đôi */
+            width: 245px; /* Đặt chiều rộng lên 245px cho desktop */
+            margin: 0 auto; /* Căn giữa theo chiều ngang trong container cha */
         }
         #music-player-progress-bar-2d {
             background-color: #3498db;
@@ -321,7 +323,7 @@
             display: flex;
             justify-content: space-between; /* Distribute items */
             align-items: center;
-            background-color: rgba(0, 0, 0, 0.7); /* Giữ nền để dễ nhìn thấy */
+            background-color: transparent; /* Làm nền trong suốt */
             border: none; /* Bỏ viền */
             pointer-events: none; /* Allow clicks to pass through to the scene by default */
         }
@@ -358,7 +360,7 @@
                 align-items: center; /* Vertically align items within the bar */
                 gap: 10px; /* Add spacing between items/rows when wrapped */
                 padding: 5px; /* Add some padding */
-                background-color: rgba(0, 0, 0, 0.6); /* Giữ nền */
+                background-color: transparent; /* Làm nền trong suốt */
                 border-radius: 8px;
                 border: none; /* Bỏ viền */
             }
@@ -378,13 +380,17 @@
             }
 
             #music-controls-2d button {
+                /* Kích thước nút đã được giữ nguyên */
                 width: 28px; /* Giữ kích thước */
                 height: 28px; /* Giữ kích thước */
                 font-size: 12px;
             }
 
             #music-player-progress-container-2d {
-                width: 200px; /* Tăng chiều rộng lên gấp đôi cho thanh tiến trình trên mobile */
+                width: 172px; /* Đặt chiều rộng lên 172px cho mobile */
+            }
+            .music-player-buttons-row {
+                width: 172px; /* Đặt chiều rộng lên 172px cho mobile */
             }
 
             #overview-btn { /* Kiểu dáng mobile cho nút mới */
@@ -486,7 +492,7 @@
     <div id="main-scene">
         <!-- New container for UI buttons -->
         <div id="main-ui-controls">
-            <button id="select-planet-btn">Chọn hành tinh</button>
+            <button id="select-planet-btn">Hành tinh</button>
             <!-- <button id="overview-btn">Toàn cảnh</button> Removed from here -->
             <div id="music-controls-2d" style="display: none;"> <!-- display: none sẽ được JS thay đổi thành flex -->
                 <div id="music-player-progress-container-2d">
