@@ -120,6 +120,135 @@
         .planet-list-item:hover {
             background-color: rgba(0,0,0,0.7); /* Darker on hover */
         }
+
+        /* --- Music Player Styles --- */
+        #select-song-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px; /* Position on the top right */
+            z-index: 1001;
+            padding: 10px 15px;
+            background-color: transparent;
+            color: white;
+            border: 1px solid #3498db;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+        }
+        #song-list-overlay {
+            position: fixed;
+            top: 60px;
+            right: 20px; /* Align with the button */
+            width: fit-content;
+            min-width: 220px; /* Increased width for longer names */
+            background-color: transparent;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,255,255,0.5);
+            z-index: 1002;
+            display: none; /* Hidden by default */
+            font-family: Arial, sans-serif;
+        }
+        #close-song-menu-btn {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 1003;
+        }
+        .song-list-item {
+            color: white;
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: rgba(0,0,0,0.5);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .song-list-item:hover {
+            background-color: rgba(0,0,0,0.7);
+        }
+
+        /* --- 3D Music Player Styles --- */
+        .music-player-container-3d {
+            background-color: rgba(10, 20, 30, 0.8);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 15px;
+            width: 400px;
+            color: white;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            position: relative;
+            pointer-events: auto; /* Allow interaction with the player */
+        }
+        .music-player-close-btn {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        .music-player-close-btn:hover {
+            opacity: 1;
+        }
+        .music-player-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .music-player-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .music-player-controls button {
+            background: none;
+            border: 1px solid white;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .music-player-controls button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .music-player-progress-container {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            height: 6px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .music-player-progress-bar {
+            background-color: #3498db;
+            height: 100%;
+            width: 0%;
+            border-radius: 5px;
+        }
+        .music-player-time {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-top: 5px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -144,14 +273,23 @@
 
     <div id="main-scene">
         <button id="select-planet-btn">Chọn hành tinh</button>
+        <button id="select-song-btn">Chọn nhạc</button>
         <div id="planet-list-overlay">
             <span id="close-dropmenu-btn">&times;</span>
             <ul id="planet-selection-list" style="list-style: none; padding: 0; margin: 0;">
                 <!-- Planet items will be inserted here -->
             </ul>
         </div>
+        <div id="song-list-overlay">
+            <span id="close-song-menu-btn">&times;</span>
+            <ul id="song-selection-list" style="list-style: none; padding: 0; margin: 0;">
+                <!-- Song items will be inserted here -->
+            </ul>
+        </div>
         <!-- Canvas and renderers will be appended here by Three.js -->
     </div>
+
+    <audio id="background-music" loop></audio>
 
     <script>
         // --- Image & Planet Data ---
@@ -500,7 +638,14 @@
         }
         // Thêm trình lắng nghe sự kiện để đóng dropmenu khi nhấn phím ESC
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && planetListOverlay.style.display === 'flex') hidePlanetList();
+            if (event.key === 'Escape') {
+                if (planetListOverlay.style.display === 'flex') {
+                    hidePlanetList();
+                }
+                if (isSongListOpen) {
+                    hideSongList();
+                }
+            }
         });
 
         function handleOutsideInteraction(event) {
@@ -541,6 +686,233 @@
             });
         }
         
+        // --- Music Player Logic ---
+        // --- CẤU HÌNH NHẠC ---
+        // 1. Đặt tên các file nhạc của bạn theo thứ tự: music1.mp3, music2.mp3, ... và đặt chúng vào thư mục 'music'.
+        // 2. Cập nhật số `totalMusicFiles` dưới đây cho khớp với tổng số file nhạc bạn có.
+        const totalMusicFiles = 1; // <-- THAY ĐỔI SỐ NÀY
+
+        // Tự động tạo danh sách bài hát. Sau này bạn có thể gán tên cụ thể cho từng bài.
+        const songs = [];
+        for (let i = 1; i <= totalMusicFiles; i++) {
+            songs.push({
+                name: `Bài hát ${i}`, // Tên hiển thị trong menu, ví dụ: "Bài hát 1"
+                // name: "Tên bài hát thực tế", // Bạn có thể thay thế dòng trên bằng dòng này để đặt tên cụ thể
+                file: `music/music${i}.mp3` // Đường dẫn đến file
+            });
+        }
+
+        const audioPlayer = document.getElementById('background-music');
+        const selectSongBtn = document.getElementById('select-song-btn');
+        const songListOverlay = document.getElementById('song-list-overlay');
+        const songSelectionList = document.getElementById('song-selection-list');
+        const closeSongMenuBtn = document.getElementById('close-song-menu-btn');
+        let isSongListOpen = false;
+        
+        // New variables for the 3D music player
+        let musicPlayerObject = null;
+        let currentSongIndex = -1;
+
+        function playSong(file) {
+            audioPlayer.src = file;
+            audioPlayer.play().catch(error => {
+                console.log("Phát nhạc bị chặn bởi trình duyệt. Cần người dùng tương tác để bắt đầu.", error);
+                // Trình duyệt hiện đại thường chặn tự động phát âm thanh.
+                // Âm thanh sẽ chỉ phát sau khi người dùng click vào một thứ gì đó trên trang.
+            });
+        }
+
+        function populateSongList() {
+            songSelectionList.innerHTML = ''; // Clear previous list
+            songs.forEach(song => {
+                const listItem = document.createElement('li');
+                listItem.className = 'song-list-item';
+                listItem.textContent = song.name;
+                listItem.addEventListener('click', () => {
+                    const songIndex = songs.findIndex(s => s.file === song.file);
+                    if (songIndex !== -1) {
+                        showMusicPlayer(songIndex);
+                    }
+                    hideSongList(); // Close the selection menu
+                });
+                songSelectionList.appendChild(listItem);
+            });
+        }
+
+        function showSongList() {
+            songListOverlay.style.display = 'block';
+            isSongListOpen = true;
+            populateSongList();
+            // Add global listener to close menu
+            document.addEventListener('click', handleOutsideSongInteraction, true);
+            document.addEventListener('touchend', handleOutsideSongInteraction, true);
+        }
+
+        function hideSongList() {
+            songListOverlay.style.display = 'none';
+            isSongListOpen = false;
+            // Remove global listener
+            document.removeEventListener('click', handleOutsideSongInteraction, true);
+            document.removeEventListener('touchend', handleOutsideSongInteraction, true);
+        }
+
+        function handleOutsideSongInteraction(event) {
+            if (isSongListOpen && !songListOverlay.contains(event.target) && !selectSongBtn.contains(event.target)) {
+                hideSongList();
+            }
+        }
+
+        selectSongBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            isSongListOpen ? hideSongList() : showSongList();
+        });
+
+        closeSongMenuBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            hideSongList();
+        });
+
+        // --- 3D Music Player Functions ---
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function hideMusicPlayer() {
+            if (musicPlayerObject) {
+                scene.remove(musicPlayerObject);
+                musicPlayerObject.element.remove(); // Clean up the DOM element
+                musicPlayerObject = null;
+            }
+            audioPlayer.pause();
+            audioPlayer.src = '';
+            currentSongIndex = -1;
+        }
+
+        function showMusicPlayer(songIndex) {
+            if (musicPlayerObject) {
+                hideMusicPlayer();
+            }
+
+            currentSongIndex = songIndex;
+            const song = songs[currentSongIndex];
+            if (!song) return;
+
+            // --- Create Player HTML Elements ---
+            const playerContainer = document.createElement('div');
+            playerContainer.className = 'music-player-container-3d';
+
+            const closeBtn = document.createElement('span');
+            closeBtn.className = 'music-player-close-btn';
+            closeBtn.innerHTML = '&times;';
+            closeBtn.onclick = hideMusicPlayer;
+
+            const title = document.createElement('div');
+            title.className = 'music-player-title';
+            title.textContent = song.name;
+            title.title = song.name;
+
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'music-player-controls';
+
+            const prevBtn = document.createElement('button');
+            prevBtn.innerHTML = '⏮';
+            prevBtn.onclick = () => {
+                const newIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+                showMusicPlayer(newIndex);
+            };
+
+            const playPauseBtn = document.createElement('button');
+            playPauseBtn.id = 'music-player-play-pause';
+            playPauseBtn.innerHTML = '▶';
+
+            const nextBtn = document.createElement('button');
+            nextBtn.innerHTML = '⏭';
+            nextBtn.onclick = () => {
+                const newIndex = (currentSongIndex + 1) % songs.length;
+                showMusicPlayer(newIndex);
+            };
+
+            controlsDiv.append(prevBtn, playPauseBtn, nextBtn);
+
+            const progressContainer = document.createElement('div');
+            progressContainer.className = 'music-player-progress-container';
+            const progressBar = document.createElement('div');
+            progressBar.className = 'music-player-progress-bar';
+            progressContainer.appendChild(progressBar);
+
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'music-player-time';
+            const currentTimeSpan = document.createElement('span');
+            currentTimeSpan.id = 'music-player-current-time';
+            currentTimeSpan.textContent = '0:00';
+            const totalTimeSpan = document.createElement('span');
+            totalTimeSpan.id = 'music-player-total-time';
+            totalTimeSpan.textContent = '0:00';
+            timeDiv.append(currentTimeSpan, totalTimeSpan);
+
+            playerContainer.append(closeBtn, title, controlsDiv, progressContainer, timeDiv);
+
+            // --- Logic for Player ---
+            playPauseBtn.onclick = () => {
+                if (audioPlayer.paused) {
+                    audioPlayer.play();
+                } else {
+                    audioPlayer.pause();
+                }
+            };
+
+            progressContainer.onclick = (e) => {
+                const rect = progressContainer.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const percentage = clickX / rect.width;
+                if (audioPlayer.duration) {
+                    audioPlayer.currentTime = audioPlayer.duration * percentage;
+                }
+            };
+
+            // --- Create and Position 2D Object ---
+            musicPlayerObject = new THREE.CSS2DObject(playerContainer);
+            
+            const distance = 200;
+            const positionVector = new THREE.Vector3();
+            camera.getWorldDirection(positionVector);
+            positionVector.multiplyScalar(distance);
+            positionVector.add(camera.position);
+            
+            const downVector = new THREE.Vector3(0, -1, 0);
+            downVector.applyQuaternion(camera.quaternion);
+            downVector.multiplyScalar(distance * 0.35);
+            positionVector.add(downVector);
+
+            musicPlayerObject.position.copy(positionVector);
+            scene.add(musicPlayerObject);
+            playSong(song.file);
+        }
+
+        function updateMusicPlayerUI() {
+            if (!musicPlayerObject || !audioPlayer.duration) return;
+            const playPauseBtn = document.getElementById('music-player-play-pause');
+            const progressBar = musicPlayerObject.element.querySelector('.music-player-progress-bar');
+            const currentTimeSpan = document.getElementById('music-player-current-time');
+            const totalTimeSpan = document.getElementById('music-player-total-time');
+            if (playPauseBtn) playPauseBtn.innerHTML = audioPlayer.paused ? '▶' : '❚❚';
+            if (progressBar) progressBar.style.width = `${(audioPlayer.currentTime / audioPlayer.duration) * 100}%`;
+            if (currentTimeSpan) currentTimeSpan.textContent = formatTime(audioPlayer.currentTime);
+            if (totalTimeSpan) totalTimeSpan.textContent = formatTime(audioPlayer.duration);
+        }
+
+        audioPlayer.addEventListener('timeupdate', updateMusicPlayerUI);
+        audioPlayer.addEventListener('loadedmetadata', updateMusicPlayerUI);
+        audioPlayer.addEventListener('play', updateMusicPlayerUI);
+        audioPlayer.addEventListener('pause', updateMusicPlayerUI);
+        audioPlayer.addEventListener('ended', () => {
+            const newIndex = (currentSongIndex + 1) % songs.length;
+            showMusicPlayer(newIndex);
+        });
+
         function restoreDefaultControls() {
             controls.enablePan = true;
             controls.minDistance = 10;
@@ -959,5 +1331,6 @@
         
         // Note: The animate() call is now in loadingManager.onLoad
     </script>
+
 </body>
 </html>
