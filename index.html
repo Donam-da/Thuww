@@ -174,6 +174,37 @@
         .song-list-item:hover {
             background-color: rgba(0,0,0,0.7);
         }
+        /* --- 2D Music Controls Styles --- */
+        #music-controls-2d {
+            position: fixed;
+            top: 20px;
+            right: 150px; /* Position to the left of "Chọn nhạc" button */
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Space between controls */
+            background-color: rgba(0,0,0,0.5); /* Semi-transparent background */
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #3498db;
+        }
+        #music-controls-2d button {
+            background: none;
+            border: 1px solid white;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        #music-controls-2d button:hover {
+            background-color: rgba(0,0,0,0.7);
+        }
         #music-player-scene-container {
             position: fixed;
             top: 0;
@@ -183,6 +214,20 @@
             z-index: 1;
             pointer-events: none; /* Cho phép click xuyên qua để tương tác với scene chính */
         }
+        #music-player-progress-container-2d {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            height: 5px;
+            cursor: pointer;
+            width: 80px; /* Fixed width for the progress bar */
+        }
+        #music-player-progress-bar-2d {
+            background-color: #3498db;
+            height: 100%;
+            width: 0%;
+            border-radius: 5px;
+        }
+
 
         /* --- 3D Music Player Styles --- */
         .music-player-container-3d {
@@ -217,43 +262,6 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-        }
-        .music-player-controls {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 8px;
-        }
-        .music-player-controls button {
-            background: none;
-            border: 1px solid white;
-            color: white;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            font-size: 14px;
-            cursor: pointer;
-            margin: 0 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.2s;
-        }
-        .music-player-controls button:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-        .music-player-progress-container {
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 5px;
-            height: 5px;
-            cursor: pointer;
-            width: 100%;
-        }
-        .music-player-progress-bar {
-            background-color: #3498db;
-            height: 100%;
-            width: 0%;
-            border-radius: 5px;
         }
         .music-player-time {
             display: flex;
@@ -300,6 +308,17 @@
                 <!-- Song items will be inserted here -->
             </ul>
         </div>
+        <div id="music-controls-2d" style="display: none;">
+            <button id="music-player-prev-2d">⏮</button>
+            <button id="music-player-play-pause-2d">▶</button>
+            <button id="music-player-next-2d">⏭</button>
+            <div id="music-player-progress-container-2d">
+                <div id="music-player-progress-bar-2d"></div>
+            </div>
+        </div>
+
+
+
         <!-- Canvas and renderers will be appended here by Three.js -->
     </div>
 
@@ -731,6 +750,13 @@
         const closeSongMenuBtn = document.getElementById('close-song-menu-btn');
         let isSongListOpen = false;
         
+        // References for the new 2D music controls
+        const musicControls2D = document.getElementById('music-controls-2d');
+        const prevBtn2D = document.getElementById('music-player-prev-2d');
+        const playPauseBtn2D = document.getElementById('music-player-play-pause-2d');
+        const nextBtn2D = document.getElementById('music-player-next-2d');
+        const progressContainer2D = document.getElementById('music-player-progress-container-2d');
+        const progressBar2D = document.getElementById('music-player-progress-bar-2d');
         // New variables for the 3D music player
         let musicPlayerObject = null;
         let currentSongIndex = -1;
@@ -752,6 +778,7 @@
                 listItem.textContent = song.name;
                 listItem.addEventListener('click', () => {
                     const songIndex = songs.findIndex(s => s.file === song.file);
+                    audioPlayer.pause(); // Pause current song before showing new player
                     if (songIndex !== -1) {
                         showMusicPlayer(songIndex);
                     }
@@ -764,6 +791,7 @@
         function showSongList() {
             songListOverlay.style.display = 'block';
             isSongListOpen = true;
+            musicControls2D.style.display = 'none'; // Hide 2D controls when song list is open
             populateSongList();
             // Add global listener to close menu
             document.addEventListener('click', handleOutsideSongInteraction, true);
@@ -773,6 +801,7 @@
         function hideSongList() {
             songListOverlay.style.display = 'none';
             isSongListOpen = false;
+            if (currentSongIndex !== -1) musicControls2D.style.display = 'flex'; // Show 2D controls if a song is selected
             // Remove global listener
             document.removeEventListener('click', handleOutsideSongInteraction, true);
             document.removeEventListener('touchend', handleOutsideSongInteraction, true);
@@ -794,8 +823,43 @@
             hideSongList();
         });
 
-        // --- 3D Music Player Functions ---
+        function show2DMusicControls() {
+            musicControls2D.style.display = 'flex';
 
+            playPauseBtn2D.onclick = () => {
+                if (audioPlayer.paused) {
+                    audioPlayer.play();
+                } else {
+                    audioPlayer.pause();
+                }
+            };
+
+            prevBtn2D.onclick = () => {
+                const newIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+                showMusicPlayer(newIndex);
+            };
+
+            nextBtn2D.onclick = () => {
+                const newIndex = (currentSongIndex + 1) % songs.length;
+                showMusicPlayer(newIndex);
+            };
+
+            progressContainer2D.onclick = (e) => {
+                const rect = progressContainer2D.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const percentage = clickX / rect.width;
+                if (audioPlayer.duration) {
+                    audioPlayer.currentTime = audioPlayer.duration * percentage;
+                }
+            };
+            updateMusicPlayerUI(); // Initial UI update for 2D controls
+        }
+
+        function hide2DMusicControls() {
+            musicControls2D.style.display = 'none';
+        }
+
+        // --- 3D Music Player Functions ---
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
@@ -808,6 +872,7 @@
                 musicPlayerObject.element.remove(); // Clean up the DOM element
                 musicPlayerObject = null;
             }
+            hide2DMusicControls(); // Hide 2D controls when 3D player is hidden
             audioPlayer.pause();
             audioPlayer.src = '';
             currentSongIndex = -1;
@@ -836,35 +901,6 @@
             title.textContent = song.name;
             title.title = song.name;
 
-            const controlsDiv = document.createElement('div');
-            controlsDiv.className = 'music-player-controls';
-
-            const prevBtn = document.createElement('button');
-            prevBtn.innerHTML = '⏮';
-            prevBtn.onclick = () => {
-                const newIndex = (currentSongIndex - 1 + songs.length) % songs.length;
-                showMusicPlayer(newIndex);
-            };
-
-            const playPauseBtn = document.createElement('button');
-            playPauseBtn.id = 'music-player-play-pause';
-            playPauseBtn.innerHTML = '▶';
-
-            const nextBtn = document.createElement('button');
-            nextBtn.innerHTML = '⏭';
-            nextBtn.onclick = () => {
-                const newIndex = (currentSongIndex + 1) % songs.length;
-                showMusicPlayer(newIndex);
-            };
-
-            controlsDiv.append(prevBtn, playPauseBtn, nextBtn);
-
-            const progressContainer = document.createElement('div');
-            progressContainer.className = 'music-player-progress-container';
-            const progressBar = document.createElement('div');
-            progressBar.className = 'music-player-progress-bar';
-            progressContainer.appendChild(progressBar);
-
             const timeDiv = document.createElement('div');
             timeDiv.className = 'music-player-time';
             const currentTimeSpan = document.createElement('span');
@@ -872,28 +908,10 @@
             currentTimeSpan.textContent = '0:00';
             const totalTimeSpan = document.createElement('span');
             totalTimeSpan.id = 'music-player-total-time';
-            totalTimeSpan.textContent = '0:00';
-            timeDiv.append(currentTimeSpan, totalTimeSpan);
+            totalTimeSpan.textContent = '0:00'; // Will be updated by loadedmetadata
+            timeDiv.append(currentTimeSpan, totalTimeSpan); // Append time spans to the 3D player's time div
 
-            playerContainer.append(closeBtn, title, controlsDiv, progressContainer, timeDiv);
-
-            // --- Logic for Player ---
-            playPauseBtn.onclick = () => {
-                if (audioPlayer.paused) {
-                    audioPlayer.play();
-                } else {
-                    audioPlayer.pause();
-                }
-            };
-
-            progressContainer.onclick = (e) => {
-                const rect = progressContainer.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const percentage = clickX / rect.width;
-                if (audioPlayer.duration) {
-                    audioPlayer.currentTime = audioPlayer.duration * percentage;
-                }
-            };
+            playerContainer.append(closeBtn, title, timeDiv); // Only title and time for 3D player
 
             // --- Create and Position 2D Object ---
             musicPlayerObject = new THREE.CSS2DObject(playerContainer);
@@ -904,19 +922,20 @@
 
             musicPlayerObject.position.copy(playerPosition);
             musicPlayerScene.add(musicPlayerObject);
+            show2DMusicControls(); // Show the 2D controls
             playSong(song.file);
         }
 
         function updateMusicPlayerUI() {
-            if (!musicPlayerObject || !audioPlayer.duration) return;
-            const playerContainer = musicPlayerObject.element;
-            const playPauseBtn = document.getElementById('music-player-play-pause');
-            const progressBar = playerContainer.querySelector('.music-player-progress-bar');
-            const currentTimeSpan = document.getElementById('music-player-current-time');
-            const totalTimeSpan = document.getElementById('music-player-total-time');
+            if (!audioPlayer.duration) return;
 
-            if (playPauseBtn) playPauseBtn.innerHTML = audioPlayer.paused ? '▶' : '❚❚';
-            if (progressBar) progressBar.style.width = `${(audioPlayer.currentTime / audioPlayer.duration) * 100}%`;
+            // Update 2D controls
+            if (playPauseBtn2D) playPauseBtn2D.innerHTML = audioPlayer.paused ? '▶' : '❚❚';
+            if (progressBar2D) progressBar2D.style.width = `${(audioPlayer.currentTime / audioPlayer.duration) * 100}%`;
+
+            // Update 3D player's time display (if it exists)
+            const currentTimeSpan = musicPlayerObject ? musicPlayerObject.element.querySelector('#music-player-current-time') : null;
+            const totalTimeSpan = musicPlayerObject ? musicPlayerObject.element.querySelector('#music-player-total-time') : null;
             if (currentTimeSpan) currentTimeSpan.textContent = formatTime(audioPlayer.currentTime);
             if (totalTimeSpan) totalTimeSpan.textContent = formatTime(audioPlayer.duration);
         }
