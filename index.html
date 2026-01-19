@@ -591,6 +591,9 @@
                 loaderOverlay.style.display = 'none';
                 // Show the main scene and start the animation
                 document.getElementById('main-scene').style.display = 'block';
+                // Tự động chạy một bài hát ngẫu nhiên khi tải xong
+                const randomIndex = Math.floor(Math.random() * songs.length);
+                showMusicPlayer(randomIndex);
                 // Nút "Toàn cảnh" giờ đã được đặt đúng vị trí và có CSS display: block, nên không cần setTimeout hay console.log nữa.
                 // console.log('Main scene displayed. Overview button display:', document.getElementById('overview-btn').style.display); // Debugging (có thể xóa)
                 animate();
@@ -1029,6 +1032,56 @@
         let bufferLength = null;
         let audioSource = null; // To hold the MediaElementSourceNode
         
+        // Global flags for autoplay handling
+        let hasUserInteracted = false;
+        let songToPlayAfterInteraction = null; // Stores the file path of the song to play
+
+        // Function to attempt playing a queued song after user interaction
+        function attemptPlayQueuedSong() {
+            if (songToPlayAfterInteraction) { // Check if there's a song queued
+                // Always try to resume AudioContext if it's not already running
+                if (audioContext && audioContext.state !== 'running') {
+                    audioContext.resume().then(() => {
+                        console.log("AudioContext resumed by user interaction.");
+                        // Now try to play the audio element
+                        audioPlayer.play().catch(error => {
+                            console.error("Failed to play queued song after AudioContext resume:", error);
+                        });
+                    }).catch(error => {
+                        console.error("Failed to resume AudioContext:", error);
+                    }).finally(() => {
+                        songToPlayAfterInteraction = null; // Clear the queue regardless of play success
+                    });
+                } else {
+                    // If AudioContext is already running or doesn't exist, just try to play the audio element
+                    audioPlayer.play().catch(error => {
+                        console.error("Failed to play queued song (AudioContext not suspended):", error);
+                    }).finally(() => {
+                        songToPlayAfterInteraction = null; // Clear the queue regardless of play success
+                    });
+                }
+            }
+        }
+        
+        // Setup a one-time global interaction listener
+        const onFirstInteraction = () => {
+            // Check if the audio player is currently paused and a song is queued.
+            // This prevents trying to play if a song is already playing or no song is queued.
+            // However, the `attemptPlayQueuedSong` already handles `songToPlayAfterInteraction`.
+            // The main purpose of this listener is to trigger the `resume` and `play` attempts.
+            // So, we should always call `attemptPlayQueuedSong` if `hasUserInteracted` is false.
+
+            if (!hasUserInteracted) {
+                hasUserInteracted = true;
+                attemptPlayQueuedSong();
+                document.removeEventListener('click', onFirstInteraction);
+                document.removeEventListener('touchend', onFirstInteraction);
+                console.log("First user interaction detected, attempting to play queued song.");
+            }
+        };
+        document.addEventListener('click', onFirstInteraction);
+        document.addEventListener('touchend', onFirstInteraction);
+
         // References for the new 2D music controls
         const musicControls2D = document.getElementById('music-controls-2d');
         const prevBtn2D = document.getElementById('music-player-prev-2d');
@@ -1060,15 +1113,21 @@
         }
 
         function playSong(file) {
-            initAudioContext(); // Ensure context is initialized
-            if (audioContext.state === 'suspended') {
-                audioContext.resume(); // Resume if suspended
-            }
+            initAudioContext(); // Ensure AudioContext is initialized
+
             audioPlayer.src = file;
-            audioPlayer.play().catch(error => {
-                console.log("Phát nhạc bị chặn bởi trình duyệt. Cần người dùng tương tác để bắt đầu.", error);
-                // Trình duyệt hiện đại thường chặn tự động phát âm thanh.
-                // Âm thanh sẽ chỉ phát sau khi người dùng click vào một thứ gì đó trên trang.
+
+            // Attempt to play. If it fails, queue it for later.
+            audioPlayer.play().then(() => { // This .then() block is executed if autoplay is successful
+                console.log("Autoplay successful.");
+                songToPlayAfterInteraction = null; // Clear if successful
+            }).catch(error => {
+                // This .catch() block is executed if autoplay is blocked or fails
+                // This is where we queue the song for later interaction
+                console.log("Autoplay blocked or failed. Queuing for first user interaction.", error);
+                songToPlayAfterInteraction = file; // Queue the current song file
+                // The attemptPlayQueuedSong will handle resuming AudioContext if needed
+                // and retrying play() on the first user interaction.
             });
         }
 
