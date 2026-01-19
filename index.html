@@ -70,7 +70,7 @@
         .planet-label.hidden {
             display: none;
         }
-        #select-planet-btn, #toggle-labels-btn {
+        #select-planet-btn, #toggle-labels-btn, #select-song-btn, #toggle-images-btn {
             /* Vị trí được quản lý bởi #main-ui-controls */
             z-index: 1001;
             padding: 10px 15px;
@@ -138,18 +138,7 @@
         }
 
         /* --- Music Player Styles --- */
-        #select-song-btn {
-            position: fixed;
-            /* Vị trí được quản lý bởi #main-ui-controls */
-            z-index: 1001;
-            background-color: transparent; /* Giữ nền trong suốt */
-            color: white; /* Giữ màu chữ */
-            border: none; /* Bỏ viền */
-            border-radius: 5px;
-            cursor: pointer;
-            font-family: Arial, sans-serif;
-            font-size: 16px;
-        }
+        /* Style for #select-song-btn is now consolidated */
         #song-list-overlay {
             position: fixed;
             top: 60px;
@@ -368,7 +357,9 @@
 
         /* Remove fixed positioning from individual buttons, let flexbox handle it */
         #select-planet-btn,
-        #select-song-btn {
+        #select-song-btn,
+        #toggle-labels-btn,
+        #toggle-images-btn {
             /* Các nút này giờ là con của #main-ui-controls, nên position: static là phù hợp */
             position: static;
             margin: 0;
@@ -551,7 +542,10 @@
                     <button id="shuffle-btn" class="playback-mode-btn" title="Phát ngẫu nhiên"><i class="fas fa-random"></i></button>
                 </div>
             </div>
-            <button id="select-song-btn">Chọn nhạc</button>
+            <div style="display: flex; flex-direction: column; gap: 5px; align-items: center;">
+                <button id="select-song-btn">Chọn nhạc</button>
+                <button id="toggle-images-btn">Tắt Ảnh</button>
+            </div>
         </div>
         <!-- Existing overlays -->
         <div id="planet-list-overlay">
@@ -1015,6 +1009,38 @@
                 planetSelectionList.appendChild(listItem);
             });
         }
+
+        // --- Toggle Images ---
+        const toggleImagesBtn = document.getElementById('toggle-images-btn');
+        let isGlobalToggleInHideMode = false; // Tracks the state of the global toggle
+        const planetsHiddenByGlobalToggle = new Set(); // Stores planets whose images were hidden by the toggle
+
+        toggleImagesBtn.addEventListener('click', () => {
+            isGlobalToggleInHideMode = !isGlobalToggleInHideMode;
+
+            if (isGlobalToggleInHideMode) {
+                // HIDE mode: Find all planets with visible images, remember them, and hide their images.
+                planetsHiddenByGlobalToggle.clear(); // Reset before hiding
+                planets.forEach(planet => {
+                    if (planet.userData.imageGroup && planet.userData.imageGroup.visible) {
+                        planetsHiddenByGlobalToggle.add(planet); // Remember this planet was hidden by the global toggle
+                        planet.userData.imageGroup.visible = false;
+                    }
+                });
+                toggleImagesBtn.textContent = 'Hiện Ảnh';
+            } else {
+                // SHOW mode: Show images only on the planets that were previously hidden by this toggle.
+                planetsHiddenByGlobalToggle.forEach(planet => {
+                    // This check prevents the global "show" from overriding a manual "hide" on a specific planet.
+                    // If a planet's interaction state is 3, it means the user explicitly hid its images.
+                    if (planet.userData.interactionState !== 3) {
+                        addImagesToPlanet(planet);
+                    }
+                });
+                planetsHiddenByGlobalToggle.clear(); // The set is now processed.
+                toggleImagesBtn.textContent = 'Tắt Ảnh';
+            }
+        });
 
         // --- Toggle Planet Labels ---
         const toggleLabelsBtn = document.getElementById('toggle-labels-btn');
