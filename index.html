@@ -7,6 +7,9 @@
     <style>
         body { margin: 0; background-color: #000; overflow: hidden; }
         canvas { display: block; }
+        #main-scene {
+            position: relative; z-index: 2;
+        }
         #main-scene { display: none; }
         #loader-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -171,6 +174,15 @@
         .song-list-item:hover {
             background-color: rgba(0,0,0,0.7);
         }
+        #music-player-scene-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none; /* Cho phép click xuyên qua để tương tác với scene chính */
+        }
 
         /* --- 3D Music Player Styles --- */
         .music-player-container-3d {
@@ -255,6 +267,8 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
 </head>
 <body>
+    <div id="music-player-scene-container"></div>
+
     <div id="loader-overlay">
         <div class="loader-container">
             <div class="progress-circle">
@@ -343,8 +357,8 @@
 
         // --- Scene Setup ---
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 8000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('main-scene').appendChild(renderer.domElement);
         
@@ -392,6 +406,14 @@
         labelRenderer.domElement.style.position = 'absolute';
         labelRenderer.domElement.style.top = '0px';
         document.getElementById('main-scene').appendChild(labelRenderer.domElement);
+
+        // --- Music Player Scene & Renderer (Không gian nền) ---
+        const musicPlayerScene = new THREE.Scene();
+        const musicPlayerRenderer = new THREE.CSS2DRenderer();
+        musicPlayerRenderer.setSize(window.innerWidth, window.innerHeight);
+        musicPlayerRenderer.domElement.style.position = 'absolute';
+        musicPlayerRenderer.domElement.style.top = '0px';
+        document.getElementById('music-player-scene-container').appendChild(musicPlayerRenderer.domElement);
 
         // --- Lighting ---
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
@@ -782,7 +804,7 @@
 
         function hideMusicPlayer() {
             if (musicPlayerObject) {
-                scene.remove(musicPlayerObject);
+                musicPlayerScene.remove(musicPlayerObject);
                 musicPlayerObject.element.remove(); // Clean up the DOM element
                 musicPlayerObject = null;
             }
@@ -792,7 +814,7 @@
         }
 
         function showMusicPlayer(songIndex) {
-            if (musicPlayerObject) {
+            if (musicPlayerObject) { // If a player is already shown, hide it first
                 hideMusicPlayer();
             }
 
@@ -875,29 +897,24 @@
 
             // --- Create and Position 2D Object ---
             musicPlayerObject = new THREE.CSS2DObject(playerContainer);
-            
-            const distance = 200;
-            const positionVector = new THREE.Vector3();
-            camera.getWorldDirection(positionVector);
-            positionVector.multiplyScalar(distance);
-            positionVector.add(camera.position);
-            
-            const downVector = new THREE.Vector3(0, -1, 0);
-            downVector.applyQuaternion(camera.quaternion);
-            downVector.multiplyScalar(distance * 0.35);
-            positionVector.add(downVector);
 
-            musicPlayerObject.position.copy(positionVector);
-            scene.add(musicPlayerObject);
+            // Đặt trình phát nhạc ở một vị trí cố định trong không gian nền (background scene)
+            // để nó không bao giờ tương tác hay che khuất hệ mặt trời.
+            const playerPosition = new THREE.Vector3(0, 100, -5000);
+
+            musicPlayerObject.position.copy(playerPosition);
+            musicPlayerScene.add(musicPlayerObject);
             playSong(song.file);
         }
 
         function updateMusicPlayerUI() {
             if (!musicPlayerObject || !audioPlayer.duration) return;
+            const playerContainer = musicPlayerObject.element;
             const playPauseBtn = document.getElementById('music-player-play-pause');
-            const progressBar = musicPlayerObject.element.querySelector('.music-player-progress-bar');
+            const progressBar = playerContainer.querySelector('.music-player-progress-bar');
             const currentTimeSpan = document.getElementById('music-player-current-time');
             const totalTimeSpan = document.getElementById('music-player-total-time');
+
             if (playPauseBtn) playPauseBtn.innerHTML = audioPlayer.paused ? '▶' : '❚❚';
             if (progressBar) progressBar.style.width = `${(audioPlayer.currentTime / audioPlayer.duration) * 100}%`;
             if (currentTimeSpan) currentTimeSpan.textContent = formatTime(audioPlayer.currentTime);
@@ -1295,9 +1312,12 @@
                 // Không cần đặt camera.position một cách rõ ràng ở đây.
             }
 
+            renderer.setClearColor(0x000000, 0); // Xóa nền của scene chính để scene nền có thể nhìn thấy
+
             controls.update();
-            renderer.render(scene, camera);
-            labelRenderer.render(scene, camera);
+            musicPlayerRenderer.render(musicPlayerScene, camera); // Render scene nền (khung nhạc)
+            renderer.render(scene, camera); // Render scene chính (hệ mặt trời)
+            labelRenderer.render(scene, camera); // Render các nhãn của scene chính
         }
 
         // --- Event Listeners & Initial Calls ---
