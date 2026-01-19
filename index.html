@@ -8,7 +8,7 @@
         body { margin: 0; background-color: #000; overflow: hidden; }
         canvas { display: block; }
         #main-scene {
-            position: relative; z-index: 2;
+            position: relative; z-index: 2; /* Giữ thuộc tính này */
         }
         #main-scene { display: none; }
         #loader-overlay {
@@ -303,6 +303,8 @@
             display: flex;
             justify-content: space-between; /* Distribute items */
             align-items: center;
+            background-color: rgba(0, 0, 0, 0.7); /* Thêm nền để dễ nhìn thấy */
+            border: 2px solid #3498db; /* Thêm viền để dễ nhìn thấy */
             pointer-events: none; /* Allow clicks to pass through to the scene by default */
         }
 
@@ -366,6 +368,8 @@
             #song-list-overlay {
                 top: auto; /* Remove top positioning */
                 bottom: 70px; /* Position above the bottom control bar */
+                top: auto;
+                bottom: 57px; /* Đặt vị trí cách lề dưới 57px (5px trên thanh điều khiển chính) */
                 left: 50%; /* Center horizontally */
                 transform: translateX(-50%); /* Center horizontally */
                 width: 90%; /* Take up most of the width */
@@ -373,6 +377,8 @@
                 min-width: unset; /* Remove min-width constraint */
                 padding: 10px; /* Adjust padding */
                 background-color: rgba(0,0,0,0.8); /* Darker background for readability */
+                max-height: calc(100vh - 77px); /* Chiều cao tối đa để không tràn màn hình (100vh - 57px bottom - 20px top margin) */
+                overflow-y: auto; /* Cho phép cuộn nếu nội dung quá dài */
                 box-shadow: 0 0 10px rgba(0,255,255,0.7); /* Slightly stronger shadow */
             }
 
