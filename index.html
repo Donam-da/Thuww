@@ -571,18 +571,18 @@
         const totalImages = 62;
         const allImageUrls = Array.from({length: totalImages}, (_, i) => `images/${i + 1}.png`);
         const usedImageUrls = new Set();
-        const planets = []; // Khai báo biến planets ở đây
+        const planets = [];
         // Speeds are calculated relative to Earth's orbital period for a more realistic simulation.
         // The base speed is adjusted for visual appeal.
         const planetData = [
-            { name: 'Sao Thủy', distance: 20, size: 2, color: 0xcccccc, speed: 0.00167, realSpeed: 47.87 },   // Brighter grey
-            { name: 'Sao Kim', distance: 35, size: 3, color: 0xffa500, speed: 0.00065, realSpeed: 35.02 },    // Vibrant orange
-            { name: 'Trái Đất', distance: 50, size: 3.2, color: 0x00bfff, speed: 0.0004, realSpeed: 29.78 },     // Deep sky blue
-            { name: 'Sao Hỏa', distance: 70, size: 2.4, color: 0xff4500, speed: 0.00021, realSpeed: 24.08 },    // Orange-red
+            { name: 'Sao Thủy', distance: 20, size: 2.0, color: 0xcccccc, speed: 0.00167, realSpeed: 47.87 },   // Brighter grey
+            { name: 'Sao Kim', distance: 35, size: 2.3, color: 0xffa500, speed: 0.00065, realSpeed: 35.02 },    // Vibrant orange
+            { name: 'Trái Đất', distance: 50, size: 2.4, color: 0x00bfff, speed: 0.0004, realSpeed: 29.78 },     // Deep sky blue
+            { name: 'Sao Hỏa', distance: 70, size: 2.1, color: 0xff4500, speed: 0.00021, realSpeed: 24.08 },    // Orange-red
             { name: 'Sao Mộc', distance: 100, size: 8, color: 0xffe0b2, speed: 0.000034, realSpeed: 13.07 },   // Light peach
-            { name: 'Sao Thổ', distance: 140, size: 7, color: 0xffd700, speed: 0.000014, realSpeed: 9.69 },   // Gold
-            { name: 'Sao Thiên Vương', distance: 180, size: 5, color: 0x87ceeb, speed: 0.0000048, realSpeed: 6.81 },// Sky blue
-            { name: 'Sao Hải Vương', distance: 220, size: 4.8, color: 0x1e90ff, speed: 0.0000024, realSpeed: 5.43 } // Dodger blue
+            { name: 'Sao Thổ', distance: 140, size: 6.9, color: 0xffd700, speed: 0.000014, realSpeed: 9.69 },   // Gold
+            { name: 'Sao Thiên Vương', distance: 180, size: 4.1, color: 0x87ceeb, speed: 0.0000048, realSpeed: 6.81 },// Sky blue
+            { name: 'Sao Hải Vương', distance: 220, size: 4.0, color: 0x1e90ff, speed: 0.0000024, realSpeed: 5.43 } // Dodger blue
         ];
 
         // --- Loading Manager ---
