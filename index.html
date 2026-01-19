@@ -246,6 +246,18 @@
             width: 240px; /* Giảm chiều rộng đi 5px cho desktop */
             margin: 0 auto; /* Căn giữa theo chiều ngang trong container cha */
             transform: translateX(-5px); /* Dịch sang phải 5px (từ vị trí -10px, giờ là -5px) */
+            position: relative; /* Cần thiết để định vị chấm kéo bên trong */
+        }
+        #music-player-progress-handle-2d {
+            width: 12px; /* Kích thước của chấm kéo */
+            height: 12px;
+            background-color: #ffffff; /* Màu trắng */
+            border-radius: 50%; /* Hình tròn */
+            position: absolute;
+            top: 50%; /* Căn giữa theo chiều dọc */
+            transform: translateY(-50%); /* Dịch chuyển lên trên 50% chiều cao của chính nó */
+            left: 0; /* Vị trí ban đầu, sẽ được JS cập nhật */
+            cursor: grab; /* Con trỏ kéo */
         }
         #music-player-progress-bar-2d {
             background-color: #3498db;
@@ -501,6 +513,7 @@
             <div id="music-controls-2d" style="display: none;"> <!-- display: none sẽ được JS thay đổi thành flex -->
                 <div id="music-player-progress-container-2d">
                     <div id="music-player-progress-bar-2d"></div>
+                    <div id="music-player-progress-handle-2d"></div> <!-- Chấm kéo mới -->
                 </div>
                 <div class="music-player-buttons-row"> <!-- Hàng nút điều khiển mới -->
                     <button id="music-player-prev-2d">⏮</button>
@@ -1022,6 +1035,7 @@
         const nextBtn2D = document.getElementById('music-player-next-2d');
         const progressContainer2D = document.getElementById('music-player-progress-container-2d');
         const progressBar2D = document.getElementById('music-player-progress-bar-2d');
+        const progressHandle2D = document.getElementById('music-player-progress-handle-2d'); // Tham chiếu đến chấm kéo mới
         // New variables for the 3D music player
         let musicPlayerObject = null;
         let currentSongIndex = -1;        
@@ -1138,9 +1152,59 @@
                     audioPlayer.currentTime = audioPlayer.duration * percentage;
                 }
             };
+            // Thêm lắng nghe sự kiện cho chấm kéo mới
+            progressHandle2D.addEventListener('mousedown', startProgressDrag);
+            progressHandle2D.addEventListener('touchstart', startProgressDrag, { passive: false });
+
             updateMusicPlayerUI(); // Initial UI update for 2D controls
         }
 
+        // --- Logic kéo thanh tiến trình ---
+        let isDraggingProgress = false;
+
+        function startProgressDrag(e) {
+            e.preventDefault(); // Ngăn chặn hành vi mặc định của trình duyệt (ví dụ: chọn văn bản, cuộn)
+            e.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên container click/touch
+            isDraggingProgress = true;
+            controls.enabled = false; // Tắt OrbitControls khi đang kéo
+
+            document.addEventListener('mousemove', doProgressDrag);
+            document.addEventListener('mouseup', endProgressDrag);
+            document.addEventListener('touchmove', doProgressDrag, { passive: false });
+            document.addEventListener('touchend', endProgressDrag);
+        }
+
+        function doProgressDrag(e) {
+            if (!isDraggingProgress) return;
+
+            let clientX;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+            } else {
+                clientX = e.clientX;
+            }
+
+            const rect = progressContainer2D.getBoundingClientRect();
+            let newX = clientX - rect.left; // Vị trí tương đối so với container
+
+            // Giới hạn newX trong phạm vi của container
+            newX = Math.max(0, Math.min(newX, rect.width));
+
+            const percentage = newX / rect.width;
+            if (audioPlayer.duration) {
+                audioPlayer.currentTime = audioPlayer.duration * percentage;
+            }
+            updateMusicPlayerUI(); // Cập nhật giao diện ngay lập tức trong khi kéo để có phản hồi trực quan
+        }
+
+        function endProgressDrag() {
+            isDraggingProgress = false;
+            controls.enabled = true; // Kích hoạt lại OrbitControls sau khi kéo
+            document.removeEventListener('mousemove', doProgressDrag);
+            document.removeEventListener('mouseup', endProgressDrag);
+            document.removeEventListener('touchmove', doProgressDrag);
+            document.removeEventListener('touchend', endProgressDrag);
+        }
         function hide2DMusicControls() {
             musicControls2D.style.display = 'none';
         }
@@ -1237,6 +1301,13 @@
             if (playPauseBtn2D) playPauseBtn2D.innerHTML = audioPlayer.paused ? '▶' : '❚❚';
             if (progressBar2D) progressBar2D.style.width = `${(audioPlayer.currentTime / audioPlayer.duration) * 100}%`;
 
+            const progressPercentage = (audioPlayer.currentTime / audioPlayer.duration);
+            // Cập nhật vị trí của chấm kéo
+            if (progressHandle2D) {
+                const containerWidth = progressContainer2D.offsetWidth;
+                const handleWidth = progressHandle2D.offsetWidth;
+                progressHandle2D.style.left = `${(progressPercentage * containerWidth) - (handleWidth / 2)}px`;
+            }
             // Update 3D player's time display (if it exists)
             const currentTimeSpan = musicPlayerObject ? musicPlayerObject.element.querySelector('#music-player-current-time') : null;
             const totalTimeSpan = musicPlayerObject ? musicPlayerObject.element.querySelector('#music-player-total-time') : null;
