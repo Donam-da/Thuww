@@ -285,9 +285,9 @@
         .music-player-container-3d {
             background-color: transparent; /* Nền hoàn toàn trong suốt */
             border: none; /* Bỏ viền */
-            border-radius: 10px;
-            padding: 10px;
-            width: 250px;
+            border-radius: 20px;
+            padding: 20px;
+            width: 500px;
             color: white;
             font-family: Arial, sans-serif;
             box-shadow: none; /* Bỏ hiệu ứng đổ bóng */
@@ -298,9 +298,9 @@
         }
         .music-player-title {
             /* Existing styles */
-            font-size: 14px;
+            font-size: 28px;
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 16px;
             
             /* New styles for scrolling */
             white-space: nowrap; /* Ensure text stays on one line */
@@ -321,7 +321,7 @@
         .music-player-title-text,
         .music-player-title-text-duplicate {
             display: inline-block; /* Allows them to sit side-by-side */
-            padding-right: 20px; /* Space between original and duplicate text */
+            padding-right: 40px; /* Space between original and duplicate text */
         }
         @keyframes scrollText {
             0% { transform: translateX(0); }
@@ -333,14 +333,14 @@
         .music-player-time {
             display: flex;
             justify-content: space-between;
-            font-size: 10px;
-            margin-top: 5px;
+            font-size: 20px;
+            margin-top: 10px;
         }
         .music-player-visualizer {
             display: block; /* Đảm bảo canvas là block element để căn giữa */
-            margin: 5px auto; /* Căn giữa bên dưới tiêu đề/thời gian */
+            margin: 10px auto; /* Căn giữa bên dưới tiêu đề/thời gian */
             background-color: transparent; /* Nền trong suốt */
-            border-radius: 3px;
+            border-radius: 6px;
             border: none; /* Bỏ viền */
         }
 
@@ -482,20 +482,20 @@
 
             /* 3D Music Player (internal styling) */
             .music-player-container-3d {
-                width: 150px; /* Smaller width for mobile */
-                padding: 6px;
+                width: 300px; /* Smaller width for mobile */
+                padding: 12px;
             }
             .music-player-title {
-                font-size: 9px; /* Smaller font size */
+                font-size: 18px; /* Smaller font size */
                 height: 1.3em; /* Adjust height for new font size */
                 line-height: 1.3em; /* Adjust line height */
             }
             .music-player-time {
-                font-size: 7px; /* Smaller font size */
+                font-size: 14px; /* Smaller font size */
             }
             .music-player-visualizer {
-                width: 110px; /* Adjust visualizer width to match container */
-                height: 25px; /* Adjust height */
+                width: 276px; /* Adjust visualizer width to match container */
+                height: 50px; /* Adjust height */
             }
         }
     </style>
@@ -1514,7 +1514,7 @@
             // Create the visualizer canvas
             const visualizerCanvasElement = document.createElement('canvas');
             visualizerCanvasElement.className = 'music-player-visualizer';
-            visualizerCanvasElement.width = 230; // Match player width minus padding
+            visualizerCanvasElement.width = 460; // Match player width minus padding
             visualizerCanvasElement.height = 50; // Height for the wave
 
             // Append elements in the desired order: close, title, visualizer, time
