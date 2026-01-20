@@ -207,6 +207,10 @@
         .song-list-item:hover {
             background-color: rgba(0,0,0,0.7);
         }
+        /* Làm đậm bài hát đang phát trong danh sách */
+        .song-list-item.current-song {
+            font-weight: bold;
+        }
         /* --- 2D Music Controls Styles --- */
         #music-controls-2d {
             position: fixed;
@@ -404,7 +408,7 @@
             z-index: 1001;
             display: flex;
             justify-content: space-between; /* Distribute items */
-            align-items: center;
+            align-items: flex-end;
             background-color: transparent; /* Làm nền trong suốt */
             border: none; /* Bỏ viền */
             pointer-events: none; /* Allow clicks to pass through to the scene by default */
@@ -427,7 +431,7 @@
         /* Remove fixed positioning from 2D music controls */
         #music-controls-2d {
             position: static;
-            margin: 0;
+            margin-bottom: 27px;
         }
 
         /* Mobile Layout (max-width: 768px) */
@@ -1330,9 +1334,15 @@
         const shuffleBtn = document.getElementById('shuffle-btn');
         function populateSongList() {
             songSelectionList.innerHTML = ''; // Clear previous list
-            songs.forEach(song => {
+            songs.forEach((song, index) => {
                 const listItem = document.createElement('li');
                 listItem.className = 'song-list-item';
+
+                // Làm đậm bài hát đang được chọn
+                if (index === currentSongIndex) {
+                    listItem.classList.add('current-song');
+                }
+
                 listItem.textContent = song.name;
                 listItem.addEventListener('click', () => {
                     const songIndex = songs.findIndex(s => s.file === song.file);
