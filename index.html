@@ -1464,6 +1464,13 @@
             // musicControls2D.style.display = 'none'; // Removed: Keep 2D music controls visible when song list is open
             controls.enabled = false; // Tắt điều khiển 3D khi mở danh sách nhạc
             populateSongList();
+
+            // Scroll to the currently playing song
+            const currentSongItem = songSelectionList.querySelector('.current-song');
+            if (currentSongItem) {
+                currentSongItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
             // Add global listener to close menu
             document.addEventListener('click', handleOutsideSongInteraction, true);
             document.addEventListener('touchend', handleOutsideSongInteraction, true);
