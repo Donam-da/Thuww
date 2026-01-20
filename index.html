@@ -1151,7 +1151,7 @@
             // Điều chỉnh padding theo đơn vị thế giới. Giá trị này sẽ ảnh hưởng đến mức độ zoom.
             // Giá trị lớn hơn sẽ zoom ra xa hơn, giá trị nhỏ hơn sẽ zoom gần hơn.
             // Đây là một giá trị heuristic để mô phỏng "cách lề 50px/10px". Để zoom to hơn, giảm giá trị này.
-            const worldPadding = isMobile ? 10 : 30; // Giảm padding để zoom gần hơn: 10 cho mobile, 30 cho desktop
+            const worldPadding = isMobile ? 25 : 50; // Tăng padding để zoom ra xa hơn
 
             // Kích thước mục tiêu (nửa chiều rộng/chiều cao) mà camera cần nhìn thấy
             const targetHalfWidth = maxPlanetDistance + worldPadding;
@@ -2151,7 +2151,7 @@
 
             // Đặt trình phát nhạc ở một vị trí cố định trong không gian nền (background scene)
             // để nó không bao giờ tương tác hay che khuất hệ mặt trời.
-            const playerPosition = new THREE.Vector3(0, 100, -15000);
+            const playerPosition = new THREE.Vector3(0, 85, -15000); // Dịch xuống 15 đơn vị so với vị trí cũ (100)
 
             musicPlayerObject.position.copy(playerPosition);
             musicPlayerScene.add(musicPlayerObject); // Thêm trình phát nhạc 3D vào scene nền
