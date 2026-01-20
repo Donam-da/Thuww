@@ -131,6 +131,20 @@
             display: block; /* Đảm bảo nút luôn hiển thị */
             font-size: 16px;
         }
+        #more-options-btn { /* Nút 3 chấm mới */
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1001;
+            padding: 10px 15px;
+            background-color: transparent;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px; /* Giữ kích thước icon nhất quán */
+            display: block;
+        }
         /* Desktop styles for main-ui-controls */
         #planet-list-overlay {
             position: fixed;
@@ -533,6 +547,16 @@
                 font-size: 14px; /* Smaller font size */
                 border: none; /* Bỏ viền */
             }
+            #more-options-btn { /* Kiểu dáng mobile cho nút 3 chấm */
+                top: 20px;
+                bottom: auto;
+                left: 20px;
+                right: auto;
+                padding: 8px 12px;
+                font-size: 14px;
+                border: none;
+                background-color: transparent;
+            }
 
             /* Overlays for mobile (positioned above the bottom control bar) */
             #planet-list-overlay,
@@ -666,6 +690,7 @@
             </ul>
         </div> <!-- Đóng thẻ div cho song-list-overlay -->
         <button id="overview-btn">Toàn cảnh</button> <!-- Moved here -->
+        <button id="more-options-btn"><i class="fas fa-bars"></i></button>
         <!-- Canvas and renderers will be appended here by Three.js -->
     </div>
 
