@@ -157,13 +157,24 @@
             color: white;
             padding: 10px;
             margin-bottom: 5px;
-            background-color: rgba(0,0,0,0.5); /* Semi-transparent background */
+            background-color: transparent; /* Semi-transparent background */
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.2s ease;
         }
         .planet-list-item:hover {
-            background-color: rgba(0,0,0,0.7); /* Darker on hover */
+            background-color: rgba(255, 255, 255, 0.1); /* Darker on hover */
+        }
+
+        /* Hide Scrollbar */
+        #song-list-overlay, 
+        #planet-list-overlay {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #song-list-overlay::-webkit-scrollbar,
+        #planet-list-overlay::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
 
         /* --- Music Player Styles --- */
