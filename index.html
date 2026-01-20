@@ -2219,6 +2219,8 @@
         }
 
         function showMusicPlayer(songIndex) {
+            const oldPosition = musicPlayerObject ? musicPlayerObject.position.clone() : null;
+
             if (musicPlayerObject) { // If a player is already shown, hide it first
                 hideMusicPlayer();
             }
@@ -2289,6 +2291,11 @@
 
             // --- Create and Position 2D Object ---
             musicPlayerObject = new THREE.CSS2DObject(playerContainer);
+
+            // Nếu có vị trí cũ, hãy áp dụng nó ngay lập tức để tránh hiệu ứng "bắn ra"
+            if (oldPosition) {
+                musicPlayerObject.position.copy(oldPosition);
+            }
 
             // Vị trí của trình phát nhạc sẽ được cập nhật liên tục trong vòng lặp animate.
             // Thêm nó vào scene nền để nó di chuyển trong không gian 3D phía sau hệ mặt trời.
