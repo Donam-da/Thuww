@@ -108,6 +108,10 @@
             font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
             font-weight: 400; /* Thinner font weight */
             font-size: 16px;
+        }
+        /* Giảm font size cho nút "Ẩn tên" và "Tắt ảnh" */
+        #toggle-labels-btn, #toggle-images-btn {
+            font-size: 11px; /* Giảm 5px so với 16px */
             /* Đã loại bỏ định vị cố định */
             display: block; /* Đảm bảo nút luôn hiển thị */
         }
@@ -439,6 +443,14 @@
             pointer-events: auto; /* Make children interactive */
         }
 
+        /* Add a class for button groups */
+        .ui-button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: center;
+            width: 120px; /* Fixed width for desktop to prevent shifting */
+        }
         /* Remove fixed positioning from individual buttons, let flexbox handle it */
         #select-planet-btn,
         #select-song-btn,
@@ -481,6 +493,14 @@
                 font-size: 11px; /* Giảm font size thêm */
                 border: none; /* Bỏ viền */
             }
+            .ui-button-group {
+                width: 90px; /* Fixed width for mobile to prevent shifting */
+            }
+            /* Đảm bảo font size của nút "Ẩn tên" và "Tắt ảnh" cũng được áp dụng trên mobile */
+            #toggle-labels-btn, #toggle-images-btn {
+                font-size: 11px;
+            }
+
 
             #music-controls-2d {
                 padding: 2px 6px; /* Smaller padding */
@@ -605,7 +625,7 @@
     <div id="main-scene">
         <!-- New container for UI buttons -->
         <div id="main-ui-controls">
-            <div style="display: flex; flex-direction: column; gap: 5px; align-items: center;">
+            <div class="ui-button-group">
                 <button id="select-planet-btn">Hành tinh</button>
                 <button id="toggle-labels-btn">Ẩn tên</button>
             </div>
@@ -627,7 +647,7 @@
                     <button id="shuffle-btn" class="playback-mode-btn" title="Phát ngẫu nhiên"><i class="fas fa-random"></i></button>
                 </div>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 5px; align-items: center;">
+            <div class="ui-button-group">
                 <button id="select-song-btn">Chọn nhạc</button>
                 <button id="toggle-images-btn">Tắt ảnh</button>
             </div>
