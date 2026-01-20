@@ -1653,6 +1653,7 @@
                 default: songName = `Bài hát ${i}`; // Fallback for any unexpected index
             }
             songs.push({
+                id: i,
                 name: songName,
                 file: `music/music${i}.mp3`
             });
@@ -1824,7 +1825,8 @@
                 const parts = song.name.split(' - ', 2); // Split by ' - ' (space-hyphen-space)
                 if (parts.length > 1) {
                     const songTitleSpan = document.createElement('span');
-                    songTitleSpan.textContent = parts[0];
+                    // Thêm số thứ tự vào trước tên bài hát
+                    songTitleSpan.textContent = `${song.id}. ${parts[0]}`;
                     songTitleSpan.style.fontWeight = 'bold'; // Make the song title bold
                     listItem.appendChild(songTitleSpan);
 
@@ -1835,7 +1837,8 @@
                 } else {
                     // No hyphen found, display the whole name as bold
                     const songTitleSpan = document.createElement('span');
-                    songTitleSpan.textContent = song.name;
+                    // Thêm số thứ tự vào trước tên bài hát
+                    songTitleSpan.textContent = `${song.id}. ${song.name}`;
                     songTitleSpan.style.fontWeight = 'bold';
                     listItem.appendChild(songTitleSpan);
                 }
