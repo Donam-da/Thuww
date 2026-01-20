@@ -2445,6 +2445,12 @@
             isViewLocked = false;
             lockedPlanet = null;
 
+            // Thay đổi kích thước và vị trí của trình phát nhạc 3D theo yêu cầu
+            if (musicPlayerObject && musicPlayerObject.element) {
+                musicPlayerObject.element.style.transition = 'transform 0.5s ease-out';
+                musicPlayerObject.element.style.transform = 'scale(0.7) translateY(-50px)';
+            }
+
             // Di chuyển trình phát nhạc xuống
             document.getElementById('music-controls-2d').style.transform = 'translateY(20px)';
 
@@ -2529,6 +2535,11 @@
             // Đặt lại vị trí của trình phát nhạc khi chọn một hành tinh
             selectedPlanetObject = planet; // Cập nhật hành tinh đang được chọn
             document.getElementById('music-controls-2d').style.transform = '';
+            // Đặt lại kích thước và vị trí của trình phát nhạc 3D
+            if (musicPlayerObject && musicPlayerObject.element) {
+                musicPlayerObject.element.style.transform = 'scale(1) translateY(0)';
+            }
+
 
             if (planet.userData.interactionState === undefined) {
                 planet.userData.interactionState = 0;
