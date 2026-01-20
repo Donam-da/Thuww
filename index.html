@@ -191,11 +191,54 @@
             cursor: pointer;
             display: none; /* Ẩn thanh trượt theo mặc định */
             margin-top: 8px; /* Thêm khoảng cách với label */
+            -webkit-appearance: none; /* Bỏ giao diện mặc định */
+            appearance: none;
+            background: transparent; /* Nền trong suốt */
+            height: 20px; /* Chiều cao để chứa thumb và track */
         }
 
         /* Khi di chuột (hoặc chạm trên mobile) vào một mục, hiển thị thanh trượt của nó */
         .settings-list-item:hover input[type="range"] {
             display: block;
+        }
+
+        /* --- Tùy chỉnh màu sắc thanh trượt --- */
+        /* Track (thanh chạy) cho Chrome, Safari, Edge */
+        .settings-list-item input[type="range"]::-webkit-slider-runnable-track {
+            height: 4px;
+            background: rgba(0, 255, 255, 0.15);
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            border-radius: 3px;
+        }
+
+        /* Thumb (nút kéo) cho Chrome, Safari, Edge */
+        .settings-list-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            background: transparent;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            margin-top: -7px; /* Căn giữa thumb trên track */
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+        }
+
+        /* Track cho Firefox */
+        .settings-list-item input[type="range"]::-moz-range-track {
+            height: 4px;
+            background: rgba(0, 255, 255, 0.15);
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            border-radius: 3px;
+        }
+
+        /* Thumb cho Firefox */
+        .settings-list-item input[type="range"]::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            background: transparent;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
         }
         /* Desktop styles for main-ui-controls */
         #planet-list-overlay {
