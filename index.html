@@ -1371,7 +1371,7 @@
         function showSongList() {
             songListOverlay.style.display = 'block';
             isSongListOpen = true;
-            musicControls2D.style.display = 'none'; // Hide 2D controls when song list is open
+            // musicControls2D.style.display = 'none'; // Removed: Keep 2D music controls visible when song list is open
             controls.enabled = false; // Tắt điều khiển 3D khi mở danh sách nhạc
             populateSongList();
             // Add global listener to close menu
