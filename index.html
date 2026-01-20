@@ -469,9 +469,9 @@
         .music-player-container-3d {
             background-color: transparent; /* Nền hoàn toàn trong suốt */
             border: none; /* Bỏ viền */
-            border-radius: 22px; /* 15px * 1.5 */
-            padding: 22px; /* 15px * 1.5 */
-            width: 562px; /* 375px * 1.5 */
+            border-radius: 15px;
+            padding: 15px;
+            width: 375px;
             color: white;            
             font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
             font-weight: 100; /* Thinner font weight */
@@ -521,7 +521,7 @@
         .music-player-time {
             display: flex;
             justify-content: space-between;
-            font-size: 22px; /* 15px * 1.5 */
+            font-size: 15px;
             margin-top: -25px; /* Đẩy lên sát đáy sóng hơn */
             line-height: 1; /* Thu gọn chiều cao sát vào số */
             align-items: center;
@@ -533,7 +533,7 @@
             border-radius: 4px;
             border: none; /* Bỏ viền */
             width: 100%; /* Set width to 100% to match parent */
-            height: 225px; /* 150px * 1.5 */
+            height: 150px;
         }
 
         /* New container for main UI buttons */
@@ -714,8 +714,8 @@
 
             /* 3D Music Player (internal styling) */
             .music-player-container-3d {
-                width: 338px; /* 225px * 1.5 */
-                padding: 14px; /* 9px * 1.5 */
+                width: 225px;
+                padding: 9px;
             }
             .music-player-title {
                 font-size: 14px; /* Smaller font size */
@@ -723,11 +723,11 @@
                 line-height: 1.3em; /* Adjust line height */
             }
             .music-player-time {
-                font-size: 16px; /* 11px * 1.5 */
+                font-size: 11px;
             }
             .music-player-visualizer {
-                width: 310px; /* 207px * 1.5 */
-                height: 150px; /* 100px * 1.5 */
+                width: 207px;
+                height: 100px;
             }
         }
     </style>
@@ -2190,8 +2190,8 @@
             visualizerCanvasElement.className = 'music-player-visualizer';
             // Dynamically set canvas width and height attributes based on screen size
             const isMobile = window.innerWidth <= 768;
-            visualizerCanvasElement.width = isMobile ? 310 : 518;
-            visualizerCanvasElement.height = isMobile ? 150 : 225;
+            visualizerCanvasElement.width = isMobile ? 207 : 345;
+            visualizerCanvasElement.height = isMobile ? 100 : 150;
 
             // Append elements in the desired order: close, title, visualizer, time
             titleDiv.appendChild(scrollContainer); // Add scroll container to title div
