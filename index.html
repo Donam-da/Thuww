@@ -3626,6 +3626,17 @@
             }
         }, false);
         
+        // Handle visibility change to ensure AudioContext is resumed if needed
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                // Tab is now visible
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume().then(() => {
+                        console.log("AudioContext resumed due to tab becoming visible.");
+                    }).catch(e => console.error("Error resuming AudioContext on visibilitychange:", e));
+                }
+            }
+        });
         labelRenderer_fg.domElement.addEventListener('click', onInteraction, true); // Use capturing phase for click on foreground
         labelRenderer_fg.domElement.addEventListener('touchend', onInteraction, true); // Use capturing phase for touchend on foreground
 
