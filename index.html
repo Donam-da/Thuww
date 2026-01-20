@@ -1754,6 +1754,8 @@
         let currentSongIndex = -1;
         // Biến cho hiệu ứng trôi nổi của trình phát nhạc
         const musicPlayerFloatInfo = {
+            enabled: true, // Cờ để bật/tắt hiệu ứng trôi nổi
+            overviewPosition: new THREE.Vector3(0, 50, -800), // Vị trí cố định ở chế độ Toàn cảnh (X=0 để căn giữa)
             targetPosition: new THREE.Vector3(0, 50, -250), // Vị trí mục tiêu ban đầu để nó xuất hiện trước camera
             timeToNewTarget: 0, // Sẽ được đặt khi chạy lần đầu, buộc phải có mục tiêu mới ngay lập tức
             lerpAlpha: 0.0005, // Tốc độ di chuyển đến mục tiêu (giá trị nhỏ hơn = chậm hơn, trôi hơn)
@@ -2490,6 +2492,9 @@
             isViewLocked = false;
             lockedPlanet = null;
 
+            // Tắt hiệu ứng trôi nổi và chuẩn bị di chuyển sóng nhạc vào vị trí trung tâm
+            musicPlayerFloatInfo.enabled = false;
+
             // Thay đổi kích thước và vị trí của trình phát nhạc 3D theo yêu cầu
             if (musicPlayerObject && musicPlayerObject.element) {
                 musicPlayerObject.element.style.transition = 'transform 0.5s ease-out';
@@ -2578,6 +2583,7 @@
         // New handler for planet clicks to manage state
         function handlePlanetClick(planet) {
             // Đặt lại vị trí của trình phát nhạc khi chọn một hành tinh
+            musicPlayerFloatInfo.enabled = true; // Kích hoạt lại hiệu ứng trôi nổi
             selectedPlanetObject = planet; // Cập nhật hành tinh đang được chọn
             document.getElementById('music-controls-2d').style.transform = '';
             // Đặt lại kích thước và vị trí của trình phát nhạc 3D
@@ -2769,14 +2775,19 @@
 
             // Hiệu ứng trôi nổi ngẫu nhiên, lộn xộn cho trình phát nhạc
             if (musicPlayerObject) {
-                const time = Date.now();
-                // Nếu đã đến lúc hoặc đã đến rất gần mục tiêu, hãy đặt một mục tiêu mới
-                if (time > musicPlayerFloatInfo.timeToNewTarget || musicPlayerObject.position.distanceTo(musicPlayerFloatInfo.targetPosition) < 20) {
-                    setNewMusicPlayerTarget();
-                }
+                if (musicPlayerFloatInfo.enabled) {
+                    const time = Date.now();
+                    // Nếu đã đến lúc hoặc đã đến rất gần mục tiêu, hãy đặt một mục tiêu mới
+                    if (time > musicPlayerFloatInfo.timeToNewTarget || musicPlayerObject.position.distanceTo(musicPlayerFloatInfo.targetPosition) < 20) {
+                        setNewMusicPlayerTarget();
+                    }
 
-                // Di chuyển mượt mà (lerp) đến vị trí mục tiêu để tạo hiệu ứng "trôi"
-                musicPlayerObject.position.lerp(musicPlayerFloatInfo.targetPosition, musicPlayerFloatInfo.lerpAlpha);
+                    // Di chuyển mượt mà (lerp) đến vị trí mục tiêu để tạo hiệu ứng "trôi"
+                    musicPlayerObject.position.lerp(musicPlayerFloatInfo.targetPosition, musicPlayerFloatInfo.lerpAlpha);
+                } else {
+                    // Khi ở chế độ Toàn cảnh, di chuyển mượt mà đến vị trí cố định ở trung tâm
+                    musicPlayerObject.position.lerp(musicPlayerFloatInfo.overviewPosition, 0.02);
+                }
             }
 
             // Animate star brightness for twinkling effect
