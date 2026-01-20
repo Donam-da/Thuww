@@ -814,6 +814,10 @@
                     <label for="zoom-slider">Giới hạn zoom (<span id="zoom-value">50,000</span>)</label>
                     <input type="range" id="zoom-slider" min="500" max="100000" step="1" value="50000">
                 </li>
+                <li class="settings-list-item">
+                    <label for="speed-slider">Tốc độ quỹ đạo (<span id="speed-value">1.00</span>x)</label>
+                    <input type="range" id="speed-slider" min="1" max="100" value="1" step="0.01">
+                </li>
             </ul>
         </div> <!-- Đóng thẻ div cho song-list-overlay -->
         <button id="overview-btn">Toàn cảnh</button> <!-- Moved here -->
@@ -1093,6 +1097,9 @@
         let sunMessageMesh = null;
         let sunMessageAnimation = { active: false };
 
+        // --- Planet Speed Multiplier ---
+        let planetSpeedMultiplier = 1.0;
+
         // --- Camera Lock Feature Variables ---
         let lockedPlanet = null; // Stores the planet object to follow
         let isViewLocked = false; // Flag to indicate if view is locked
@@ -1363,6 +1370,8 @@
         const densityValue = document.getElementById('density-value');
         const zoomSlider = document.getElementById('zoom-slider');
         const zoomValue = document.getElementById('zoom-value');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedValue = document.getElementById('speed-value');
 
         function showSettingsMenu() {
             settingsOverlay.style.display = 'block';
@@ -1416,6 +1425,12 @@
 
         densitySlider.addEventListener('input', () => { densityValue.textContent = parseInt(densitySlider.value).toLocaleString('en-US'); });
         densitySlider.addEventListener('change', () => { regenerateStarfield(parseInt(densitySlider.value), currentRadiusMultiplier); });
+
+        speedSlider.addEventListener('input', () => {
+            const value = parseFloat(speedSlider.value);
+            planetSpeedMultiplier = value;
+            speedValue.textContent = value.toFixed(2);
+        });
 
         // --- Toggle Images ---
         const toggleImagesBtn = document.getElementById('toggle-images-btn');
@@ -2794,7 +2809,7 @@
 
             planets.forEach(planet => {
                 const data = planet.userData;
-                data.angle += data.speed;
+                data.angle += data.speed * planetSpeedMultiplier;
                 planet.position.x = Math.cos(data.angle) * data.distance;
                 planet.position.z = Math.sin(data.angle) * data.distance;
                 planet.rotation.y += 0.001;
