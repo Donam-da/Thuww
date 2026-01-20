@@ -1019,7 +1019,7 @@
             </div>
             <div class="ui-button-group">
                 <button id="select-song-btn">Chọn nhạc</button>
-                <button id="toggle-images-btn">Tắt ảnh</button>
+                <button id="toggle-images-btn">Hiện ảnh</button>
             </div>
         </div>
         <!-- Existing overlays -->
@@ -2003,7 +2003,7 @@
 
         // --- Toggle Images ---
         const toggleImagesBtn = document.getElementById('toggle-images-btn');
-        let isGlobalToggleInHideMode = false; // Tracks the state of the global toggle
+        let isGlobalToggleInHideMode = true; // Tracks the state of the global toggle
         const planetsHiddenByGlobalToggle = new Set(); // Stores planets whose images were hidden by the toggle
         let isFirstImageLoad = true; // New flag to track the very first image load
 
@@ -2024,7 +2024,7 @@
                 if (isFirstImageLoad) {
                     // SHOW mode (FIRST TIME): Asynchronously create images with a loading screen
                     const planetsToShow = [];
-                    planetsHiddenByGlobalToggle.forEach(planet => {
+                    planets.forEach(planet => {
                         if (planet.userData.interactionState !== 3) {
                             planetsToShow.push(planet);
                         }
@@ -2739,16 +2739,17 @@
 
         function showMusicPlayer(songIndex) {
             const oldPosition = musicPlayerObject ? musicPlayerObject.position.clone() : null;
+            const wasInOverview = !musicPlayerFloatInfo.enabled; // Ghi lại trạng thái toàn cảnh khi bắt đầu
 
             if (musicPlayerObject) { // If a player is already shown, hide it first
                 hideMusicPlayer();
             }
 
-            // Kích hoạt lại hiệu ứng trôi nổi và đặt lại các transform
-            // Điều này đảm bảo trình phát nhạc trở về trạng thái mặc định khi một bài hát mới được chọn,
-            // đặc biệt là sau khi ở chế độ "Toàn cảnh".
-            musicPlayerFloatInfo.enabled = true;
-            document.getElementById('music-controls-2d').style.transform = '';
+            // Chỉ đặt lại giao diện người dùng về trạng thái mặc định nếu KHÔNG ở chế độ toàn cảnh.
+            if (!wasInOverview) {
+                musicPlayerFloatInfo.enabled = true;
+                document.getElementById('music-controls-2d').style.transform = '';
+            }
 
             // If playbackMode is random, ensure shuffledSongIndices is set up
             // and currentShuffledIndex points to the current song within it.
@@ -2774,6 +2775,12 @@
             // --- Create Player HTML Elements ---
             const playerContainer = document.createElement('div');
             playerContainer.className = 'music-player-container-3d';
+
+            // Nếu đang ở chế độ toàn cảnh, hãy áp dụng lại các kiểu dáng cho trình phát nhạc mới
+            if (wasInOverview) {
+                playerContainer.style.transform = 'scale(0.7) translateY(-200px)';
+            }
+
 
             const titleDiv = document.createElement('div');
             titleDiv.className = 'music-player-title';
