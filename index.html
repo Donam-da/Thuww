@@ -1012,7 +1012,17 @@
         const planetSelectionList = document.getElementById('planet-selection-list');
         const closeDropmenuBtn = document.getElementById('close-dropmenu-btn');
 
-        selectPlanetBtn.addEventListener('click', showPlanetList);
+        selectPlanetBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
+            if (isPlanetListOpen) {
+                hidePlanetList();
+            } else {
+                if (isSongListOpen) { // Nếu danh sách nhạc đang mở, đóng nó lại
+                    hideSongList();
+                }
+                showPlanetList();
+            }
+        });
         closeDropmenuBtn.addEventListener('click', (event) => {
             event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
             hidePlanetList();
@@ -1020,6 +1030,7 @@
 
         function showPlanetList() {
             planetListOverlay.style.display = 'flex';
+            isPlanetListOpen = true; // Set flag when planet list is open
             populatePlanetList();
             controls.enabled = false; // Disable controls when list is open
             // Thêm trình lắng nghe sự kiện toàn cục để đóng dropmenu khi click/touch bên ngoài
@@ -1029,6 +1040,7 @@
 
         function hidePlanetList() {
             planetListOverlay.style.display = 'none';
+            isPlanetListOpen = false; // Clear flag when planet list is closed
             // Chỉ kích hoạt lại controls nếu không có hoạt ảnh camera nào đang diễn ra và chế độ xem không bị khóa
             if (!isCameraAnimating && !isViewLocked) {
                 controls.enabled = true;
@@ -1199,7 +1211,7 @@
         const songSelectionList = document.getElementById('song-selection-list');
         const closeSongMenuBtn = document.getElementById('close-song-menu-btn');
         let isSongListOpen = false;
-
+        let isPlanetListOpen = false; // New: Track if planet list is open
         // Global variables for audio visualization
         let audioContext = null;
         let analyser = null;
@@ -1371,6 +1383,9 @@
         function showSongList() {
             songListOverlay.style.display = 'block';
             isSongListOpen = true;
+            if (isPlanetListOpen) { // Nếu danh sách hành tinh đang mở, đóng nó lại
+                hidePlanetList();
+            }
             // musicControls2D.style.display = 'none'; // Removed: Keep 2D music controls visible when song list is open
             controls.enabled = false; // Tắt điều khiển 3D khi mở danh sách nhạc
             populateSongList();
@@ -1400,7 +1415,14 @@
 
         selectSongBtn.addEventListener('click', (event) => {
             event.stopPropagation();
-            isSongListOpen ? hideSongList() : showSongList();
+            if (isSongListOpen) {
+                hideSongList();
+            } else {
+                if (isPlanetListOpen) { // Nếu danh sách hành tinh đang mở, đóng nó lại
+                    hidePlanetList();
+                }
+                showSongList();
+            }
         });
 
         closeSongMenuBtn.addEventListener('click', (event) => {
