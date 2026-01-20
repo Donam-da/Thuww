@@ -744,9 +744,9 @@
         function addStarfield() {
             const starGeometry = new THREE.BufferGeometry();
             const starVertices = [];
-            const starColors = []; // This will hold the color (and brightness) of each star
-            const color = new THREE.Color();
-            const numStars = 15000;
+            const starColors = []; // This will hold the color (and brightness) of each star            
+            const numStars = 300000; // Tăng số lượng sao
+            const initialTime = performance.now();
 
             for (let i = 0; i < numStars; i++) {
                 const x = (Math.random() - 0.5) * 2500;
@@ -754,13 +754,28 @@
                 const z = (Math.random() - 0.5) * 2500;
                 starVertices.push(x, y, z);
 
-                // Start with a random brightness
-                const initialBrightness = Math.random();
-                color.setRGB(initialBrightness, initialBrightness, initialBrightness);
-                starColors.push(color.r, color.g, color.b);
+                // Tỷ lệ 80% sao tĩnh, 20% sao nhấp nháy
+                if (Math.random() < 0.5) {
+                    // This is a static star, always on
+                    const brightness = 0.2 + Math.random() * 0.6; // Random brightness from 0.2 to 0.8
+                    starColors.push(brightness, brightness, brightness);
+                    starAnimationData.push({ isStatic: true });
+                } else {
+                    // This is a twinkling star
+                    // Start twinkling stars as black
+                    starColors.push(0, 0, 0);
 
-                // Store a random value for each star to control its twinkle speed and phase
-                starAnimationData.push(Math.random());
+                    // Store animation state for the twinkling star
+                    starAnimationData.push({
+                        isStatic: false, // Mark as not static
+                        isTwinkling: false,
+                        // Set a random time for the first twinkle to appear (from now up to 10s)
+                        nextTwinkleTime: initialTime + Math.random() * 10000,
+                        twinkleEndTime: 0,
+                        color: new THREE.Color(),
+                        twinkleDuration: 0
+                    });
+                }
             }
 
             starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
@@ -2364,19 +2379,66 @@
             requestAnimationFrame(animate);
 
             // Animate star brightness for twinkling effect
-            if (stars && starAnimationData.length > 0) { // Ensure starAnimationData is not empty
-                const time = performance.now() / 300; // Control overall speed
+            if (stars && starAnimationData.length > 0) {
+                const currentTime = performance.now();
                 const colors = stars.geometry.attributes.color.array;
 
                 for (let i = 0; i < starAnimationData.length; i++) {
-                    const randomFactor = starAnimationData[i];
-                    // Calculate brightness using a sine wave, offset by the random factor
-                    const brightness = (Math.sin(time * (randomFactor * 0.5 + 0.5) + randomFactor * 6.28318) + 1) / 2;
-                    
+                    const starData = starAnimationData[i];
+
+                    // If the star is static, skip it. Its color is fixed.
+                    if (starData.isStatic) {
+                        continue;
+                    }
+
                     const colorIndex = i * 3;
-                    colors[colorIndex] = brightness;
-                    colors[colorIndex + 1] = brightness;
-                    colors[colorIndex + 2] = brightness;
+
+                    if (starData.isTwinkling) {
+                        // Star is currently twinkling, let's fade it out
+                        if (currentTime > starData.twinkleEndTime) {
+                            // Twinkle has ended
+                            colors[colorIndex] = 0;
+                            colors[colorIndex + 1] = 0;
+                            colors[colorIndex + 2] = 0;
+
+                            starData.isTwinkling = false;
+                            // Set a random dark period from 1 to 10 seconds
+                            starData.nextTwinkleTime = currentTime + 1000 + Math.random() * 9000;
+                        } else {
+                            // Fade out effect
+                            const timeRemaining = starData.twinkleEndTime - currentTime;
+                            const brightness = timeRemaining / starData.twinkleDuration; // Fades from 1 to 0
+                            
+                            colors[colorIndex] = starData.color.r * brightness;
+                            colors[colorIndex + 1] = starData.color.g * brightness;
+                            colors[colorIndex + 2] = starData.color.b * brightness;
+                        }
+                    } else {
+                        // Star is dark, check if it's time to twinkle again
+                        if (currentTime > starData.nextTwinkleTime) {
+                            starData.isTwinkling = true;
+                            // Set a short, random duration for the twinkle (e.g., 200-500ms)
+                            starData.twinkleDuration = 200 + Math.random() * 300;
+                            starData.twinkleEndTime = currentTime + starData.twinkleDuration;
+
+                            // Set a new random bright color with a slight tint
+                            const randomTint = Math.random();
+                            if (randomTint < 0.25) { // Cyan tint
+                                starData.color.setRGB(0.8, 1.0, 1.0);
+                            } else if (randomTint < 0.5) { // Yellow tint
+                                starData.color.setRGB(1.0, 1.0, 0.8);
+                            } else if (randomTint < 0.75) { // Magenta tint
+                                starData.color.setRGB(1.0, 0.8, 1.0);
+                            } else { // Pure white
+                                starData.color.setRGB(1.0, 1.0, 1.0);
+                            }
+
+                            // Start at full brightness
+                            colors[colorIndex] = starData.color.r;
+                            colors[colorIndex + 1] = starData.color.g;
+                            colors[colorIndex + 2] = starData.color.b;
+                        }
+                    }
                 }
                 stars.geometry.attributes.color.needsUpdate = true;
             }
