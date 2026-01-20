@@ -833,17 +833,31 @@
         const allImageUrls = Array.from({length: totalImages}, (_, i) => `images/${i + 1}.png`);
         const usedImageUrls = new Set();
         const planets = [];
-        // Speeds are calculated relative to Earth's orbital period for a more realistic simulation.
-        // The base speed is adjusted for visual appeal.
+        
+        // --- Realistic Orbital Speeds ---
+        // The base speed is for Earth and is adjusted for visual appeal in the simulation.
+        // Other planets' speeds are calculated relative to Earth's real orbital period.
+        // Speed = (Earth's Speed) * (Earth's Period / Planet's Period)
+        const EARTH_ORBITAL_PERIOD_DAYS = 365.25;
+        const EARTH_SIMULATION_SPEED = 0.0004;
+
         const planetData = [
-            { name: 'Sao Thủy', distance: 20, size: 2.0, color: 0xcccccc, speed: 0.00167, realSpeed: 47.87 },   // Brighter grey
-            { name: 'Sao Kim', distance: 35, size: 2.3, color: 0xffa500, speed: 0.00065, realSpeed: 35.02 },    // Vibrant orange
-            { name: 'Trái Đất', distance: 50, size: 2.4, color: 0x00bfff, speed: 0.0004, realSpeed: 29.78 },     // Deep sky blue
-            { name: 'Sao Hỏa', distance: 70, size: 2.1, color: 0xff4500, speed: 0.00021, realSpeed: 24.08 },    // Orange-red
-            { name: 'Sao Mộc', distance: 100, size: 8, color: 0xffe0b2, speed: 0.000034, realSpeed: 13.07 },   // Light peach
-            { name: 'Sao Thổ', distance: 140, size: 6.9, color: 0xffd700, speed: 0.000014, realSpeed: 9.69 },   // Gold
-            { name: 'Sao Thiên Vương', distance: 180, size: 4.1, color: 0x87ceeb, speed: 0.0000048, realSpeed: 6.81 },// Sky blue
-            { name: 'Sao Hải Vương', distance: 220, size: 4.0, color: 0x1e90ff, speed: 0.0000024, realSpeed: 5.43 } // Dodger blue
+            // Orbital Period: ~88 Earth days
+            { name: 'Sao Thủy', distance: 20, size: 2.0, color: 0xcccccc, speed: EARTH_SIMULATION_SPEED * (EARTH_ORBITAL_PERIOD_DAYS / 88), realSpeed: 47.87 },
+            // Orbital Period: ~225 Earth days
+            { name: 'Sao Kim', distance: 35, size: 2.3, color: 0xffa500, speed: EARTH_SIMULATION_SPEED * (EARTH_ORBITAL_PERIOD_DAYS / 225), realSpeed: 35.02 },
+            // Orbital Period: ~365 Earth days
+            { name: 'Trái Đất', distance: 50, size: 2.4, color: 0x00bfff, speed: EARTH_SIMULATION_SPEED, realSpeed: 29.78 },
+            // Orbital Period: ~687 Earth days
+            { name: 'Sao Hỏa', distance: 70, size: 2.1, color: 0xff4500, speed: EARTH_SIMULATION_SPEED * (EARTH_ORBITAL_PERIOD_DAYS / 687), realSpeed: 24.08 },
+            // Orbital Period: ~11.86 Earth years
+            { name: 'Sao Mộc', distance: 100, size: 8, color: 0xffe0b2, speed: EARTH_SIMULATION_SPEED / 11.86, realSpeed: 13.07 },
+            // Orbital Period: ~29.46 Earth years
+            { name: 'Sao Thổ', distance: 140, size: 6.9, color: 0xffd700, speed: EARTH_SIMULATION_SPEED / 29.46, realSpeed: 9.69 },
+            // Orbital Period: ~84.02 Earth years
+            { name: 'Sao Thiên Vương', distance: 180, size: 4.1, color: 0x87ceeb, speed: EARTH_SIMULATION_SPEED / 84.02, realSpeed: 6.81 },
+            // Orbital Period: ~164.79 Earth years
+            { name: 'Sao Hải Vương', distance: 220, size: 4.0, color: 0x1e90ff, speed: EARTH_SIMULATION_SPEED / 164.79, realSpeed: 5.43 }
         ];
 
         // --- Loading Manager ---
