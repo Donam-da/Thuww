@@ -507,10 +507,9 @@
             border-radius: 8px;
             box-shadow: 0 0 15px rgba(0,255,255,0.5);
             z-index: 1002;
-            display: none; /* Hidden by default */
+            display: none; /* Hidden by default, will be set to 'flex' by JS */
+            flex-direction: column; /* Stack search bar and list vertically */
             height: 320px; /* Đặt chiều cao cố định để không thay đổi kích thước */
-            overflow-y: auto; /* Kích hoạt thanh cuộn khi nội dung vượt quá chiều cao tối đa */
-            -webkit-overflow-scrolling: touch; /* Giúp cuộn mượt mà trên iOS */
             font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
             font-weight: 100; /* Thinner font weight */
         }
@@ -531,6 +530,14 @@
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.2s ease;
+        }
+        #song-selection-list {
+            flex-grow: 1; /* Take available vertical space */
+            overflow-y: auto; /* Enable scrolling for the list only */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
         .song-list-item:hover {
             background-color: rgba(255, 255, 255, 0.1);
@@ -897,6 +904,12 @@
                 box-shadow: 0 0 10px rgba(0,255,255,0.7); /* Slightly stronger shadow */
             }
 
+            #song-list-overlay {
+                overflow-y: hidden; /* Prevent the whole overlay from scrolling */
+                display: none; /* Will be set to flex */
+                flex-direction: column; /* Stack items vertically */
+            }
+
             #close-dropmenu-btn,
             #close-song-menu-btn {
                 top: 5px;
@@ -1017,7 +1030,7 @@
         <div id="song-list-overlay">
             <span id="close-song-menu-btn">&times;</span>
             <input type="text" id="song-search-input" placeholder="Tìm kiếm theo tên bài hát, ca sĩ...">
-            <ul id="song-selection-list" style="list-style: none; padding: 0; margin: 0;">
+            <ul id="song-selection-list">
                 <!-- Song items will be inserted here -->
             </ul>
         </div> <!-- Đóng thẻ div cho song-list-overlay -->
@@ -2432,7 +2445,7 @@
         }
 
         function showSongList() {
-            songListOverlay.style.display = 'block';
+            songListOverlay.style.display = 'flex';
             isSongListOpen = true;
             if (isPlanetListOpen) { // Nếu danh sách hành tinh đang mở, đóng nó lại
                 hidePlanetList();
@@ -2444,16 +2457,19 @@
             controls.enabled = false; // Tắt điều khiển 3D khi mở danh sách nhạc
             populateSongList();
 
-            // Scroll to the currently playing song
-            const currentSongItem = songSelectionList.querySelector('.current-song');
-            if (currentSongItem) {
-                currentSongItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            
             // Add global listener to close menu
             document.addEventListener('click', handleOutsideSongInteraction, true);
             document.addEventListener('touchend', handleOutsideSongInteraction, true);
             songSearchInput.focus();
+
+            // Scroll to the currently playing song after a short delay.
+            // This ensures it happens after the DOM is updated and focus is set, preventing conflicts.
+            setTimeout(() => {
+                const currentSongItem = songSelectionList.querySelector('.current-song');
+                if (currentSongItem) {
+                    currentSongItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 0);
         }
 
         function hideSongList() {
