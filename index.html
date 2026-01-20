@@ -1082,7 +1082,7 @@
                 imageGroup: imageGroup
             };
             
-            const orbitGeometry = new THREE.TorusGeometry(data.distance, 0.1, 16, 128); // Use TorusGeometry for a 3D tube shape
+            const orbitGeometry = new THREE.TorusGeometry(data.distance, 0.2, 16, 128); // Use TorusGeometry for a 3D tube shape
             const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, opacity: 0.8, transparent: true }); // Brighter cyan, higher opacity
             const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
             orbit.rotation.x = -Math.PI / 2;
