@@ -116,10 +116,7 @@
             display: block; /* Đảm bảo nút luôn hiển thị */
         }
         #overview-btn { /* Kiểu dáng cho nút mới */
-            position: fixed; /* Định vị cố định */
-            bottom: 20px; /* Mặc định ở góc dưới bên phải cho desktop */
-            right: 20px;
-            z-index: 1001;
+            z-index: 1001; /* z-index is still useful within the flex container */
             padding: 10px 15px;
             background-color: transparent;
             color: white;
@@ -149,6 +146,16 @@
             z-index: 1001;
             display: flex;
             align-items: flex-end; /* Align to bottom */
+            gap: 10px;
+        }
+        #bottom-right-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1001;
+            display: flex;
+            flex-direction: row-reverse; /* To keep overview button on the far right */
+            align-items: flex-end;
             gap: 10px;
         }
 
@@ -367,6 +374,67 @@
             border-radius: 50%;
             border: 2px solid rgba(0, 255, 255, 0.75);
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+
+        /* --- Zoom Control --- */
+        #zoom-control-container {
+            position: relative; /* For slider positioning */
+        }
+
+        #zoom-btn {
+            /* Match other icon buttons */
+            padding: 10px 15px;
+            background-color: transparent;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #zoom-slider-container {
+            position: absolute;
+            right: calc(100% + 10px); /* Position to the left of the button */
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: transparent;
+            padding: 10px 15px;
+            border-radius: 8px;
+            z-index: 1002;
+        }
+
+        #zoom-level-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 120px;
+            height: 20px;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        #zoom-level-slider::-webkit-slider-runnable-track {
+            height: 4px;
+            background: rgba(0, 255, 255, 0.15);
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            border-radius: 3px;
+        }
+        #zoom-level-slider::-moz-range-track {
+            height: 4px;
+            background: rgba(0, 255, 255, 0.15);
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            border-radius: 3px;
+        }
+
+        #zoom-level-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px; width: 16px; background: transparent; border-radius: 50%;
+            border: 1px solid rgba(0, 255, 255, 0.5); margin-top: -7px;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+        }
+        #zoom-level-slider::-moz-range-thumb {
+            height: 16px; width: 16px; background: transparent; border-radius: 50%;
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
         }
 
         /* Hide Scrollbar */
@@ -723,12 +791,22 @@
                 max-width: 100px; /* Giảm chiều rộng thêm */
             }
 
+            #bottom-right-controls {
+                top: 20px;
+                bottom: auto;
+                right: 10px;
+                left: auto;
+                align-items: flex-start;
+            }
+
             #overview-btn { /* Kiểu dáng mobile cho nút mới */
-                top: 20px; /* Di chuyển lên góc trên bên phải cho mobile */
-                bottom: auto; /* Hủy bỏ định vị bottom */
                 padding: 8px 12px; /* Smaller padding */
                 font-size: 14px; /* Smaller font size */
                 border: none; /* Bỏ viền */
+            }
+            #zoom-btn {
+                padding: 8px 12px;
+                font-size: 14px;
             }
             #more-options-btn { /* Kiểu dáng mobile cho nút 3 chấm */
                 padding: 8px 12px;
@@ -927,8 +1005,16 @@
                 </div>
             </div>
         </div>
-        <button id="overview-btn">Toàn cảnh</button>
         <!-- Canvas and renderers will be appended here by Three.js -->
+        <div id="bottom-right-controls">
+            <button id="overview-btn">Toàn cảnh</button>
+            <div id="zoom-control-container">
+                <button id="zoom-btn"><i class="fas fa-eye"></i></button>
+                <div id="zoom-slider-container" style="display: none;">
+                    <input type="range" id="zoom-level-slider" min="10" max="120" value="75">
+                </div>
+            </div>
+        </div>
     </div>
 
     <audio id="background-music"></audio>
@@ -1405,6 +1491,9 @@
                 if (isSongListOpen) { // Nếu danh sách nhạc đang mở, đóng nó lại
                     hideSongList();
                 }
+                if (isZoomSliderOpen) {
+                    hideZoomSlider();
+                }
                 if (isVolumeSliderOpen) hideVolumeSlider();
                 if (isSettingsMenuOpen) { // Nếu menu cài đặt đang mở, đóng nó lại
                     hideSettingsMenu();
@@ -1449,6 +1538,9 @@
                 }
                 if (isSettingsMenuOpen) {
                     hideSettingsMenu();
+                }
+                if (isZoomSliderOpen) {
+                    hideZoomSlider();
                 }
             }
         });
@@ -1530,6 +1622,12 @@
         const volumeIcon = volumeBtn.querySelector('i');
         let isVolumeSliderOpen = false;
 
+        // New zoom control elements
+        const zoomBtn = document.getElementById('zoom-btn');
+        const zoomSliderContainer = document.getElementById('zoom-slider-container');
+        const zoomLevelSlider = document.getElementById('zoom-level-slider');
+        let isZoomSliderOpen = false;
+
         // --- Settings Persistence ---
         function saveSettings() {
             const settings = {
@@ -1539,7 +1637,8 @@
                 speed: speedSlider.value,
                 orbitsVisible: areOrbitsVisible,
                 visualizerVisible: isVisualizerVisible,
-                volume: volumeSlider.value
+                volume: volumeSlider.value,
+                fov: camera.fov
             };
             localStorage.setItem('solarSystemSettings', JSON.stringify(settings));
         }
@@ -1560,6 +1659,7 @@
                 const visualizerVisible = settings.visualizerVisible === false ? false : true;
                 // Load volume, defaulting to 100 if not found
                 const volume = settings.volume || '100';
+                const fov = settings.fov || 75; // Load FOV, default to 75
 
                 // Cập nhật giá trị cho các thanh trượt
                 radiusSlider.value = radius;
@@ -1598,6 +1698,11 @@
                 updateVolumeIcon(volume / 100);
                 updateVolumeSliderVisual(volume);
 
+                // Apply FOV setting
+                camera.fov = fov;
+                camera.updateProjectionMatrix();
+                zoomLevelSlider.value = fov;
+
                 // Tái tạo lại các vì sao với giá trị mật độ và bán kính đã được tải
                 regenerateStarfield(parseInt(density), parseFloat(radius));
             }
@@ -1610,6 +1715,7 @@
             if (isPlanetListOpen) hidePlanetList();
             if (isSongListOpen) hideSongList();
             if (isVolumeSliderOpen) hideVolumeSlider();
+            if (isZoomSliderOpen) hideZoomSlider();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideSettingsInteraction, true);
             document.addEventListener('touchend', handleOutsideSettingsInteraction, true);
@@ -1620,6 +1726,7 @@
             isVolumeSliderOpen = true;
             if (isSettingsMenuOpen) hideSettingsMenu();
             if (isSongListOpen) hideSongList();
+            if (isZoomSliderOpen) hideZoomSlider();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideVolumeInteraction, true);
             document.addEventListener('touchend', handleOutsideVolumeInteraction, true);
@@ -1654,6 +1761,36 @@
         function handleOutsideVolumeInteraction(event) {
             if (isVolumeSliderOpen && !volumeSliderContainer.contains(event.target) && !volumeBtn.contains(event.target)) {
                 hideVolumeSlider();
+            }
+        }
+
+        // New functions for zoom slider
+        function showZoomSlider() {
+            zoomSliderContainer.style.display = 'block';
+            isZoomSliderOpen = true;
+            // Close other menus
+            if (isSettingsMenuOpen) hideSettingsMenu();
+            if (isSongListOpen) hideSongList();
+            if (isPlanetListOpen) hidePlanetList();
+            if (isVolumeSliderOpen) hideVolumeSlider();
+            controls.enabled = false;
+            document.addEventListener('click', handleOutsideZoomInteraction, true);
+            document.addEventListener('touchend', handleOutsideZoomInteraction, true);
+        }
+
+        function hideZoomSlider() {
+            zoomSliderContainer.style.display = 'none';
+            isZoomSliderOpen = false;
+            if (!isCameraAnimating && !isViewLocked) {
+                controls.enabled = true;
+            }
+            document.removeEventListener('click', handleOutsideZoomInteraction, true);
+            document.removeEventListener('touchend', handleOutsideZoomInteraction, true);
+        }
+
+        function handleOutsideZoomInteraction(event) {
+            if (isZoomSliderOpen && !zoomSliderContainer.contains(event.target) && !zoomBtn.contains(event.target)) {
+                hideZoomSlider();
             }
         }
 
@@ -1718,6 +1855,19 @@
             audioPlayer.volume = volume;
             updateVolumeIcon(volume);
             updateVolumeSliderVisual(volumeSlider.value);
+            saveSettings();
+        });
+
+        // Zoom slider logic
+        zoomBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            isZoomSliderOpen ? hideZoomSlider() : showZoomSlider();
+        });
+
+        zoomLevelSlider.addEventListener('input', () => {
+            const fov = parseFloat(zoomLevelSlider.value);
+            camera.fov = fov;
+            camera.updateProjectionMatrix();
             saveSettings();
         });
 
@@ -2160,6 +2310,7 @@
             if (isPlanetListOpen) { // Nếu danh sách hành tinh đang mở, đóng nó lại
                 hidePlanetList();
             }
+            if (isZoomSliderOpen) hideZoomSlider();
             if (isSettingsMenuOpen) hideSettingsMenu();
             if (isVolumeSliderOpen) hideVolumeSlider();
             // musicControls2D.style.display = 'none'; // Removed: Keep 2D music controls visible when song list is open
@@ -2203,6 +2354,9 @@
             } else {
                 if (isPlanetListOpen) { // Nếu danh sách hành tinh đang mở, đóng nó lại
                     hidePlanetList();
+                }
+                if (isZoomSliderOpen) {
+                    hideZoomSlider();
                 }
                 if (isVolumeSliderOpen) hideVolumeSlider();
                 if (isSettingsMenuOpen) { // Nếu menu cài đặt đang mở, đóng nó lại
