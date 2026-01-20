@@ -817,6 +817,10 @@
                     <label for="speed-slider">Tốc độ quỹ đạo (<span id="speed-value">5.00</span>x)</label>
                     <input type="range" id="speed-slider" min="1" max="100" value="5" step="0.01">
                 </li>
+                <li class="settings-list-item" id="toggle-orbits-btn" style="cursor: pointer;">
+                    <!-- The text inside the label will be controlled by JavaScript -->
+                    <label style="pointer-events: none; margin-bottom: 0;">Ẩn Quỹ đạo</label>
+                </li>
             </ul>
         </div> <!-- Đóng thẻ div cho song-list-overlay -->
         <button id="overview-btn">Toàn cảnh</button> <!-- Moved here -->
@@ -1103,6 +1107,7 @@
             const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, opacity: 0.8, transparent: true }); // Brighter cyan, higher opacity
             const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
             orbit.rotation.x = -Math.PI / 2;
+            orbit.userData.isOrbit = true; // Flag to identify orbits
                         scene.add(orbit);
                         
                         if (data.name === 'Sao Thổ') {
@@ -1404,6 +1409,11 @@
         const speedSlider = document.getElementById('speed-slider');
         const speedValue = document.getElementById('speed-value');
 
+        // New orbit toggle elements
+        const toggleOrbitsBtn = document.getElementById('toggle-orbits-btn');
+        const toggleOrbitsLabel = toggleOrbitsBtn.querySelector('label');
+        let areOrbitsVisible = true; // Default state: orbits are visible
+
         // --- Settings Persistence ---
         function saveSettings() {
             const settings = {
@@ -1425,6 +1435,8 @@
                 const density = settings.density || densitySlider.value;
                 const zoom = settings.zoom || zoomSlider.value;
                 const speed = settings.speed || speedSlider.value;
+                // Load orbit visibility, defaulting to true if not found or not explicitly false
+                const orbitsVisible = settings.orbitsVisible === false ? false : true;
 
                 // Cập nhật giá trị cho các thanh trượt
                 radiusSlider.value = radius;
@@ -1441,6 +1453,15 @@
                 // Cập nhật các biến trạng thái của ứng dụng
                 controls.maxDistance = parseInt(zoom);
                 planetSpeedMultiplier = parseFloat(speed);
+
+                // Apply orbit visibility
+                areOrbitsVisible = orbitsVisible;
+                scene.children.forEach(child => {
+                    if (child.userData.isOrbit) {
+                        child.visible = areOrbitsVisible;
+                    }
+                });
+                toggleOrbitsLabel.textContent = areOrbitsVisible ? 'Ẩn Quỹ đạo' : 'Hiện Quỹ đạo';
 
                 // Tái tạo lại các vì sao với giá trị mật độ và bán kính đã được tải
                 regenerateStarfield(parseInt(density), parseFloat(radius));
@@ -1482,6 +1503,24 @@
         closeSettingsBtn.addEventListener('click', (event) => {
             event.stopPropagation();
             hideSettingsMenu();
+        });
+
+        // Add event listener for the new orbit toggle button
+        toggleOrbitsBtn.addEventListener('click', () => {
+            areOrbitsVisible = !areOrbitsVisible; // Toggle the state
+
+            // Apply the new visibility to all orbits
+            scene.children.forEach(child => {
+                if (child.userData.isOrbit) {
+                    child.visible = areOrbitsVisible;
+                }
+            });
+
+            // Update the button text
+            toggleOrbitsLabel.textContent = areOrbitsVisible ? 'Ẩn Quỹ đạo' : 'Hiện Quỹ đạo';
+
+            // Save the new setting
+            saveSettings();
         });
 
         // Slider functionalities
