@@ -736,7 +736,6 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
 </head>
 <body>
-    <div id="music-player-scene-container"></div>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
     <div id="loader-overlay">
@@ -901,11 +900,26 @@
 
         // --- Scene Setup ---
         const scene = new THREE.Scene();
+        const scene_bg = new THREE.Scene(); // Scene for background elements (stars, music player)
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 60000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        
+        // Foreground WebGL Renderer (Planets)
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // alpha:true for transparent background
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.domElement.style.position = 'absolute';
+        renderer.domElement.style.top = '0px';
+        renderer.domElement.style.zIndex = 2; // Above background CSS and WebGL
         document.getElementById('main-scene').appendChild(renderer.domElement);
         
+        // Background WebGL Renderer (Stars)
+        const renderer_bg = new THREE.WebGLRenderer({ antialias: true });
+        renderer_bg.setSize(window.innerWidth, window.innerHeight);
+        renderer_bg.domElement.style.position = 'absolute';
+        renderer_bg.domElement.style.top = '0px';
+        renderer_bg.domElement.style.zIndex = 0; // At the very back
+        // Insert at the beginning of the container so it's naturally behind other elements added later
+        document.getElementById('main-scene').insertBefore(renderer_bg.domElement, document.getElementById('main-scene').firstChild);
+
         // --- Starfield ---
         let stars;
         // Store data for animating each star individually
@@ -930,7 +944,7 @@
         function regenerateStarfield(numStars, radiusMultiplier) {
             // 1. Clean up old starfield if it exists
             if (stars) {
-                scene.remove(stars);
+                scene_bg.remove(stars); // Remove from background scene
                 stars.geometry.dispose();
                 stars.material.dispose();
                 stars = null;
@@ -992,7 +1006,7 @@
             });
 
             stars = new THREE.Points(starGeometry, starMaterial);
-            scene.add(stars);
+            scene_bg.add(stars); // Add to background scene
 
             // Update current values
             currentStarCount = numStars;
@@ -1001,26 +1015,29 @@
         regenerateStarfield(currentStarCount, currentRadiusMultiplier);
 
         // --- Label Renderer Setup ---
-        const labelRenderer = new THREE.CSS2DRenderer();
-        labelRenderer.setSize(window.innerWidth, window.innerHeight);
-        labelRenderer.domElement.style.position = 'absolute';
-        labelRenderer.domElement.style.top = '0px';
-        document.getElementById('main-scene').appendChild(labelRenderer.domElement);
+        // Foreground CSS Renderer (Planet Labels)
+        const labelRenderer_fg = new THREE.CSS2DRenderer();
+        labelRenderer_fg.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer_fg.domElement.style.position = 'absolute';
+        labelRenderer_fg.domElement.style.top = '0px';
+        labelRenderer_fg.domElement.style.zIndex = 3; // On top of everything
+        document.getElementById('main-scene').appendChild(labelRenderer_fg.domElement);
 
-        // --- Music Player Scene & Renderer (Không gian nền) ---
-        const musicPlayerScene = new THREE.Scene();
-        const musicPlayerRenderer = new THREE.CSS2DRenderer();
-        musicPlayerRenderer.setSize(window.innerWidth, window.innerHeight);
-        musicPlayerRenderer.domElement.style.position = 'absolute';
-        musicPlayerRenderer.domElement.style.top = '0px';
-        document.getElementById('music-player-scene-container').appendChild(musicPlayerRenderer.domElement);
+        // Background CSS Renderer (Music Player)
+        const labelRenderer_bg = new THREE.CSS2DRenderer();
+        labelRenderer_bg.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer_bg.domElement.style.position = 'absolute';
+        labelRenderer_bg.domElement.style.top = '0px';
+        labelRenderer_bg.domElement.style.zIndex = 1; // Above background stars, behind foreground planets
+        labelRenderer_bg.domElement.style.pointerEvents = 'none'; // Allow clicks to pass through to the planet scene
+        document.getElementById('main-scene').appendChild(labelRenderer_bg.domElement);
 
         // --- Lighting ---
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
         scene.add(ambientLight);
 
         // --- Controls ---
-        const controls = new THREE.OrbitControls(camera, labelRenderer.domElement);
+        const controls = new THREE.OrbitControls(camera, labelRenderer_fg.domElement); // Controls interact with the foreground
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.minDistance = 10;
@@ -1734,7 +1751,35 @@
         const progressHandle2D = document.getElementById('music-player-progress-handle-2d'); // Tham chiếu đến chấm kéo mới
         // New variables for the 3D music player
         let musicPlayerObject = null;
-        let currentSongIndex = -1;        
+        let currentSongIndex = -1;
+        // Biến cho hiệu ứng trôi nổi của trình phát nhạc
+        const musicPlayerFloatInfo = {
+            targetPosition: new THREE.Vector3(0, 50, -250), // Vị trí mục tiêu ban đầu để nó xuất hiện trước camera
+            timeToNewTarget: 0, // Sẽ được đặt khi chạy lần đầu, buộc phải có mục tiêu mới ngay lập tức
+            lerpAlpha: 0.0005, // Tốc độ di chuyển đến mục tiêu (giá trị nhỏ hơn = chậm hơn, trôi hơn)
+            movementRadius: 350, // Bán kính của khối cầu mà trình phát nhạc sẽ di chuyển bên trong
+            minTargetChangeTime: 5000, // Thời gian tối thiểu trước khi đổi mục tiêu (5 giây)
+            maxTargetChangeTime: 10000 // Thời gian tối đa trước khi đổi mục tiêu (10 giây)
+        };
+
+        function setNewMusicPlayerTarget() {
+            const radius = musicPlayerFloatInfo.movementRadius;
+            // Tạo một điểm ngẫu nhiên trong một hình cầu để có chuyển động 3D thực sự
+            const r = radius * Math.cbrt(Math.random()); // Phân bố đồng đều trong hình cầu
+            const theta = Math.random() * 2 * Math.PI;
+            const phi = Math.acos((2 * Math.random()) - 1);
+            
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi);
+
+            musicPlayerFloatInfo.targetPosition.set(x, y, z);
+            
+            // Đặt thời gian cho lần thay đổi mục tiêu tiếp theo
+            const timeRange = musicPlayerFloatInfo.maxTargetChangeTime - musicPlayerFloatInfo.minTargetChangeTime;
+            musicPlayerFloatInfo.timeToNewTarget = Date.now() + musicPlayerFloatInfo.minTargetChangeTime + Math.random() * timeRange;
+        }
+
         // Playback mode variables
         let playbackMode = 'sequential'; // 'repeat-one', 'sequential', 'random'
         let shuffledSongIndices = [];
@@ -2123,7 +2168,7 @@
 
         function hideMusicPlayer() {
             if (musicPlayerObject) {
-                musicPlayerScene.remove(musicPlayerObject);
+                scene_bg.remove(musicPlayerObject); // Xóa khỏi scene nền
                 musicPlayerObject.element.remove(); // Clean up the DOM element
                 musicPlayerObject = null;
             }
@@ -2205,12 +2250,9 @@
             // --- Create and Position 2D Object ---
             musicPlayerObject = new THREE.CSS2DObject(playerContainer);
 
-            // Đặt trình phát nhạc ở một vị trí cố định trong không gian nền (background scene)
-            // để nó không bao giờ tương tác hay che khuất hệ mặt trời.
-            const playerPosition = new THREE.Vector3(0, 85, -15000); // Dịch xuống 15 đơn vị so với vị trí cũ (100)
-
-            musicPlayerObject.position.copy(playerPosition);
-            musicPlayerScene.add(musicPlayerObject); // Thêm trình phát nhạc 3D vào scene nền
+            // Vị trí của trình phát nhạc sẽ được cập nhật liên tục trong vòng lặp animate.
+            // Thêm nó vào scene nền để nó di chuyển trong không gian 3D phía sau hệ mặt trời.
+            scene_bg.add(musicPlayerObject); // Thêm vào scene nền
             show2DMusicControls(); // Show the 2D controls
             playSong(song.file);
             // Call the function to handle scrolling after the player is in the DOM
@@ -2451,7 +2493,7 @@
             // Thay đổi kích thước và vị trí của trình phát nhạc 3D theo yêu cầu
             if (musicPlayerObject && musicPlayerObject.element) {
                 musicPlayerObject.element.style.transition = 'transform 0.5s ease-out';
-                musicPlayerObject.element.style.transform = 'scale(0.7) translateY(-50px)';
+                musicPlayerObject.element.style.transform = 'scale(0.7) translateY(-200px)';
             }
 
             // Di chuyển trình phát nhạc xuống
@@ -2725,6 +2767,18 @@
         function animate() {
             requestAnimationFrame(animate);
 
+            // Hiệu ứng trôi nổi ngẫu nhiên, lộn xộn cho trình phát nhạc
+            if (musicPlayerObject) {
+                const time = Date.now();
+                // Nếu đã đến lúc hoặc đã đến rất gần mục tiêu, hãy đặt một mục tiêu mới
+                if (time > musicPlayerFloatInfo.timeToNewTarget || musicPlayerObject.position.distanceTo(musicPlayerFloatInfo.targetPosition) < 20) {
+                    setNewMusicPlayerTarget();
+                }
+
+                // Di chuyển mượt mà (lerp) đến vị trí mục tiêu để tạo hiệu ứng "trôi"
+                musicPlayerObject.position.lerp(musicPlayerFloatInfo.targetPosition, musicPlayerFloatInfo.lerpAlpha);
+            }
+
             // Animate star brightness for twinkling effect
             if (stars && starAnimationData.length > 0) {
                 const currentTime = performance.now();
@@ -2870,12 +2924,12 @@
                         restoreDefaultControls(); // Đảm bảo min/max distance được đặt lại
 
                         // Temporarily disable interaction to prevent accidental clicks after overview
-                        labelRenderer.domElement.removeEventListener('click', onInteraction, true);
-                        labelRenderer.domElement.removeEventListener('touchend', onInteraction, true);
+                        labelRenderer_fg.domElement.removeEventListener('click', onInteraction, true);
+                        labelRenderer_fg.domElement.removeEventListener('touchend', onInteraction, true);
 
                         const reenableInteraction = () => {
-                            labelRenderer.domElement.addEventListener('click', onInteraction, true);
-                            labelRenderer.domElement.addEventListener('touchend', onInteraction, true);
+                            labelRenderer_fg.domElement.addEventListener('click', onInteraction, true);
+                            labelRenderer_fg.domElement.addEventListener('touchend', onInteraction, true);
                         };
                         controls.addEventListener('change', reenableInteraction, { once: true });
                     }
@@ -2921,22 +2975,29 @@
                 // OrbitControls.update() sẽ tự xử lý việc di chuyển camera tương đối với mục tiêu mới
                 // Không cần đặt camera.position một cách rõ ràng ở đây.
             }
-
-            renderer.setClearColor(0x000000, 0); // Xóa nền của scene chính để scene nền có thể nhìn thấy
-
+            
             controls.update();
             drawVisualizer(); // Call the visualizer drawing function
-            musicPlayerRenderer.render(musicPlayerScene, camera); // Render scene nền (khung nhạc)
-            renderer.render(scene, camera); // Render scene chính (hệ mặt trời)
-            labelRenderer.render(scene, camera); // Render các nhãn của scene chính
+
+            // 1. Render background WebGL (stars)
+            renderer_bg.render(scene_bg, camera);
+            // 2. Render background CSS (music player)
+            labelRenderer_bg.render(scene_bg, camera);
+            // 3. Render foreground WebGL (solar system) with a transparent background
+            renderer.render(scene, camera);
+            // 4. Render foreground CSS (planet labels)
+            labelRenderer_fg.render(scene, camera);
         }
 
         // --- Event Listeners & Initial Calls ---
         window.addEventListener('resize', () => { 
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
+
+            renderer_bg.setSize(window.innerWidth, window.innerHeight);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer_bg.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer_fg.setSize(window.innerWidth, window.innerHeight);
             // Recalculate overview position on resize
             overviewCameraPosition = calculateOverviewCameraPosition();
             // Nếu đang ở chế độ toàn cảnh, kích hoạt lại hoạt ảnh để cập nhật vị trí
@@ -2956,8 +3017,8 @@
             }
         }, false);
         
-        labelRenderer.domElement.addEventListener('click', onInteraction, true); // Use capturing phase for click
-        labelRenderer.domElement.addEventListener('touchend', onInteraction, true); // Use capturing phase for touchend
+        labelRenderer_fg.domElement.addEventListener('click', onInteraction, true); // Use capturing phase for click on foreground
+        labelRenderer_fg.domElement.addEventListener('touchend', onInteraction, true); // Use capturing phase for touchend on foreground
 
         // Tự động mở khóa chế độ xem nếu người dùng tương tác thủ công với controls
         controls.addEventListener('start', () => {
