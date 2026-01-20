@@ -472,21 +472,43 @@
             display: none; /* Chrome, Safari, Opera */
         }
 
+        /* --- Search Input for Song List --- */
+        #song-search-input {
+            width: 100%;
+            padding: 8px 10px;
+            margin-bottom: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            border-radius: 4px;
+            color: white;
+            font-family: 'VN Time', Arial, sans-serif;
+            font-weight: 100;
+            font-size: 14px;
+            box-sizing: border-box; /* Ensure padding doesn't affect width */
+        }
+        #song-search-input:focus {
+            outline: none;
+            border-color: rgba(0, 255, 255, 0.75);
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+        }
+        #song-search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
         /* --- Music Player Styles --- */
         /* Style for #select-song-btn is now consolidated */
         #song-list-overlay {
             position: fixed;
             top: 110px;
-            right: 20px; /* Align with the button */
-            width: fit-content;
-            min-width: 220px; /* Increased width for longer names */ /* Nền trong suốt */
+            right: 20px; /* Căn chỉnh với nút */
+            width: 250px; /* Đặt chiều rộng cố định để không thay đổi kích thước khi tìm kiếm */
             background-color: transparent;
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 0 15px rgba(0,255,255,0.5);
             z-index: 1002;
             display: none; /* Hidden by default */
-            max-height: 320px; /* Hiển thị khoảng 7 bài hát */
+            height: 320px; /* Đặt chiều cao cố định để không thay đổi kích thước */
             overflow-y: auto; /* Kích hoạt thanh cuộn khi nội dung vượt quá chiều cao tối đa */
             -webkit-overflow-scrolling: touch; /* Giúp cuộn mượt mà trên iOS */
             font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
@@ -869,7 +891,7 @@
                 min-width: 180px; /* Đặt lại min-width để tránh quá nhỏ */
                 padding: 8px; /* Adjust padding */
                 background-color: transparent; /* Nền trong suốt */
-                max-height: 220px; /* Adjusted to show approx 7 items */
+                height: 220px; /* Đặt chiều cao cố định */
                 overflow-y: auto; /* Cho phép cuộn nếu nội dung quá dài */
                 -webkit-overflow-scrolling: touch; /* Giúp cuộn mượt mà trên iOS */
                 box-shadow: 0 0 10px rgba(0,255,255,0.7); /* Slightly stronger shadow */
@@ -994,6 +1016,7 @@
         </div>
         <div id="song-list-overlay">
             <span id="close-song-menu-btn">&times;</span>
+            <input type="text" id="song-search-input" placeholder="Tìm kiếm theo tên bài hát, ca sĩ...">
             <ul id="song-selection-list" style="list-style: none; padding: 0; margin: 0;">
                 <!-- Song items will be inserted here -->
             </ul>
@@ -2182,6 +2205,7 @@
         const songListOverlay = document.getElementById('song-list-overlay');
         const songSelectionList = document.getElementById('song-selection-list');
         const closeSongMenuBtn = document.getElementById('close-song-menu-btn');
+        const songSearchInput = document.getElementById('song-search-input');
         let isSongListOpen = false;
         let isPlanetListOpen = false; // New: Track if planet list is open
         // Global variables for audio visualization
@@ -2357,41 +2381,47 @@
         const repeatOneBtn = document.getElementById('repeat-one-btn');
         const sequentialBtn = document.getElementById('sequential-btn');
         const shuffleBtn = document.getElementById('shuffle-btn');
+        songSearchInput.addEventListener('input', populateSongList);
+
         function populateSongList() {
+            const query = songSearchInput.value.toLowerCase().trim();
             songSelectionList.innerHTML = ''; // Clear previous list
-            songs.forEach((song, index) => {
+            const currentPlayingSong = songs[currentSongIndex];
+
+            songs.forEach(song => {
+                // Filter logic: if query exists and song name doesn't include it, skip
+                if (query && !song.name.toLowerCase().includes(query)) {
+                    return;
+                }
+
                 const listItem = document.createElement('li');
                 listItem.className = 'song-list-item';
 
-                // Làm đậm bài hát đang được chọn
-                if (index === currentSongIndex) {
+                // Highlight the currently playing song by comparing objects or IDs
+                if (currentPlayingSong && song.id === currentPlayingSong.id) {
                     listItem.classList.add('current-song');
                 }
 
                 // Split the song name into title and artist(s)
-                const parts = song.name.split(' - ', 2); // Split by ' - ' (space-hyphen-space)
+                const parts = song.name.split(' - ', 2);
                 if (parts.length > 1) {
                     const songTitleSpan = document.createElement('span');
-                    // Thêm số thứ tự vào trước tên bài hát
                     songTitleSpan.textContent = `${song.id}. ${parts[0]}`;
-                    songTitleSpan.style.fontWeight = 'bold'; // Make the song title bold
+                    songTitleSpan.style.fontWeight = 'bold';
                     listItem.appendChild(songTitleSpan);
 
                     const artistSpan = document.createElement('span');
-                    artistSpan.textContent = ` - ${parts[1]}`; // Re-add the hyphen and space
-                    artistSpan.classList.add('artist-name'); // Apply faded style
+                    artistSpan.textContent = ` - ${parts[1]}`;
+                    artistSpan.classList.add('artist-name');
                     listItem.appendChild(artistSpan);
                 } else {
-                    // No hyphen found, display the whole name as bold
                     const songTitleSpan = document.createElement('span');
-                    // Thêm số thứ tự vào trước tên bài hát
                     songTitleSpan.textContent = `${song.id}. ${song.name}`;
                     songTitleSpan.style.fontWeight = 'bold';
                     listItem.appendChild(songTitleSpan);
                 }
                 listItem.addEventListener('click', () => {
-                    const songIndex = songs.findIndex(s => s.file === song.file);
-                    audioPlayer.pause(); // Pause current song before showing new player
+                    const songIndex = songs.findIndex(s => s.id === song.id); // Find index in original array
                     if (songIndex !== -1) {
                         showMusicPlayer(songIndex);
                     }
@@ -2423,6 +2453,7 @@
             // Add global listener to close menu
             document.addEventListener('click', handleOutsideSongInteraction, true);
             document.addEventListener('touchend', handleOutsideSongInteraction, true);
+            songSearchInput.focus();
         }
 
         function hideSongList() {
@@ -2436,6 +2467,7 @@
             // Remove global listener
             document.removeEventListener('click', handleOutsideSongInteraction, true);
             document.removeEventListener('touchend', handleOutsideSongInteraction, true);
+            songSearchInput.value = ''; // Clear search input
         }
 
         function handleOutsideSongInteraction(event) {
