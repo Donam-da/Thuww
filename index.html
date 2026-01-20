@@ -132,9 +132,6 @@
             font-size: 16px;
         }
         #more-options-btn { /* Nút 3 chấm mới */
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
             z-index: 1001;
             padding: 10px 15px;
             background-color: transparent;
@@ -145,6 +142,16 @@
             font-size: 16px; /* Giữ kích thước icon nhất quán */
             display: block;
         }
+        #bottom-left-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1001;
+            display: flex;
+            align-items: flex-end; /* Align to bottom */
+            gap: 10px;
+        }
+
         /* --- Settings Menu --- */
         #settings-overlay {
             position: fixed;
@@ -282,6 +289,84 @@
         .planet-list-item.current-planet {
             color: rgba(0, 255, 255, 0.5); /* Cyan color */
             text-shadow: 0 0 8px rgba(0, 255, 255, 0.5); /* Glowing effect */
+        }
+        /* --- Volume Control --- */
+        #volume-control-container {
+            position: relative; /* For slider positioning */
+        }
+
+        #volume-btn {
+            /* Match other icon buttons */
+            padding: 10px 15px;
+            background-color: transparent;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #volume-slider-container {
+            position: absolute;
+            left: calc(100% + 15px); /* Position to the right of the button */
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: transparent;
+            padding: 10px 15px; /* Adjusted for horizontal layout */
+            border-radius: 8px;
+            /* box-shadow: 0 0 15px rgba(0,255,255,0.5); */ /* Đã xóa hiệu ứng đổ bóng để làm cho khung chứa trong suốt */
+            z-index: 1002;
+        }
+
+        /* Horizontal Slider Styles */
+        #volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 120px;
+            height: 20px; /* Container height for track/thumb */
+            background: transparent;
+            cursor: pointer;
+        }
+
+        /* Track */
+        #volume-slider::-webkit-slider-runnable-track {
+            height: 4px;
+            background: linear-gradient(to right, 
+                rgba(0, 255, 255, 0.75) var(--volume-progress, 100%), 
+                transparent var(--volume-progress, 100%) /* Làm cho nền của phần chưa điền trong suốt */
+            );
+            /* border: 1px solid rgba(0, 255, 255, 0.4); */ /* Đã xóa viền để trong suốt hoàn toàn */
+            border-radius: 3px;
+        }
+        #volume-slider::-moz-range-track {
+            height: 4px;
+            background: linear-gradient(to right, 
+                rgba(0, 255, 255, 0.75) var(--volume-progress, 100%), 
+                transparent var(--volume-progress, 100%) /* Làm cho nền của phần chưa điền trong suốt */
+            );
+            /* border: 1px solid rgba(0, 255, 255, 0.4); */ /* Đã xóa viền để trong suốt hoàn toàn */
+            border-radius: 3px;
+        }
+
+        /* Thumb */
+        #volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -7px; /* Center on track */
+            width: 16px;
+            height: 16px;
+            background: transparent;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 255, 255, 0.75);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+        #volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: transparent;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 255, 255, 0.75);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
         }
 
         /* Hide Scrollbar */
@@ -646,16 +731,22 @@
                 border: none; /* Bỏ viền */
             }
             #more-options-btn { /* Kiểu dáng mobile cho nút 3 chấm */
-                top: 20px;
-                bottom: auto;
-                left: 20px;
-                right: auto;
                 padding: 8px 12px;
                 font-size: 14px;
                 border: none;
                 background-color: transparent;
             }
-
+            #bottom-left-controls {
+                top: 20px;
+                bottom: auto;
+                left: 20px;
+                right: auto;
+                align-items: flex-start;
+            }
+            #volume-btn {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
             /* --- Mobile Settings Menu --- */
             #settings-overlay {
                 top: 70px; /* Position below the 3-bar button */
@@ -826,9 +917,17 @@
                     <input type="range" id="speed-slider" min="1" max="100" value="5" step="0.01">
                 </li>
             </ul>
-        </div> <!-- Đóng thẻ div cho song-list-overlay -->
-        <button id="overview-btn">Toàn cảnh</button> <!-- Moved here -->
-        <button id="more-options-btn"><i class="fas fa-bars"></i></button>
+        </div>
+        <div id="bottom-left-controls">
+            <button id="more-options-btn"><i class="fas fa-bars"></i></button>
+            <div id="volume-control-container">
+                <button id="volume-btn"><i class="fas fa-volume-up"></i></button>
+                <div id="volume-slider-container" style="display: none;">
+                    <input type="range" id="volume-slider" min="0" max="100" value="100">
+                </div>
+            </div>
+        </div>
+        <button id="overview-btn">Toàn cảnh</button>
         <!-- Canvas and renderers will be appended here by Three.js -->
     </div>
 
@@ -1306,6 +1405,7 @@
                 if (isSongListOpen) { // Nếu danh sách nhạc đang mở, đóng nó lại
                     hideSongList();
                 }
+                if (isVolumeSliderOpen) hideVolumeSlider();
                 if (isSettingsMenuOpen) { // Nếu menu cài đặt đang mở, đóng nó lại
                     hideSettingsMenu();
                 }
@@ -1423,6 +1523,13 @@
         const toggleVisualizerLabel = toggleVisualizerBtn.querySelector('label');
         let isVisualizerVisible = true; // Default state: visualizer is visible
 
+        // New volume control elements
+        const volumeBtn = document.getElementById('volume-btn');
+        const volumeSliderContainer = document.getElementById('volume-slider-container');
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeIcon = volumeBtn.querySelector('i');
+        let isVolumeSliderOpen = false;
+
         // --- Settings Persistence ---
         function saveSettings() {
             const settings = {
@@ -1431,7 +1538,8 @@
                 zoom: zoomSlider.value,
                 speed: speedSlider.value,
                 orbitsVisible: areOrbitsVisible,
-                visualizerVisible: isVisualizerVisible
+                visualizerVisible: isVisualizerVisible,
+                volume: volumeSlider.value
             };
             localStorage.setItem('solarSystemSettings', JSON.stringify(settings));
         }
@@ -1450,6 +1558,8 @@
                 const orbitsVisible = settings.orbitsVisible === false ? false : true;
                 // Load visualizer visibility, defaulting to true if not found or not explicitly false
                 const visualizerVisible = settings.visualizerVisible === false ? false : true;
+                // Load volume, defaulting to 100 if not found
+                const volume = settings.volume || '100';
 
                 // Cập nhật giá trị cho các thanh trượt
                 radiusSlider.value = radius;
@@ -1482,6 +1592,12 @@
                     toggleVisualizerLabel.textContent = isVisualizerVisible ? 'Ẩn Sóng nhạc' : 'Hiện Sóng nhạc';
                 }
 
+                // Apply volume setting
+                volumeSlider.value = volume;
+                audioPlayer.volume = volume / 100;
+                updateVolumeIcon(volume / 100);
+                updateVolumeSliderVisual(volume);
+
                 // Tái tạo lại các vì sao với giá trị mật độ và bán kính đã được tải
                 regenerateStarfield(parseInt(density), parseFloat(radius));
             }
@@ -1493,9 +1609,20 @@
             // Close other menus if open
             if (isPlanetListOpen) hidePlanetList();
             if (isSongListOpen) hideSongList();
+            if (isVolumeSliderOpen) hideVolumeSlider();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideSettingsInteraction, true);
             document.addEventListener('touchend', handleOutsideSettingsInteraction, true);
+        }
+
+        function showVolumeSlider() {
+            volumeSliderContainer.style.display = 'block';
+            isVolumeSliderOpen = true;
+            if (isSettingsMenuOpen) hideSettingsMenu();
+            if (isSongListOpen) hideSongList();
+            controls.enabled = false;
+            document.addEventListener('click', handleOutsideVolumeInteraction, true);
+            document.addEventListener('touchend', handleOutsideVolumeInteraction, true);
         }
 
         function hideSettingsMenu() {
@@ -1508,9 +1635,25 @@
             document.removeEventListener('touchend', handleOutsideSettingsInteraction, true);
         }
 
+        function hideVolumeSlider() {
+            volumeSliderContainer.style.display = 'none';
+            isVolumeSliderOpen = false;
+            if (!isCameraAnimating && !isViewLocked) {
+                controls.enabled = true;
+            }
+            document.removeEventListener('click', handleOutsideVolumeInteraction, true);
+            document.removeEventListener('touchend', handleOutsideVolumeInteraction, true);
+        }
+
         function handleOutsideSettingsInteraction(event) {
             if (isSettingsMenuOpen && !settingsOverlay.contains(event.target) && !moreOptionsBtn.contains(event.target)) {
                 hideSettingsMenu();
+            }
+        }
+
+        function handleOutsideVolumeInteraction(event) {
+            if (isVolumeSliderOpen && !volumeSliderContainer.contains(event.target) && !volumeBtn.contains(event.target)) {
+                hideVolumeSlider();
             }
         }
 
@@ -1563,6 +1706,37 @@
             // Save the new setting
             saveSettings();
         });
+
+        // Volume slider logic
+        volumeBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            isVolumeSliderOpen ? hideVolumeSlider() : showVolumeSlider();
+        });
+
+        volumeSlider.addEventListener('input', () => {
+            const volume = volumeSlider.value / 100;
+            audioPlayer.volume = volume;
+            updateVolumeIcon(volume);
+            updateVolumeSliderVisual(volumeSlider.value);
+            saveSettings();
+        });
+
+        function updateVolumeIcon(volume) {
+            if (volume === 0) {
+                volumeIcon.className = 'fas fa-volume-mute';
+            } else if (volume < 0.5) {
+                volumeIcon.className = 'fas fa-volume-down';
+            } else {
+                volumeIcon.className = 'fas fa-volume-up';
+            }
+        }
+
+        function updateVolumeSliderVisual(value) {
+            if (volumeSlider) {
+                // The value is expected to be between 0 and 100
+                volumeSlider.style.setProperty('--volume-progress', `${value}%`);
+            }
+        }
 
         // Slider functionalities
         zoomSlider.addEventListener('input', () => {
@@ -1986,6 +2160,8 @@
             if (isPlanetListOpen) { // Nếu danh sách hành tinh đang mở, đóng nó lại
                 hidePlanetList();
             }
+            if (isSettingsMenuOpen) hideSettingsMenu();
+            if (isVolumeSliderOpen) hideVolumeSlider();
             // musicControls2D.style.display = 'none'; // Removed: Keep 2D music controls visible when song list is open
             controls.enabled = false; // Tắt điều khiển 3D khi mở danh sách nhạc
             populateSongList();
@@ -2028,6 +2204,7 @@
                 if (isPlanetListOpen) { // Nếu danh sách hành tinh đang mở, đóng nó lại
                     hidePlanetList();
                 }
+                if (isVolumeSliderOpen) hideVolumeSlider();
                 if (isSettingsMenuOpen) { // Nếu menu cài đặt đang mở, đóng nó lại
                     hideSettingsMenu();
                 }
@@ -3159,10 +3336,10 @@
             }
         });
 
+        updateVolumeSliderVisual(volumeSlider.value); // Đặt giao diện ban đầu dựa trên giá trị mặc định của HTML
         // Tải các cài đặt đã lưu sau khi tất cả các phần tử và biến đã được khởi tạo
         loadSettings();
 
-        
         // Note: The animate() call is now in loadingManager.onLoad
     </script>
 
