@@ -223,6 +223,10 @@
             color: #3498db;
             text-shadow: 0 0 8px #3498db;
         }
+        /* Style for artist names in the song list */
+        .song-list-item .artist-name {
+            opacity: 0.7; /* Make it slightly faded */
+        }
         /* --- 2D Music Controls Styles --- */
         #music-controls-2d {
             position: fixed;
@@ -1420,7 +1424,25 @@
                     listItem.classList.add('current-song');
                 }
 
-                listItem.textContent = song.name;
+                // Split the song name into title and artist(s)
+                const parts = song.name.split(' - ', 2); // Split by ' - ' (space-hyphen-space)
+                if (parts.length > 1) {
+                    const songTitleSpan = document.createElement('span');
+                    songTitleSpan.textContent = parts[0];
+                    songTitleSpan.style.fontWeight = 'bold'; // Make the song title bold
+                    listItem.appendChild(songTitleSpan);
+
+                    const artistSpan = document.createElement('span');
+                    artistSpan.textContent = ` - ${parts[1]}`; // Re-add the hyphen and space
+                    artistSpan.classList.add('artist-name'); // Apply faded style
+                    listItem.appendChild(artistSpan);
+                } else {
+                    // No hyphen found, display the whole name as bold
+                    const songTitleSpan = document.createElement('span');
+                    songTitleSpan.textContent = song.name;
+                    songTitleSpan.style.fontWeight = 'bold';
+                    listItem.appendChild(songTitleSpan);
+                }
                 listItem.addEventListener('click', () => {
                     const songIndex = songs.findIndex(s => s.file === song.file);
                     audioPlayer.pause(); // Pause current song before showing new player
