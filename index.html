@@ -738,37 +738,54 @@
         
         // --- Starfield ---
         let stars;
+        // Store data for animating each star individually
+        const starAnimationData = [];
+
         function addStarfield() {
             const starGeometry = new THREE.BufferGeometry();
+            const starVertices = [];
+            const starColors = []; // This will hold the color (and brightness) of each star
+            const color = new THREE.Color();
+            const numStars = 15000;
 
-            // Create a circular texture for the stars to make them round instead of square
+            for (let i = 0; i < numStars; i++) {
+                const x = (Math.random() - 0.5) * 2500;
+                const y = (Math.random() - 0.5) * 2500;
+                const z = (Math.random() - 0.5) * 2500;
+                starVertices.push(x, y, z);
+
+                // Start with a random brightness
+                const initialBrightness = Math.random();
+                color.setRGB(initialBrightness, initialBrightness, initialBrightness);
+                starColors.push(color.r, color.g, color.b);
+
+                // Store a random value for each star to control its twinkle speed and phase
+                starAnimationData.push(Math.random());
+            }
+
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            starGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
+
+            // Create a circular texture for the stars
             const canvas = document.createElement('canvas');
             canvas.width = 32;
             canvas.height = 32;
             const context = canvas.getContext('2d');
             context.beginPath();
-            context.arc(16, 16, 16, 0, 2 * Math.PI); // Draw a circle
+            context.arc(16, 16, 16, 0, 2 * Math.PI);
             context.fillStyle = 'white';
             context.fill();
             const starTexture = new THREE.CanvasTexture(canvas);
 
             const starMaterial = new THREE.PointsMaterial({
                 map: starTexture,
-                size: 1.5, // Slightly increased size for better visibility
+                size: 1.5,
                 transparent: true,
                 blending: THREE.AdditiveBlending,
-                depthWrite: false // Prevents rendering issues with transparency
+                depthWrite: false,
+                vertexColors: true // IMPORTANT: Use vertex colors
             });
 
-            const starVertices = [];
-            for (let i = 0; i < 15000; i++) {
-                const x = (Math.random() - 0.5) * 2500;
-                const y = (Math.random() - 0.5) * 2500;
-                const z = (Math.random() - 0.5) * 2500;
-                starVertices.push(x, y, z);
-            }
-
-            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
             stars = new THREE.Points(starGeometry, starMaterial);
             scene.add(stars);
         }
@@ -2345,6 +2362,26 @@
         // --- Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
+
+            // Animate star brightness for twinkling effect
+            if (stars && starAnimationData.length > 0) { // Ensure starAnimationData is not empty
+                const time = performance.now() / 300; // Control overall speed
+                const colors = stars.geometry.attributes.color.array;
+
+                for (let i = 0; i < starAnimationData.length; i++) {
+                    const randomFactor = starAnimationData[i];
+                    // Calculate brightness using a sine wave, offset by the random factor
+                    const brightness = (Math.sin(time * (randomFactor * 0.5 + 0.5) + randomFactor * 6.28318) + 1) / 2;
+                    
+                    const colorIndex = i * 3;
+                    colors[colorIndex] = brightness;
+                    colors[colorIndex + 1] = brightness;
+                    colors[colorIndex + 2] = brightness;
+                }
+                stars.geometry.attributes.color.needsUpdate = true;
+            }
+
+            const delta = Date.now() * 0.0001; // Slower, more majestic rotation
 
             if (sunMessageAnimation.active && sunMessageMesh) {
                 const elapsedTime = Date.now() - sunMessageAnimation.startTime;
