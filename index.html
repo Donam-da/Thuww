@@ -145,6 +145,58 @@
             font-size: 16px; /* Giữ kích thước icon nhất quán */
             display: block;
         }
+        /* --- Settings Menu --- */
+        #settings-overlay {
+            position: fixed;
+            bottom: 70px; /* Position above the 3-bar button */
+            left: 20px;
+            width: fit-content;
+            min-width: 250px;
+            background-color: transparent;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,255,255,0.5);
+            z-index: 1002;
+            display: none; /* Hidden by default */
+            font-family: 'VN Time', Arial, sans-serif;
+            font-weight: 100;
+        }
+
+        #close-settings-menu-btn {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 1003;
+        }
+
+        .settings-list-item {
+            color: white;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: transparent;
+            border-radius: 4px;
+        }
+
+        .settings-list-item label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .settings-list-item input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            display: none; /* Ẩn thanh trượt theo mặc định */
+            margin-top: 8px; /* Thêm khoảng cách với label */
+        }
+
+        /* Khi di chuột (hoặc chạm trên mobile) vào một mục, hiển thị thanh trượt của nó */
+        .settings-list-item:hover input[type="range"] {
+            display: block;
+        }
         /* Desktop styles for main-ui-controls */
         #planet-list-overlay {
             position: fixed;
@@ -191,12 +243,15 @@
 
         /* Hide Scrollbar */
         #song-list-overlay, 
-        #planet-list-overlay {
+        #planet-list-overlay,
+        #settings-overlay {
             -ms-overflow-style: none;  /* IE and Edge */
             scrollbar-width: none;  /* Firefox */
         }
         #song-list-overlay::-webkit-scrollbar,
-        #planet-list-overlay::-webkit-scrollbar {
+        #planet-list-overlay::-webkit-scrollbar,
+        #settings-overlay::-webkit-scrollbar
+        {
             display: none; /* Chrome, Safari, Opera */
         }
 
@@ -558,6 +613,17 @@
                 background-color: transparent;
             }
 
+            /* --- Mobile Settings Menu --- */
+            #settings-overlay {
+                top: 70px; /* Position below the 3-bar button */
+                bottom: auto;
+                left: 50%;
+                transform: translateX(-50%);
+                min-width: 200px;
+                width: 90%;
+                max-width: 250px;
+            }
+
             /* Overlays for mobile (positioned above the bottom control bar) */
             #planet-list-overlay,
             #song-list-overlay {
@@ -689,6 +755,24 @@
                 <!-- Song items will be inserted here -->
             </ul>
         </div> <!-- Đóng thẻ div cho song-list-overlay -->
+        <!-- New Settings Overlay -->
+        <div id="settings-overlay">
+            <span id="close-settings-menu-btn">&times;</span>
+            <ul id="settings-list" style="list-style: none; padding: 0; margin: 0;">
+                <li class="settings-list-item">
+                    <label for="radius-slider">Mở rộng vũ trụ (<span id="radius-value">10</span>x)</label>
+                    <input type="range" id="radius-slider" min="1" max="100" value="10">
+                </li>
+                <li class="settings-list-item">
+                    <label for="density-slider">Mật độ sao (<span id="density-value">1,000,000</span>)</label>
+                    <input type="range" id="density-slider" min="200000" max="10000000" step="10000" value="1000000">
+                </li>
+                <li class="settings-list-item">
+                    <label for="zoom-slider">Giới hạn zoom (<span id="zoom-value">50,000</span>)</label>
+                    <input type="range" id="zoom-slider" min="500" max="100000" step="100" value="50000">
+                </li>
+            </ul>
+        </div> <!-- Đóng thẻ div cho song-list-overlay -->
         <button id="overview-btn">Toàn cảnh</button> <!-- Moved here -->
         <button id="more-options-btn"><i class="fas fa-bars"></i></button>
         <!-- Canvas and renderers will be appended here by Three.js -->
@@ -765,13 +849,38 @@
         let stars;
         // Store data for animating each star individually
         const starAnimationData = [];
+        let currentStarCount = 1000000;
+        let currentRadiusMultiplier = 10;
+        const baseStarfieldRadius = 2500;
 
-        function addStarfield() {
+        // Create a single, reusable star texture
+        const starTexture = (() => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const context = canvas.getContext('2d');
+            context.beginPath();
+            context.arc(16, 16, 16, 0, 2 * Math.PI);
+            context.fillStyle = 'white';
+            context.fill();
+            return new THREE.CanvasTexture(canvas);
+        })();
+
+        function regenerateStarfield(numStars, radiusMultiplier) {
+            // 1. Clean up old starfield if it exists
+            if (stars) {
+                scene.remove(stars);
+                stars.geometry.dispose();
+                stars.material.dispose();
+                stars = null;
+            }
+            starAnimationData.length = 0; // Clear animation data
+
+            // 2. Generate new starfield
             const starGeometry = new THREE.BufferGeometry();
             const starVertices = [];
-            const starColors = []; // This will hold the color (and brightness) of each star            
-            const numStars = 1000000; // Tăng số lượng sao
-            const starfieldRadius = 25000; // Bán kính vũ trụ = 2500 * 10
+            const starColors = [];
+            const starfieldRadius = baseStarfieldRadius * radiusMultiplier;
             const initialTime = performance.now();
 
             for (let i = 0; i < numStars; i++) {
@@ -786,7 +895,7 @@
                 starVertices.push(x, y, z);
 
                 // Tỷ lệ 80% sao tĩnh, 20% sao nhấp nháy
-                if (Math.random() < 0.5) {
+                if (Math.random() < 0.8) {
                     // This is a static star, always on
                     const brightness = 0.2 + Math.random() * 0.6; // Random brightness from 0.2 to 0.8
                     starColors.push(brightness, brightness, brightness);
@@ -812,17 +921,6 @@
             starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
             starGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
 
-            // Create a circular texture for the stars
-            const canvas = document.createElement('canvas');
-            canvas.width = 32;
-            canvas.height = 32;
-            const context = canvas.getContext('2d');
-            context.beginPath();
-            context.arc(16, 16, 16, 0, 2 * Math.PI);
-            context.fillStyle = 'white';
-            context.fill();
-            const starTexture = new THREE.CanvasTexture(canvas);
-
             const starMaterial = new THREE.PointsMaterial({
                 map: starTexture,
                 size: 1.5,
@@ -834,8 +932,12 @@
 
             stars = new THREE.Points(starGeometry, starMaterial);
             scene.add(stars);
+
+            // Update current values
+            currentStarCount = numStars;
+            currentRadiusMultiplier = radiusMultiplier;
         }
-        addStarfield();
+        regenerateStarfield(currentStarCount, currentRadiusMultiplier);
 
         // --- Label Renderer Setup ---
         const labelRenderer = new THREE.CSS2DRenderer();
@@ -1105,6 +1207,7 @@
         const closeDropmenuBtn = document.getElementById('close-dropmenu-btn');
 
         let selectedPlanetObject = null; // Biến toàn cục để theo dõi hành tinh đang được chọn
+        let isSettingsMenuOpen = false; // Track if settings menu is open
         selectPlanetBtn.addEventListener('click', (event) => {
             event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
             if (isPlanetListOpen) {
@@ -1112,6 +1215,9 @@
             } else {
                 if (isSongListOpen) { // Nếu danh sách nhạc đang mở, đóng nó lại
                     hideSongList();
+                }
+                if (isSettingsMenuOpen) { // Nếu menu cài đặt đang mở, đóng nó lại
+                    hideSettingsMenu();
                 }
                 showPlanetList();
             }
@@ -1150,6 +1256,9 @@
                 }
                 if (isSongListOpen) {
                     hideSongList();
+                }
+                if (isSettingsMenuOpen) {
+                    hideSettingsMenu();
                 }
             }
         });
@@ -1199,6 +1308,68 @@
                 planetSelectionList.appendChild(listItem);
             });
         }
+
+        // --- Settings Menu Logic ---
+        const moreOptionsBtn = document.getElementById('more-options-btn');
+        const settingsOverlay = document.getElementById('settings-overlay');
+        const closeSettingsBtn = document.getElementById('close-settings-menu-btn');
+
+        const radiusSlider = document.getElementById('radius-slider');
+        const radiusValue = document.getElementById('radius-value');
+        const densitySlider = document.getElementById('density-slider');
+        const densityValue = document.getElementById('density-value');
+        const zoomSlider = document.getElementById('zoom-slider');
+        const zoomValue = document.getElementById('zoom-value');
+
+        function showSettingsMenu() {
+            settingsOverlay.style.display = 'block';
+            isSettingsMenuOpen = true;
+            // Close other menus if open
+            if (isPlanetListOpen) hidePlanetList();
+            if (isSongListOpen) hideSongList();
+            controls.enabled = false;
+            document.addEventListener('click', handleOutsideSettingsInteraction, true);
+            document.addEventListener('touchend', handleOutsideSettingsInteraction, true);
+        }
+
+        function hideSettingsMenu() {
+            settingsOverlay.style.display = 'none';
+            isSettingsMenuOpen = false;
+            if (!isCameraAnimating && !isViewLocked) {
+                controls.enabled = true;
+            }
+            document.removeEventListener('click', handleOutsideSettingsInteraction, true);
+            document.removeEventListener('touchend', handleOutsideSettingsInteraction, true);
+        }
+
+        function handleOutsideSettingsInteraction(event) {
+            if (isSettingsMenuOpen && !settingsOverlay.contains(event.target) && !moreOptionsBtn.contains(event.target)) {
+                hideSettingsMenu();
+            }
+        }
+
+        moreOptionsBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            isSettingsMenuOpen ? hideSettingsMenu() : showSettingsMenu();
+        });
+
+        closeSettingsBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            hideSettingsMenu();
+        });
+
+        // Slider functionalities
+        zoomSlider.addEventListener('input', () => {
+            const newMaxDistance = parseInt(zoomSlider.value);
+            controls.maxDistance = newMaxDistance;
+            zoomValue.textContent = newMaxDistance.toLocaleString('en-US');
+        });
+
+        radiusSlider.addEventListener('input', () => { radiusValue.textContent = radiusSlider.value; });
+        radiusSlider.addEventListener('change', () => { regenerateStarfield(currentStarCount, parseInt(radiusSlider.value)); });
+
+        densitySlider.addEventListener('input', () => { densityValue.textContent = parseInt(densitySlider.value).toLocaleString('en-US'); });
+        densitySlider.addEventListener('change', () => { regenerateStarfield(parseInt(densitySlider.value), currentRadiusMultiplier); });
 
         // --- Toggle Images ---
         const toggleImagesBtn = document.getElementById('toggle-images-btn');
@@ -1599,6 +1770,9 @@
             } else {
                 if (isPlanetListOpen) { // Nếu danh sách hành tinh đang mở, đóng nó lại
                     hidePlanetList();
+                }
+                if (isSettingsMenuOpen) { // Nếu menu cài đặt đang mở, đóng nó lại
+                    hideSettingsMenu();
                 }
                 showSongList();
             }
@@ -2096,7 +2270,7 @@
         function restoreDefaultControls() {
             controls.enablePan = true;
             controls.minDistance = 10;
-            controls.maxDistance = 50000;
+            controls.maxDistance = parseInt(zoomSlider.value); // Use current slider value
             // Also ensure controls are enabled if not animating
             if (!isCameraAnimating) {
                 controls.enabled = true;
