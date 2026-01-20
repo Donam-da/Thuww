@@ -1387,6 +1387,49 @@
         const speedSlider = document.getElementById('speed-slider');
         const speedValue = document.getElementById('speed-value');
 
+        // --- Settings Persistence ---
+        function saveSettings() {
+            const settings = {
+                radius: radiusSlider.value,
+                density: densitySlider.value,
+                zoom: zoomSlider.value,
+                speed: speedSlider.value
+            };
+            localStorage.setItem('solarSystemSettings', JSON.stringify(settings));
+        }
+
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('solarSystemSettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+
+                // Lấy giá trị từ cài đặt đã lưu hoặc giữ nguyên giá trị mặc định từ HTML
+                const radius = settings.radius || radiusSlider.value;
+                const density = settings.density || densitySlider.value;
+                const zoom = settings.zoom || zoomSlider.value;
+                const speed = settings.speed || speedSlider.value;
+
+                // Cập nhật giá trị cho các thanh trượt
+                radiusSlider.value = radius;
+                densitySlider.value = density;
+                zoomSlider.value = zoom;
+                speedSlider.value = speed;
+
+                // Cập nhật văn bản hiển thị giá trị
+                radiusValue.textContent = parseFloat(radius).toFixed(2);
+                densityValue.textContent = parseInt(density).toLocaleString('en-US');
+                zoomValue.textContent = parseInt(zoom).toLocaleString('en-US');
+                speedValue.textContent = parseFloat(speed).toFixed(2);
+
+                // Cập nhật các biến trạng thái của ứng dụng
+                controls.maxDistance = parseInt(zoom);
+                planetSpeedMultiplier = parseFloat(speed);
+
+                // Tái tạo lại các vì sao với giá trị mật độ và bán kính đã được tải
+                regenerateStarfield(parseInt(density), parseFloat(radius));
+            }
+        }
+
         function showSettingsMenu() {
             settingsOverlay.style.display = 'block';
             isSettingsMenuOpen = true;
@@ -1429,21 +1472,31 @@
             const newMaxDistance = parseInt(zoomSlider.value);
             controls.maxDistance = newMaxDistance;
             zoomValue.textContent = newMaxDistance.toLocaleString('en-US');
+            saveSettings();
         });
 
         radiusSlider.addEventListener('input', () => {
             const value = parseFloat(radiusSlider.value).toFixed(2);
             radiusValue.textContent = value;
         });
-        radiusSlider.addEventListener('change', () => { regenerateStarfield(currentStarCount, parseFloat(radiusSlider.value)); });
+        radiusSlider.addEventListener('change', () => {
+            regenerateStarfield(currentStarCount, parseFloat(radiusSlider.value));
+            saveSettings();
+        });
 
-        densitySlider.addEventListener('input', () => { densityValue.textContent = parseInt(densitySlider.value).toLocaleString('en-US'); });
-        densitySlider.addEventListener('change', () => { regenerateStarfield(parseInt(densitySlider.value), currentRadiusMultiplier); });
+        densitySlider.addEventListener('input', () => {
+            densityValue.textContent = parseInt(densitySlider.value).toLocaleString('en-US');
+        });
+        densitySlider.addEventListener('change', () => {
+            regenerateStarfield(parseInt(densitySlider.value), currentRadiusMultiplier);
+            saveSettings();
+        });
 
         speedSlider.addEventListener('input', () => {
             const value = parseFloat(speedSlider.value);
             planetSpeedMultiplier = value;
             speedValue.textContent = value.toFixed(2);
+            saveSettings();
         });
 
         // --- Toggle Images ---
@@ -2908,6 +2961,9 @@
                 }
             }
         });
+
+        // Tải các cài đặt đã lưu sau khi tất cả các phần tử và biến đã được khởi tạo
+        loadSettings();
 
         
         // Note: The animate() call is now in loadingManager.onLoad
