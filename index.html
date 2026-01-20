@@ -1756,26 +1756,25 @@
         const musicPlayerFloatInfo = {
             enabled: true, // Cờ để bật/tắt hiệu ứng trôi nổi
             overviewPosition: new THREE.Vector3(0, 50, -800), // Vị trí cố định ở chế độ Toàn cảnh (X=0 để căn giữa)
-            targetPosition: new THREE.Vector3(0, 50, -250), // Vị trí mục tiêu ban đầu để nó xuất hiện trước camera
+            targetOffset: new THREE.Vector3(0, 0, 0), // Offset ngẫu nhiên so với vị trí camera-relative
             timeToNewTarget: 0, // Sẽ được đặt khi chạy lần đầu, buộc phải có mục tiêu mới ngay lập tức
-            lerpAlpha: 0.0005, // Tốc độ di chuyển đến mục tiêu (giá trị nhỏ hơn = chậm hơn, trôi hơn)
-            movementRadius: 350, // Bán kính của khối cầu mà trình phát nhạc sẽ di chuyển bên trong
+            lerpAlpha: 0.02, // Tốc độ di chuyển đến mục tiêu. Cần cao hơn vì mục tiêu di chuyển mỗi khung hình.
+            movementRadius: 150, // Bán kính của khu vực trôi nổi (tương đối so với camera)
             minTargetChangeTime: 5000, // Thời gian tối thiểu trước khi đổi mục tiêu (5 giây)
             maxTargetChangeTime: 10000 // Thời gian tối đa trước khi đổi mục tiêu (10 giây)
         };
 
         function setNewMusicPlayerTarget() {
             const radius = musicPlayerFloatInfo.movementRadius;
-            // Tạo một điểm ngẫu nhiên trong một hình cầu để có chuyển động 3D thực sự
-            const r = radius * Math.cbrt(Math.random()); // Phân bố đồng đều trong hình cầu
+            // Tạo một điểm ngẫu nhiên trên một đĩa 2D để có hiệu ứng trôi nổi trên màn hình
+            const r = radius * Math.sqrt(Math.random()); // Phân bố đồng đều trên đĩa
             const theta = Math.random() * 2 * Math.PI;
-            const phi = Math.acos((2 * Math.random()) - 1);
             
-            const x = r * Math.sin(phi) * Math.cos(theta);
-            const y = r * Math.sin(phi) * Math.sin(theta);
-            const z = r * Math.cos(phi);
+            const x = r * Math.cos(theta);
+            const y = r * Math.sin(theta);
+            const z = (Math.random() - 0.5) * 50; // Thêm một chút biến thiên độ sâu ngẫu nhiên
 
-            musicPlayerFloatInfo.targetPosition.set(x, y, z);
+            musicPlayerFloatInfo.targetOffset.set(x, y, z);
             
             // Đặt thời gian cho lần thay đổi mục tiêu tiếp theo
             const timeRange = musicPlayerFloatInfo.maxTargetChangeTime - musicPlayerFloatInfo.minTargetChangeTime;
@@ -2582,8 +2581,9 @@
 
         // New handler for planet clicks to manage state
         function handlePlanetClick(planet) {
-            // Đặt lại vị trí của trình phát nhạc khi chọn một hành tinh
-            musicPlayerFloatInfo.enabled = true; // Kích hoạt lại hiệu ứng trôi nổi
+            // Kích hoạt lại hiệu ứng trôi nổi khi chọn một hành tinh.
+            // Điều này đảm bảo sóng nhạc sẽ bắt đầu di chuyển trở lại nếu trước đó đang ở chế độ "Toàn cảnh".
+            musicPlayerFloatInfo.enabled = true;
             selectedPlanetObject = planet; // Cập nhật hành tinh đang được chọn
             document.getElementById('music-controls-2d').style.transform = '';
             // Đặt lại kích thước và vị trí của trình phát nhạc 3D
@@ -2777,13 +2777,20 @@
             if (musicPlayerObject) {
                 if (musicPlayerFloatInfo.enabled) {
                     const time = Date.now();
-                    // Nếu đã đến lúc hoặc đã đến rất gần mục tiêu, hãy đặt một mục tiêu mới
-                    if (time > musicPlayerFloatInfo.timeToNewTarget || musicPlayerObject.position.distanceTo(musicPlayerFloatInfo.targetPosition) < 20) {
+                    // Nếu đã đến lúc, hãy đặt một mục tiêu offset mới
+                    if (time > musicPlayerFloatInfo.timeToNewTarget) {
                         setNewMusicPlayerTarget();
                     }
 
-                    // Di chuyển mượt mà (lerp) đến vị trí mục tiêu để tạo hiệu ứng "trôi"
-                    musicPlayerObject.position.lerp(musicPlayerFloatInfo.targetPosition, musicPlayerFloatInfo.lerpAlpha);
+                    // Tạo một vị trí mục tiêu luôn ở phía trước camera
+                    // 1. Xác định vị trí cơ sở trong không gian cục bộ của camera (ví dụ: 400 đơn vị phía trước)
+                    const targetLocalPosition = new THREE.Vector3(0, 0, -400);
+                    // 2. Thêm offset trôi nổi ngẫu nhiên
+                    targetLocalPosition.add(musicPlayerFloatInfo.targetOffset);
+                    // 3. Chuyển đổi vị trí cục bộ cuối cùng thành tọa độ thế giới
+                    const finalWorldPosition = targetLocalPosition.applyMatrix4(camera.matrixWorld);
+                    // 4. Di chuyển mượt mà (lerp) đến vị trí mục tiêu trong thế giới
+                    musicPlayerObject.position.lerp(finalWorldPosition, musicPlayerFloatInfo.lerpAlpha);
                 } else {
                     // Khi ở chế độ Toàn cảnh, di chuyển mượt mà đến vị trí cố định ở trung tâm
                     musicPlayerObject.position.lerp(musicPlayerFloatInfo.overviewPosition, 0.02);
@@ -3033,6 +3040,19 @@
 
         // Tự động mở khóa chế độ xem nếu người dùng tương tác thủ công với controls
         controls.addEventListener('start', () => {
+            // Logic mới: Kích hoạt lại hiệu ứng trôi nổi khi người dùng bắt đầu thay đổi góc nhìn.
+            // Điều này chỉ xảy ra khi người dùng thoát khỏi chế độ "Toàn cảnh" bằng cách di chuyển camera.
+            if (musicPlayerFloatInfo.enabled === false) {
+                musicPlayerFloatInfo.enabled = true;
+
+                // Đặt lại vị trí và kích thước của trình phát nhạc 3D về trạng thái mặc định
+                if (musicPlayerObject && musicPlayerObject.element) {
+                    musicPlayerObject.element.style.transform = 'scale(1) translateY(0)';
+                }
+                // Đặt lại vị trí của các nút điều khiển 2D
+                document.getElementById('music-controls-2d').style.transform = '';
+            }
+
             if (isViewLocked && !isCameraAnimating) {
                 const previouslyLockedPlanet = lockedPlanet; // Store before nulling
                 // If user manually interacts, unlock view
