@@ -805,6 +805,10 @@
                     <!-- The text inside the label will be controlled by JavaScript -->
                     <label style="pointer-events: none; margin-bottom: 0;">Ẩn Quỹ đạo</label>
                 </li>
+                <li class="settings-list-item" id="toggle-visualizer-btn" style="cursor: pointer;">
+                    <!-- The text inside the label will be controlled by JavaScript -->
+                    <label style="pointer-events: none; margin-bottom: 0;">Ẩn Sóng nhạc</label>
+                </li>
                 <li class="settings-list-item">
                     <label for="radius-slider">Mở rộng vũ trụ (<span id="radius-value">10.00</span>x)</label>
                     <input type="range" id="radius-slider" min="1" max="100" value="10" step="0.01">
@@ -1414,13 +1418,20 @@
         const toggleOrbitsLabel = toggleOrbitsBtn.querySelector('label');
         let areOrbitsVisible = true; // Default state: orbits are visible
 
+        // New visualizer toggle elements
+        const toggleVisualizerBtn = document.getElementById('toggle-visualizer-btn');
+        const toggleVisualizerLabel = toggleVisualizerBtn.querySelector('label');
+        let isVisualizerVisible = true; // Default state: visualizer is visible
+
         // --- Settings Persistence ---
         function saveSettings() {
             const settings = {
                 radius: radiusSlider.value,
                 density: densitySlider.value,
                 zoom: zoomSlider.value,
-                speed: speedSlider.value
+                speed: speedSlider.value,
+                orbitsVisible: areOrbitsVisible,
+                visualizerVisible: isVisualizerVisible
             };
             localStorage.setItem('solarSystemSettings', JSON.stringify(settings));
         }
@@ -1437,6 +1448,8 @@
                 const speed = settings.speed || speedSlider.value;
                 // Load orbit visibility, defaulting to true if not found or not explicitly false
                 const orbitsVisible = settings.orbitsVisible === false ? false : true;
+                // Load visualizer visibility, defaulting to true if not found or not explicitly false
+                const visualizerVisible = settings.visualizerVisible === false ? false : true;
 
                 // Cập nhật giá trị cho các thanh trượt
                 radiusSlider.value = radius;
@@ -1462,6 +1475,12 @@
                     }
                 });
                 toggleOrbitsLabel.textContent = areOrbitsVisible ? 'Ẩn Quỹ đạo' : 'Hiện Quỹ đạo';
+
+                // Apply visualizer visibility state and update label
+                isVisualizerVisible = visualizerVisible;
+                if (toggleVisualizerLabel) {
+                    toggleVisualizerLabel.textContent = isVisualizerVisible ? 'Ẩn Sóng nhạc' : 'Hiện Sóng nhạc';
+                }
 
                 // Tái tạo lại các vì sao với giá trị mật độ và bán kính đã được tải
                 regenerateStarfield(parseInt(density), parseFloat(radius));
@@ -1518,6 +1537,28 @@
 
             // Update the button text
             toggleOrbitsLabel.textContent = areOrbitsVisible ? 'Ẩn Quỹ đạo' : 'Hiện Quỹ đạo';
+
+            // Save the new setting
+            saveSettings();
+        });
+
+        // Add event listener for the new visualizer toggle button
+        toggleVisualizerBtn.addEventListener('click', () => {
+            isVisualizerVisible = !isVisualizerVisible; // Toggle the state
+
+            // Apply the new visibility to the current visualizer if it exists
+            if (musicPlayerObject) {
+                if (visualizerCanvas) {
+                    visualizerCanvas.style.display = isVisualizerVisible ? 'block' : 'none';
+                }
+                const timeContainer = musicPlayerObject.element.querySelector('.music-player-time');
+                if (timeContainer) {
+                    timeContainer.style.display = isVisualizerVisible ? 'flex' : 'none';
+                }
+            }
+
+            // Update the button text
+            toggleVisualizerLabel.textContent = isVisualizerVisible ? 'Ẩn Sóng nhạc' : 'Hiện Sóng nhạc';
 
             // Save the new setting
             saveSettings();
@@ -2280,6 +2321,10 @@
             visualizerCanvasElement.width = isMobile ? 207 : 345;
             visualizerCanvasElement.height = isMobile ? 100 : 150;
 
+            // Set initial visibility based on the global setting
+            visualizerCanvasElement.style.display = isVisualizerVisible ? 'block' : 'none';
+            timeDiv.style.display = isVisualizerVisible ? 'flex' : 'none';
+
             // Append elements in the desired order: close, title, visualizer, time
             titleDiv.appendChild(scrollContainer); // Add scroll container to title div
             playerContainer.append(titleDiv, visualizerCanvasElement, timeDiv); // Bỏ nút đóng
@@ -2329,7 +2374,7 @@
         }
 
         function drawVisualizer() {
-            if (!analyser || !visualizerCtx || !audioPlayer || audioPlayer.paused || audioPlayer.ended) {
+            if (!isVisualizerVisible || !analyser || !visualizerCtx || !audioPlayer || audioPlayer.paused || audioPlayer.ended) {
                 // Clear canvas if no audio is playing or analyser is not ready
                 if (visualizerCtx) {
                     visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
