@@ -165,6 +165,11 @@
         .planet-list-item:hover {
             background-color: rgba(255, 255, 255, 0.1); /* Darker on hover */
         }
+        /* Làm đậm hành tinh đang được chọn trong danh sách */
+        .planet-list-item.current-planet {
+            color: rgba(0, 255, 255, 0.5); /* Cyan color */
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5); /* Glowing effect */
+        }
 
         /* Hide Scrollbar */
         #song-list-overlay, 
@@ -1016,6 +1021,7 @@
         const planetSelectionList = document.getElementById('planet-selection-list');
         const closeDropmenuBtn = document.getElementById('close-dropmenu-btn');
 
+        let selectedPlanetObject = null; // Biến toàn cục để theo dõi hành tinh đang được chọn
         selectPlanetBtn.addEventListener('click', (event) => {
             event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
             if (isPlanetListOpen) {
@@ -1082,6 +1088,10 @@
             const sunListItem = document.createElement('li');
             sunListItem.className = 'planet-list-item';
             sunListItem.textContent = sun.userData.name;
+            if (selectedPlanetObject === sun) {
+                sunListItem.classList.add('current-planet');
+            }
+
             sunListItem.addEventListener('click', () => {
                 handlePlanetClick(sun); // Use handlePlanetClick for sun
                 event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
@@ -1093,6 +1103,10 @@
             planets.forEach(planet => {
                 const listItem = document.createElement('li');
                 listItem.className = 'planet-list-item';
+                if (selectedPlanetObject === planet) {
+                    listItem.classList.add('current-planet');
+                }
+
                 listItem.textContent = planet.userData.name;
                 listItem.addEventListener('click', () => {
                     handlePlanetClick(planet); // Use handlePlanetClick for planets
@@ -2042,6 +2056,7 @@
                 }
                 lockedPlanet.userData.interactionState = 0; // Đặt lại trạng thái của hành tinh đã khóa trước đó
             }
+            selectedPlanetObject = null; // Xóa lựa chọn hành tinh khi chuyển sang chế độ toàn cảnh
             isViewLocked = false;
             lockedPlanet = null;
 
@@ -2127,6 +2142,7 @@
         // New handler for planet clicks to manage state
         function handlePlanetClick(planet) {
             // Đặt lại vị trí của trình phát nhạc khi chọn một hành tinh
+            selectedPlanetObject = planet; // Cập nhật hành tinh đang được chọn
             document.getElementById('music-controls-2d').style.transform = '';
 
             if (planet.userData.interactionState === undefined) {
