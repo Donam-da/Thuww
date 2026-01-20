@@ -27,6 +27,15 @@
             background-color: #000; display: flex; justify-content: center;
             align-items: center; z-index: 3000; transition: opacity 0.5s ease;
         }
+        #image-loader-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 3001; /* Above main loader */
+            transition: opacity 0.5s ease;
+        }
         .loader-container { text-align: center; }
         .progress-circle {
             width: 120px; height: 120px; border-radius: 50%;
@@ -934,6 +943,17 @@
         <img id="fullscreen-image" src="" alt="fullscreen-image" />
         <a id="download-btn" href="#" download style="display: none;">Tải xuống</a>
     </div>
+    <div id="image-loader-overlay">
+        <div class="loader-container">
+            <div class="progress-circle">
+                <div class="progress-circle-inner">
+                    <span id="image-progress-text" class="loader-text">0%</span>
+                </div>
+            </div>
+            
+            <span class="loader-text">Loading Images...</span>
+        </div>
+    </div>
 
     <div id="main-scene">
         <!-- New container for UI buttons -->
@@ -995,8 +1015,8 @@
                     <input type="range" id="radius-slider" min="1" max="100" value="10" step="0.01">
                 </li>
                 <li class="settings-list-item">
-                    <label for="density-slider">Số lượng sao (<span id="density-value">450,000</span>)</label>
-                    <input type="range" id="density-slider" min="200000" max="10000000" step="1" value="450000">
+                    <label for="density-slider">Số lượng sao (<span id="density-value">250,000</span>)</label>
+                    <input type="range" id="density-slider" min="200000" max="10000000" step="1" value="250000">
                 </li>
                 <li class="settings-list-item">
                     <label for="zoom-slider">Giới hạn zoom (<span id="zoom-value">20,000x</span>)</label>
@@ -1947,6 +1967,7 @@
         const toggleImagesBtn = document.getElementById('toggle-images-btn');
         let isGlobalToggleInHideMode = false; // Tracks the state of the global toggle
         const planetsHiddenByGlobalToggle = new Set(); // Stores planets whose images were hidden by the toggle
+        let isFirstImageLoad = true; // New flag to track the very first image load
 
         toggleImagesBtn.addEventListener('click', () => {
             isGlobalToggleInHideMode = !isGlobalToggleInHideMode;
@@ -1962,16 +1983,69 @@
                 });
                 toggleImagesBtn.textContent = 'Hiện Ảnh';
             } else {
-                // SHOW mode: Show images only on the planets that were previously hidden by this toggle.
-                planetsHiddenByGlobalToggle.forEach(planet => {
-                    // This check prevents the global "show" from overriding a manual "hide" on a specific planet.
-                    // If a planet's interaction state is 3, it means the user explicitly hid its images.
-                    if (planet.userData.interactionState !== 3) {
-                        addImagesToPlanet(planet);
+                if (isFirstImageLoad) {
+                    // SHOW mode (FIRST TIME): Asynchronously create images with a loading screen
+                    const planetsToShow = [];
+                    planetsHiddenByGlobalToggle.forEach(planet => {
+                        if (planet.userData.interactionState !== 3) {
+                            planetsToShow.push(planet);
+                        }
+                    });
+
+                    if (planetsToShow.length === 0) {
+                        planetsHiddenByGlobalToggle.clear();
+                        toggleImagesBtn.textContent = 'Tắt Ảnh';
+                        isFirstImageLoad = false; // Still mark as loaded even if there was nothing to show
+                        return;
                     }
-                });
-                planetsHiddenByGlobalToggle.clear(); // The set is now processed.
-                toggleImagesBtn.textContent = 'Tắt Ảnh';
+
+                    const imageLoaderOverlay = document.getElementById('image-loader-overlay');
+                    const imageProgressText = document.getElementById('image-progress-text');
+                    const imageProgressCircle = imageLoaderOverlay.querySelector('.progress-circle');
+                    imageLoaderOverlay.style.display = 'flex';
+                    controls.enabled = false;
+
+                    let planetsProcessed = 0;
+                    const totalPlanets = planetsToShow.length;
+
+                    function processNextPlanet() {
+                        if (planetsProcessed >= totalPlanets) {
+                            imageLoaderOverlay.style.display = 'none';
+                            if (!isCameraAnimating && !isViewLocked) {
+                                controls.enabled = true;
+                            }
+                            planetsHiddenByGlobalToggle.clear();
+                            toggleImagesBtn.textContent = 'Tắt Ảnh';
+                            isFirstImageLoad = false; // Set flag to false after first load is complete
+                            return;
+                        }
+
+                        const planet = planetsToShow[planetsProcessed];
+                        addImagesToPlanet(planet);
+
+                        planetsProcessed++;
+
+                        const progress = (planetsProcessed / totalPlanets) * 100;
+                        const percentage = Math.round(progress);
+                        imageProgressText.textContent = `${percentage}%`;
+                        imageProgressCircle.style.background = `conic-gradient(#3498db ${progress}%, #1a1a1a 0%)`;
+
+                        setTimeout(processNextPlanet, 16);
+                    }
+
+                    imageProgressText.textContent = `0%`;
+                    imageProgressCircle.style.background = `conic-gradient(#3498db 0%, #1a1a1a 0%)`;
+                    setTimeout(processNextPlanet, 16);
+                } else {
+                    // SHOW mode (SUBSEQUENT TIMES): Instantly show existing images
+                    planetsHiddenByGlobalToggle.forEach(planet => {
+                        if (planet.userData.interactionState !== 3) {
+                            addImagesToPlanet(planet); // This will just make the existing group visible
+                        }
+                    });
+                    planetsHiddenByGlobalToggle.clear();
+                    toggleImagesBtn.textContent = 'Tắt Ảnh';
+                }
             }
         });
 
