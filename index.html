@@ -814,11 +814,11 @@
                     <input type="range" id="radius-slider" min="1" max="100" value="10" step="0.01">
                 </li>
                 <li class="settings-list-item">
-                    <label for="density-slider">Mật độ sao (<span id="density-value">450,000</span>)</label>
+                    <label for="density-slider">Số lượng sao (<span id="density-value">450,000</span>)</label>
                     <input type="range" id="density-slider" min="200000" max="10000000" step="1" value="450000">
                 </li>
                 <li class="settings-list-item">
-                    <label for="zoom-slider">Giới hạn zoom (<span id="zoom-value">20,000</span>)</label>
+                    <label for="zoom-slider">Giới hạn zoom (<span id="zoom-value">20,000x</span>)</label>
                     <input type="range" id="zoom-slider" min="50" max="100000" step="1" value="20000">
                 </li>
                 <li class="settings-list-item">
@@ -1460,7 +1460,7 @@
                 // Cập nhật văn bản hiển thị giá trị
                 radiusValue.textContent = parseFloat(radius).toFixed(2);
                 densityValue.textContent = parseInt(density).toLocaleString('en-US');
-                zoomValue.textContent = parseInt(zoom).toLocaleString('en-US');
+                zoomValue.textContent = parseInt(zoom).toLocaleString('en-US') + 'x';
                 speedValue.textContent = parseFloat(speed).toFixed(2);
 
                 // Cập nhật các biến trạng thái của ứng dụng
@@ -1568,7 +1568,7 @@
         zoomSlider.addEventListener('input', () => {
             const newMaxDistance = parseInt(zoomSlider.value);
             controls.maxDistance = newMaxDistance;
-            zoomValue.textContent = newMaxDistance.toLocaleString('en-US');
+            zoomValue.textContent = newMaxDistance.toLocaleString('en-US') + 'x';
             saveSettings();
         });
 
