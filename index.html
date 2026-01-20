@@ -315,11 +315,11 @@
 
         #volume-slider-container {
             position: absolute;
-            left: calc(100% + 15px); /* Position to the right of the button */
+            left: calc(100% + 5px); /* Position to the right of the button */
             top: 50%;
             transform: translateY(-50%);
             background-color: transparent;
-            padding: 10px 15px; /* Adjusted for horizontal layout */
+            padding: 10px 5px; /* Adjusted for horizontal layout */
             border-radius: 8px;
             /* box-shadow: 0 0 15px rgba(0,255,255,0.5); */ /* Đã xóa hiệu ứng đổ bóng để làm cho khung chứa trong suốt */
             z-index: 1002;
@@ -394,11 +394,11 @@
 
         #zoom-slider-container {
             position: absolute;
-            right: calc(100% + 10px); /* Position to the left of the button */
+            right: calc(100% + 5px); /* Position to the left of the button */
             top: 50%;
             transform: translateY(-50%);
             background-color: transparent;
-            padding: 10px 15px;
+            padding: 10px 5px;
             border-radius: 8px;
             z-index: 1002;
         }
@@ -414,27 +414,39 @@
 
         #zoom-level-slider::-webkit-slider-runnable-track {
             height: 4px;
-            background: rgba(0, 255, 255, 0.15);
-            border: 1px solid rgba(0, 255, 255, 0.25);
+            background: linear-gradient(to left, 
+                rgba(0, 255, 255, 0.75) var(--zoom-progress, 0%), 
+                transparent var(--zoom-progress, 0%)
+            );
             border-radius: 3px;
         }
         #zoom-level-slider::-moz-range-track {
             height: 4px;
-            background: rgba(0, 255, 255, 0.15);
-            border: 1px solid rgba(0, 255, 255, 0.25);
+            background: linear-gradient(to left, 
+                rgba(0, 255, 255, 0.75) var(--zoom-progress, 0%), 
+                transparent var(--zoom-progress, 0%)
+            );
             border-radius: 3px;
         }
 
         #zoom-level-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            height: 16px; width: 16px; background: transparent; border-radius: 50%;
-            border: 1px solid rgba(0, 255, 255, 0.5); margin-top: -7px;
-            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+            appearance: none;
+            margin-top: -7px; /* Center on track */
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.4) 0%, transparent 60%);
+            border-radius: 50%;
+            border: 2px solid rgba(0, 255, 255, 0.75);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
         }
         #zoom-level-slider::-moz-range-thumb {
-            height: 16px; width: 16px; background: transparent; border-radius: 50%;
-            border: 1px solid rgba(0, 255, 255, 0.5);
-            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.4) 0%, transparent 60%);
+            border-radius: 50%;
+            border: 2px solid rgba(0, 255, 255, 0.75);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
         }
 
         /* Hide Scrollbar */
@@ -1702,6 +1714,7 @@
                 camera.fov = fov;
                 camera.updateProjectionMatrix();
                 zoomLevelSlider.value = fov;
+                updateZoomSliderVisual(fov);
 
                 // Tái tạo lại các vì sao với giá trị mật độ và bán kính đã được tải
                 regenerateStarfield(parseInt(density), parseFloat(radius));
@@ -1868,6 +1881,7 @@
             const fov = parseFloat(zoomLevelSlider.value);
             camera.fov = fov;
             camera.updateProjectionMatrix();
+            updateZoomSliderVisual(fov);
             saveSettings();
         });
 
@@ -1885,6 +1899,15 @@
             if (volumeSlider) {
                 // The value is expected to be between 0 and 100
                 volumeSlider.style.setProperty('--volume-progress', `${value}%`);
+            }
+        }
+
+        function updateZoomSliderVisual(fov) {
+            if (zoomLevelSlider) {
+                const minFov = parseFloat(zoomLevelSlider.min);
+                const maxFov = parseFloat(zoomLevelSlider.max);
+                const percentage = ((maxFov - fov) / (maxFov - minFov)) * 100;
+                zoomLevelSlider.style.setProperty('--zoom-progress', `${percentage}%`);
             }
         }
 
@@ -2597,6 +2620,12 @@
                 hideMusicPlayer();
             }
 
+            // Kích hoạt lại hiệu ứng trôi nổi và đặt lại các transform
+            // Điều này đảm bảo trình phát nhạc trở về trạng thái mặc định khi một bài hát mới được chọn,
+            // đặc biệt là sau khi ở chế độ "Toàn cảnh".
+            musicPlayerFloatInfo.enabled = true;
+            document.getElementById('music-controls-2d').style.transform = '';
+
             // If playbackMode is random, ensure shuffledSongIndices is set up
             // and currentShuffledIndex points to the current song within it.
             if (playbackMode === 'random') {
@@ -2925,12 +2954,21 @@
             // Di chuyển trình phát nhạc xuống
             document.getElementById('music-controls-2d').style.transform = 'translateY(20px)';
 
+            // Đặt lại FOV (zoom) về mặc định và tính toán lại vị trí toàn cảnh
+            camera.fov = 75; // Đặt lại về FOV mặc định
+            camera.updateProjectionMatrix();
+            zoomLevelSlider.value = 75; // Cập nhật giao diện thanh trượt
+            updateZoomSliderVisual(75); // Cập nhật hình ảnh thanh trượt
+            saveSettings(); // Lưu lại cài đặt FOV đã đặt lại
+
+            const newOverviewPosition = calculateOverviewCameraPosition(); // Tính toán lại vị trí với FOV mặc định
+
             // Lưu vị trí camera và mục tiêu điều khiển hiện tại làm điểm bắt đầu
             startCameraPosition.copy(camera.position);
             startControlsTarget.copy(controls.target);
 
             // Đặt vị trí cuối cùng cho chế độ xem toàn cảnh
-            finalCameraPosition.copy(overviewCameraPosition);
+            finalCameraPosition.copy(newOverviewPosition); // Sử dụng vị trí đã được tính toán lại
             finalControlsTarget.copy(overviewControlsTarget);
 
             isCameraAnimating = true;
@@ -3491,6 +3529,7 @@
         });
 
         updateVolumeSliderVisual(volumeSlider.value); // Đặt giao diện ban đầu dựa trên giá trị mặc định của HTML
+        updateZoomSliderVisual(parseFloat(zoomLevelSlider.value)); // Đặt giao diện ban đầu cho thanh trượt zoom
         // Tải các cài đặt đã lưu sau khi tất cả các phần tử và biến đã được khởi tạo
         loadSettings();
 
