@@ -803,16 +803,16 @@
             <span id="close-settings-menu-btn">&times;</span>
             <ul id="settings-list" style="list-style: none; padding: 0; margin: 0;">
                 <li class="settings-list-item">
-                    <label for="radius-slider">Mở rộng vũ trụ (<span id="radius-value">10</span>x)</label>
-                    <input type="range" id="radius-slider" min="1" max="100" value="10">
+                    <label for="radius-slider">Mở rộng vũ trụ (<span id="radius-value">10.00</span>x)</label>
+                    <input type="range" id="radius-slider" min="1" max="100" value="10" step="0.01">
                 </li>
                 <li class="settings-list-item">
                     <label for="density-slider">Mật độ sao (<span id="density-value">1,000,000</span>)</label>
-                    <input type="range" id="density-slider" min="200000" max="10000000" step="10000" value="1000000">
+                    <input type="range" id="density-slider" min="200000" max="10000000" step="1" value="1000000">
                 </li>
                 <li class="settings-list-item">
                     <label for="zoom-slider">Giới hạn zoom (<span id="zoom-value">50,000</span>)</label>
-                    <input type="range" id="zoom-slider" min="500" max="100000" step="100" value="50000">
+                    <input type="range" id="zoom-slider" min="500" max="100000" step="1" value="50000">
                 </li>
             </ul>
         </div> <!-- Đóng thẻ div cho song-list-overlay -->
@@ -1408,8 +1408,11 @@
             zoomValue.textContent = newMaxDistance.toLocaleString('en-US');
         });
 
-        radiusSlider.addEventListener('input', () => { radiusValue.textContent = radiusSlider.value; });
-        radiusSlider.addEventListener('change', () => { regenerateStarfield(currentStarCount, parseInt(radiusSlider.value)); });
+        radiusSlider.addEventListener('input', () => {
+            const value = parseFloat(radiusSlider.value).toFixed(2);
+            radiusValue.textContent = value;
+        });
+        radiusSlider.addEventListener('change', () => { regenerateStarfield(currentStarCount, parseFloat(radiusSlider.value)); });
 
         densitySlider.addEventListener('input', () => { densityValue.textContent = parseInt(densitySlider.value).toLocaleString('en-US'); });
         densitySlider.addEventListener('change', () => { regenerateStarfield(parseInt(densitySlider.value), currentRadiusMultiplier); });
