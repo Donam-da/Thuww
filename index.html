@@ -1006,7 +1006,7 @@
         <div id="main-ui-controls">
             <div class="ui-button-group">
                 <button id="select-planet-btn">Hành tinh</button>
-                <button id="toggle-labels-btn">Ẩn tên</button>
+                <button id="toggle-labels-btn">Hiện tên</button>
             </div>
             <!-- <button id="overview-btn">Toàn cảnh</button> Removed from here -->
             <div id="music-controls-2d" style="display: none;">
@@ -1345,6 +1345,7 @@
             // Create Label
             const planetDiv = document.createElement('div');
             planetDiv.className = 'planet-label';
+            planetDiv.classList.add('hidden'); // Ẩn tên hành tinh theo mặc định
             planetDiv.textContent = data.name;
             planetDiv.addEventListener('click', (event) => {
                 event.stopPropagation();
