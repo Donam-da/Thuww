@@ -3090,6 +3090,13 @@
             const bassAvg = bassSum / bassBins;
             const bassLevel = bassAvg / 255; // 0.0 to 1.0
             
+            // Treble (High Frequencies) - Thêm phân tích âm cao
+            let trebleSum = 0;
+            const trebleStart = Math.floor(bufferLength * 0.6);
+            for(let i = trebleStart; i < bufferLength; i++) trebleSum += dataArray[i];
+            const trebleAvg = trebleSum / (bufferLength - trebleStart);
+            const trebleLevel = trebleAvg / 255;
+
             // Overall Energy
             let totalSum = 0;
             for(let i = 0; i < bufferLength; i++) totalSum += dataArray[i];
@@ -3100,8 +3107,9 @@
             const hueSpeed = 0.5 + (energy * 4.0); // Tốc độ cơ bản + tăng tốc khi nhạc mạnh
             currentHueValue = (currentHueValue + hueSpeed) % 360;
 
-            // Pulse effect: Non-linear for snappier beat detection
-            const pulse = 1 + Math.pow(bassLevel, 3) * 0.3; 
+            // Pulse effect: Điều chỉnh kích thước dựa trên Bass (Trầm), Treble (Cao) và Energy (Năng lượng/Tốc độ)
+            // Công thức tổng hợp để quả cầu phản ứng với mọi yếu tố của âm thanh: Trầm, Cao, Nhanh/Chậm (Năng lượng)
+            const pulse = 0.8 + (bassLevel * 0.6) + (energy * 0.4) + (trebleLevel * 0.3); 
             const baseRadius = refDim * 0.2 * pulse; // Kích thước dựa trên vùng an toàn
 
             // 2. Draw Inner Core (Bass Glow)
@@ -3253,11 +3261,9 @@
             for(let i = 0; i < bufferLength; i++) totalSum += dataArray[i];
             const energy = totalSum / bufferLength / 255;
 
-            // Calculate Dynamic Width based on Audio Properties
-            // Bass (Thấp) -> Dày hơn | Treble (Cao) -> Mỏng hơn | Energy (Mạnh) -> Dày hơn
-            // Scale width by 0.7, but base thickness increased 3x as requested
-            let dynamicWidth = (6 + (bassLevel * 12) + (energy * 6) - (trebleLevel * 6)) * 0.7;
-            if (dynamicWidth < 2.1) dynamicWidth = 2.1; // Đảm bảo độ dày tối thiểu (0.7 * 3)
+            // Độ dày cố định theo yêu cầu, không phụ thuộc vào âm thanh
+            // Giữ nguyên biến dynamicWidth để tương thích với code bên dưới, nhưng gán giá trị tĩnh
+            const dynamicWidth = 0.8; 
 
             // 2. Dynamic Color Update
             const hueSpeed = 0.5 + (energy * 4.0);
@@ -3269,7 +3275,8 @@
                  ripples.push({ 
                      r: 10 * 0.7, // Scale initial radius
                      age: 0, 
-                     speed: (1 + energy * 3) * 0.7, // Scale speed
+                     // Tốc độ phụ thuộc vào năng lượng (nhanh/chậm, mạnh/nhẹ) và treble (cao)
+                     speed: (1 + energy * 2 + trebleLevel * 1.5) * 0.7, 
                      width: dynamicWidth * 0.2, // Sóng nền mỏng hơn sóng chính
                      hue: currentHueValue,
                      maxR: maxRadius,
@@ -3287,7 +3294,8 @@
                      ripples.push({ 
                          r: 10 * 0.7, // Scale initial radius
                          age: 0, 
-                         speed: (3 + (bassLevel * 6)) * 0.7, // Scale speed
+                         // Tốc độ beat phụ thuộc vào Bass (trầm) và năng lượng tổng thể
+                         speed: (3 + (bassLevel * 5) + (energy * 2)) * 0.7, 
                          width: dynamicWidth, // Sử dụng độ dày động đã tính toán
                          hue: currentHueValue,
                          maxR: maxRadius,
