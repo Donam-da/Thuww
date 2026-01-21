@@ -1711,7 +1711,7 @@
             "Gợn Sóng",
             "Mandala",
             "Thanh Tròn",
-            "Dòng Chảy"
+            "Ngọn Lửa"
         ];
         let currentVisualizerStyle = 4; // 0: Lightning, 1: Cyberpunk, 2: Circular, 3: Vertical, 4: Mirror, 5: Particles
         if (changeVisualizerStyleLabel) changeVisualizerStyleLabel.textContent = `Kiểu: ${visualizerStyleNames[currentVisualizerStyle]}`;
@@ -2944,6 +2944,7 @@
         let ripples = [];
         let particles = [];
         let neonParticles = [];
+        let fireParticles = [];
         let mandalaAngle = 0;
         let flowPhase = 0;
         let mandalaColorPhase = 0;
@@ -2978,7 +2979,7 @@
                     drawRadialBars();
                     break;
                 case 5:
-                    drawAbstractFlowingLines();
+                    drawFireVisualizer();
                     break;
                 default:
                     drawLightningVisualizer();
@@ -3588,45 +3589,95 @@
             visualizerCtx.restore();
         }
 
-        function drawAbstractFlowingLines() {
-            // --- Style 5: Abstract Flowing Lines ---
+        function drawFireVisualizer() {
+            // --- Style 5: Fire (Ngọn Đuốc Tập Trung Thẳng Đứng) ---
             const width = visualizerCanvas.width;
             const height = visualizerCanvas.height;
             const centerX = width / 2;
-            const centerY = height / 2; // Căn giữa theo chiều dọc
-            
-            const safeZone = width * 0.6;
-            const startX = (width - safeZone) / 2;
-            const endX = startX + safeZone;
-            
-            flowPhase += 0.02;
-            
-            visualizerCtx.globalCompositeOperation = 'screen';
-            visualizerCtx.lineWidth = 2;
+            const flameBaseY = height / 2 + 70; // Dịch chuyển gốc ngọn lửa lên 20px
 
-            // Draw multiple lines
-            for (let j = 0; j < 5; j++) {
-                visualizerCtx.beginPath();
-                const hue = 120 + j * 20; // Green to Cyan
-                visualizerCtx.strokeStyle = `hsla(${hue}, 100%, 50%, 0.5)`;
+            // 1. Thiết lập vùng lửa và màu sắc
+            const initialSpawnJitter = (width * 0.2) * 0.05; // Giảm vùng sinh hạt đi 1 nửa
+            const colors = {
+                // Màu lạnh (tần số thấp)
+                violet: '#9370DB', // Tím
+                indigo: '#4B0082', // Chàm
+                blue: '#1E90FF', // Xanh Dương
+                greenBlue: '#00CED1', // Xanh Lá (thiên xanh dương)
+                // Nhóm trung tính
+                greenYellow: '#ADFF2F', // Xanh Lá (thiên vàng)
+                magenta: '#FF00FF', // Tím Đỏ
+                blue: '#1E90FF',
+                yellow: '#FFD700',
+                orange: '#FFA500',
+                red: '#FF4500'
+            };
+
+            // 2. Sinh ra các hạt dựa trên dải tần âm thanh
+            for (let i = 0; i < bufferLength; i++) {
+                const value = dataArray[i];
+                if (value < 15) continue; // Bỏ qua nếu âm lượng tần số quá nhỏ
                 
-                for (let x = startX; x < endX; x += 5) {
-                    // Map x to frequency within safe zone
-                    const dataIndex = Math.floor(((x - startX) / safeZone) * bufferLength);
-                    const value = dataArray[dataIndex];
-                    
-                    // Perturb y with sine waves and audio data
-                    const y = centerY + 
-                              (Math.sin(x * 0.02 + flowPhase + j) * 30 + 
-                              Math.cos(x * 0.05 - flowPhase) * 20 +
-                              (value / 255) * 50 * (j % 2 === 0 ? 1 : -1)); // Khôi phục biên độ sóng
-                    
-                    if (x === startX) visualizerCtx.moveTo(x, y);
-                    else visualizerCtx.lineTo(x, y);
-                }
-                visualizerCtx.stroke();
+                // Giảm mật độ hạt đi 5 lần để cải thiện hiệu suất
+                if (Math.random() > (value / 255) * 0.009) continue; // 0.6 / 5 = 0.12
+
+                const t = i / (bufferLength - 1); // Vị trí chuẩn hóa trong dải tần (0.0 -> 1.0)
+                // Xác định màu sắc dựa trên vị trí dải tần
+                let particleColor;
+                if (t < 0.111)      particleColor = colors.violet;
+                else if (t < 0.222) particleColor = colors.indigo;
+                else if (t < 0.333) particleColor = colors.blue;
+                else if (t < 0.444) particleColor = colors.greenBlue;
+                else if (t < 0.555) particleColor = colors.greenYellow;
+                else if (t < 0.666) particleColor = colors.magenta;
+                else if (t < 0.777) particleColor = colors.yellow;
+                else if (t < 0.888) particleColor = colors.orange;
+                else                particleColor = colors.red;
+                const energy = value / 255;
+                const life = 0.8 + Math.random() * 0.5;
+                
+                fireParticles.push({
+                    x: centerX + (Math.random() - 0.5) * initialSpawnJitter, // Tất cả hạt sinh ra từ trung tâm
+                    y: flameBaseY,
+                    // Vận tốc ngang: giảm đi 1 nửa
+                    vx: (Math.random() - 0.5) * 0.25,
+                    // Vận tốc dọc phụ thuộc vào năng lượng của dải tần đó
+                    vy: (energy * 1.5) + 0.5 + Math.random() * 0.5, // Giảm vận tốc dọc đi 1 nửa
+                    life: life,
+                    maxLife: life, // Lưu lại để tính alpha
+                    decay: 0.015 + Math.random() * 0.01,
+                    color: particleColor,
+                    // Kích thước phụ thuộc vào năng lượng, giảm đi 1 nửa
+                    size: (energy * 5) + Math.random() * 2 + 0.5
+                });
             }
+            // 3. Cập nhật và vẽ tất cả các hạt
+            visualizerCtx.globalCompositeOperation = 'lighter';
+            for (let i = fireParticles.length - 1; i >= 0; i--) {
+                const p = fireParticles[i];
+                // Cập nhật vật lý
+                p.y -= p.vy;
+                p.x += p.vx;
+                // Loại bỏ hiệu ứng "lắc lư" để các hạt bay thẳng lên
+                p.life -= p.decay;
+                p.size *= 0.97; // Thu nhỏ dần
+                if (p.life <= 0 || p.size < 0.5) {
+                    fireParticles.splice(i, 1);
+                    continue;
+                }
+                // Vẽ hạt
+                visualizerCtx.beginPath();
+                visualizerCtx.globalAlpha = (p.life / p.maxLife) * 0.9; // Làm mờ dần
+                visualizerCtx.shadowBlur = p.size * 1.5;
+                visualizerCtx.shadowColor = p.color;
+                visualizerCtx.fillStyle = p.color;
+                visualizerCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                visualizerCtx.fill();
+            }
+            // Đặt lại trạng thái canvas
+            visualizerCtx.globalAlpha = 1.0;
             visualizerCtx.globalCompositeOperation = 'source-over';
+            visualizerCtx.shadowBlur = 0;
         }
 
         audioPlayer.addEventListener('timeupdate', updateMusicPlayerUI);
