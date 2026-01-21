@@ -4079,12 +4079,25 @@
         const gifTvContainer = document.getElementById('gif-tv-container');
         const gifTvScreen = document.getElementById('gif-tv-screen');
         let gifInterval;
+        
+        // Logic phát ngẫu nhiên theo nhóm (Shuffle)
+        let tvShuffledIndices = [];
+        let currentTvShuffledIndex = 0;
+
+        function generateTvShuffle() {
+            tvShuffledIndices = Array.from({ length: tvPlaylist.length }, (_, i) => i);
+            for (let i = tvShuffledIndices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [tvShuffledIndices[i], tvShuffledIndices[j]] = [tvShuffledIndices[j], tvShuffledIndices[i]];
+            }
+            currentTvShuffledIndex = 0;
+        }
 
         function startTvPlayer() {
             gifTvContainer.style.display = 'block';
-            playRandomTvContent();
+            playNextTvContent();
             // Đổi GIF mỗi 5 giây
-            gifInterval = setInterval(playRandomTvContent, 5000);
+            gifInterval = setInterval(playNextTvContent, 5000);
             if (toggleTvLabel) toggleTvLabel.textContent = 'Ẩn TV';
         }
 
@@ -4095,10 +4108,17 @@
             if (toggleTvLabel) toggleTvLabel.textContent = 'Hiện TV';
         }
 
-        function playRandomTvContent() {
+        function playNextTvContent() {
             if (tvPlaylist.length === 0) return;
-            const randomIndex = Math.floor(Math.random() * tvPlaylist.length);
-            const selectedSrc = tvPlaylist[randomIndex];
+            
+            // Nếu chưa có danh sách ngẫu nhiên hoặc đã phát hết danh sách hiện tại, tạo nhóm mới
+            if (tvShuffledIndices.length === 0 || currentTvShuffledIndex >= tvShuffledIndices.length) {
+                generateTvShuffle();
+            }
+
+            const actualIndex = tvShuffledIndices[currentTvShuffledIndex];
+            const selectedSrc = tvPlaylist[actualIndex];
+            currentTvShuffledIndex++; // Chuyển sang ảnh tiếp theo trong nhóm ngẫu nhiên
             
             // Xử lý xóa nền và tạo hiệu ứng nét vẽ cho tất cả ảnh (bao gồm cả frame đầu của GIF)
             processImageForTv(selectedSrc, (processedDataUrl) => {
