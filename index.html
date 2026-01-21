@@ -4066,11 +4066,13 @@
         // Danh sách các file hiển thị trên TV (hỗ trợ cả .gif và .jpg, .png)
         const tvPlaylist = [];
         
-        // Thêm file gif
-        tvPlaylist.push('gifs/gif1.gif');
+        // Thêm file gif (gif1.gif đến gif61.gif)
+        for (let i = 1; i <= 61; i++) {
+            tvPlaylist.push(`gifs/gif${i}.gif`);
+        }
         
-        // Thêm các file jpg (gif1.jpg đến gif3.jpg)
-        for (let i = 1; i <= 3; i++) {
+        // Thêm các file jpg (gif1.jpg đến gif39.jpg)
+        for (let i = 1; i <= 39; i++) {
             tvPlaylist.push(`gifs/gif${i}.jpg`);
         }
 
@@ -4098,10 +4100,40 @@
             const randomIndex = Math.floor(Math.random() * tvPlaylist.length);
             const selectedSrc = tvPlaylist[randomIndex];
             
-            // Xử lý xóa nền trắng cho ảnh (Lưu ý: Với file GIF, cách này sẽ chỉ lấy frame đầu tiên)
+            // Xử lý xóa nền và tạo hiệu ứng nét vẽ cho tất cả ảnh (bao gồm cả frame đầu của GIF)
             processImageForTv(selectedSrc, (processedDataUrl) => {
                 gifTvScreen.src = processedDataUrl;
             });
+        }
+
+        // Helper function to convert RGB to HSL
+        function rgbToHsl(r, g, b) {
+            r /= 255, g /= 255, b /= 255;
+
+            var max = Math.max(r, g, b),
+                min = Math.min(r, g, b);
+            var h, s, l = (max + min) / 2;
+
+            if (max == min) {
+                h = s = 0; // achromatic
+            } else {
+                var d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+                switch (max) {
+                    case r:
+                        h = (g - b) / d + (g < b ? 6 : 0);
+                        break;
+                    case g:
+                        h = (b - r) / d + 2;
+                        break;
+                    case b:
+                        h = (r - g) / d + 4;
+                        break;
+                }
+                h /= 6;
+            }
+            return [h * 360, s * 100, l * 100]; // H in [0, 360], S and L in [0, 100]
         }
 
         function processImageForTv(src, callback) {
@@ -4117,27 +4149,47 @@
                 try {
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const data = imageData.data;
-                    
-                    // Ngưỡng xác định màu tối (đường nét, mắt, mũi...)
-                    // Các màu đen, nâu, xám đậm sẽ có độ sáng thấp.
-                    const darkThreshold = 60; 
+
+                    // Define HSL color thresholds for identification
+                    const darkLuminanceThreshold = 25; // L < 25 for "dark"
+                    const graySaturationThreshold = 15; // S < 15 for "gray/black"
+                    const brownHueMin = 10; // Hue range for brown (orange-red)
+                    const brownHueMax = 50;
+                    const brownSaturationMin = 20; // Brown needs some saturation
+                    const brownSaturationMax = 80;
 
                     for (let i = 0; i < data.length; i += 4) {
                         const r = data[i];
                         const g = data[i + 1];
                         const b = data[i + 2];
-                        
-                        // Tính độ sáng (Luminance)
-                        const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+                        const a = data[i + 3]; // Lấy giá trị alpha gốc
 
-                        if (brightness < darkThreshold) {
-                            // Giữ lại các nét tối và chuyển sang màu Cyan (#00ffff)
+                        // Nếu pixel gốc đã trong suốt (ví dụ: nền trong suốt của GIF), giữ nguyên
+                        if (a < 50) {
+                            continue;
+                        }
+                        
+                        const [h, s, l] = rgbToHsl(r, g, b); // h in [0,360], s,l in [0,100]
+
+                        // Condition for "black, dark gray"
+                        const isDarkGrayOrBlack = (l < darkLuminanceThreshold && s < graySaturationThreshold);
+
+                        // Condition for "dark brown"
+                        const isDarkBrown = (
+                            l < darkLuminanceThreshold && // Must be dark
+                            h >= brownHueMin && h <= brownHueMax && // Hue in brown range
+                            s >= brownSaturationMin && s <= brownSaturationMax // Moderate saturation
+                        );
+
+                        if (isDarkGrayOrBlack || isDarkBrown) {
+                            // Convert to Cyan (0, 255, 255)
                             data[i] = 0;     // R
                             data[i + 1] = 255; // G
                             data[i + 2] = 255; // B
                             data[i + 3] = 255; // Alpha (Hiện rõ)
                         } else {
-                            // Xóa các vùng sáng (nền, da trắng, áo trắng...)
+                            // All other colors (light colors, or dark but not black/gray/brown)
+                            // Make it transparent
                             data[i + 3] = 0;
                         }
                     }
