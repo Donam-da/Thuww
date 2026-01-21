@@ -568,6 +568,34 @@
             font-family: Arial, sans-serif;
             font-weight: bold;
         }
+        #clear-queue-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8); /* Box tối hơn */
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            z-index: 2005;
+            display: none;
+            cursor: default;
+            font-family: 'VN Time', Arial, sans-serif;
+            font-size: 16px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            width: 270px;
+            height: 320px;
+            box-sizing: border-box;
+            flex-direction: column;
+            align-items: center;
+        }
+        #clear-queue-box:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+            border-color: rgba(0, 255, 255, 0.8);
+        }
         /* --- 2D Music Controls Styles --- */
         #music-controls-2d {
             position: fixed;
@@ -962,6 +990,13 @@
                 font-size: 11px; /* Giảm kích thước thêm */
             }
 
+            #clear-queue-box {
+                top: auto;
+                bottom: 120px;
+                transform: translateX(-50%);
+                height: 240px;
+            }
+
             /* 3D Music Player (internal styling) */
             .music-player-container-3d {
                 width: 225px;
@@ -1060,6 +1095,7 @@
                 <!-- Song items will be inserted here -->
             </ul>
         </div> <!-- Đóng thẻ div cho song-list-overlay -->
+        <div id="clear-queue-box">Hủy danh sách riêng đó</div>
         <!-- New Settings Overlay -->
         <div id="settings-overlay">
             <span id="close-settings-menu-btn">&times;</span>
@@ -2309,6 +2345,7 @@
         const audioPlayer = document.getElementById('background-music');
         const selectSongBtn = document.getElementById('select-song-btn');
         const songListOverlay = document.getElementById('song-list-overlay');
+        const clearQueueBox = document.getElementById('clear-queue-box');
         const songSelectionList = document.getElementById('song-selection-list');
         const closeSongMenuBtn = document.getElementById('close-song-menu-btn');
         const songSearchInput = document.getElementById('song-search-input');
@@ -2604,6 +2641,11 @@
             if (isZoomSliderOpen) hideZoomSlider();
             if (isSettingsMenuOpen) hideSettingsMenu();
             if (isVolumeSliderOpen) hideVolumeSlider();
+            
+            if (clearQueueBox.style.display === 'flex') {
+                clearQueueBox.style.display = 'none';
+            }
+
             // musicControls2D.style.display = 'none'; // Removed: Keep 2D music controls visible when song list is open
             controls.enabled = false; // Tắt điều khiển 3D khi mở danh sách nhạc
             populateSongList();
@@ -2643,8 +2685,79 @@
             }
         }
 
+        // --- Logic nhấn giữ nút Chọn nhạc để hủy Queue ---
+        let songBtnPressTimer;
+        let isSongBtnLongPress = false;
+
+        const startSongBtnPress = (e) => {
+            if (e.type === 'mousedown' && e.button !== 0) return;
+            isSongBtnLongPress = false;
+            songBtnPressTimer = setTimeout(() => {
+                isSongBtnLongPress = true;
+                
+                if (isSongListOpen) {
+                    hideSongList();
+                }
+
+                if (songQueue.length === 0) {
+                    clearQueueBox.style.justifyContent = 'center';
+                    clearQueueBox.innerHTML = '<span>Không có danh sách phát nào</span><br><button style="margin-top: 15px; background: transparent; border: 1px solid white; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;">Thoát</button>';
+                    clearQueueBox.style.cursor = 'default';
+                } else {
+                    clearQueueBox.style.justifyContent = 'flex-start';
+                    // Hiển thị danh sách phát
+                    let listHtml = '<div style="text-align: center; margin-bottom: 10px; font-weight: bold; font-size: 18px; flex-shrink: 0;">Danh sách phát riêng</div>';
+                    listHtml += '<div style="flex-grow: 1; width: 100%; overflow-y: auto; text-align: left; margin-bottom: 15px; padding-right: 5px; font-size: 14px;">';
+                    songQueue.forEach((songIndex, i) => {
+                        const songName = songs[songIndex].name;
+                        listHtml += `<div style="margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px;">${i + 1}. ${songName}</div>`;
+                    });
+                    listHtml += '</div>';
+                    
+                    listHtml += '<div style="display: flex; justify-content: center; gap: 15px; flex-shrink: 0;">';
+                    listHtml += '<button id="btn-clear-queue" style="background: rgba(255, 0, 0, 0.6); border: 1px solid #ff4d4d; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;">Hủy danh sách</button>';
+                    listHtml += '<button id="btn-close-queue" style="background: transparent; border: 1px solid white; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;">Thoát</button>';
+                    listHtml += '</div>';
+
+                    clearQueueBox.innerHTML = listHtml;
+                    clearQueueBox.style.cursor = 'default';
+                }
+
+                clearQueueBox.style.display = 'flex'; // Hiện box hủy
+                if (navigator.vibrate) navigator.vibrate(50);
+            }, 500);
+        };
+
+        const cancelSongBtnPress = () => {
+            clearTimeout(songBtnPressTimer);
+        };
+
+        selectSongBtn.addEventListener('mousedown', startSongBtnPress);
+        selectSongBtn.addEventListener('touchstart', startSongBtnPress, { passive: true });
+        selectSongBtn.addEventListener('mouseup', cancelSongBtnPress);
+        selectSongBtn.addEventListener('mouseleave', cancelSongBtnPress);
+        selectSongBtn.addEventListener('touchend', cancelSongBtnPress);
+
+        clearQueueBox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const target = e.target;
+            
+            if (songQueue.length === 0) {
+                 clearQueueBox.style.display = 'none';
+            } else {
+                if (target.id === 'btn-clear-queue') {
+                    songQueue = []; // Xóa danh sách chờ
+                    populateSongList(); // Cập nhật lại giao diện (xóa số thứ tự)
+                    clearQueueBox.style.display = 'none';
+                } else if (target.id === 'btn-close-queue') {
+                    clearQueueBox.style.display = 'none';
+                }
+            }
+        });
+
         selectSongBtn.addEventListener('click', (event) => {
             event.stopPropagation();
+            if (isSongBtnLongPress) { isSongBtnLongPress = false; return; } // Nếu là nhấn giữ thì không mở menu
             if (isSongListOpen) {
                 hideSongList();
             } else {
@@ -2659,6 +2772,12 @@
                     hideSettingsMenu();
                 }
                 showSongList();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (clearQueueBox.style.display === 'flex' && !clearQueueBox.contains(e.target)) {
+                clearQueueBox.style.display = 'none';
             }
         });
 
