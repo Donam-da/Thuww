@@ -3080,7 +3080,7 @@
             const centerY = height / 2; // Căn giữa theo chiều dọc vì canvas giờ đã lớn và căn giữa tuyệt đối
             
             // Sử dụng vùng an toàn (60% chiều rộng) làm kích thước tham chiếu để không vượt quá thanh thời gian
-            const refDim = width * 0.6;
+            const refDim = width * 0.3; // Giảm kích thước đi một nửa (0.6 -> 0.3)
             
             // 1. Analyze Audio Data
             // Bass (Low freqs)
