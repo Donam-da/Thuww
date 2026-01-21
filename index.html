@@ -3198,40 +3198,126 @@
         }
 
         function drawMinimalistRipples() {
-            // --- Style 2: Minimalist Concentric Ripples ---
+            // --- Style 2: Minimalist Concentric Ripples (Pro Version - Enhanced) ---
             const width = visualizerCanvas.width;
             const height = visualizerCanvas.height;
             const centerX = width / 2;
             const centerY = height / 2; // Căn giữa theo chiều dọc
             
-            const maxRadius = (width * 0.6) / 2; // Bán kính tối đa bằng một nửa vùng an toàn
+            const maxRadius = ((width * 0.6) / 2) * 0.7; // Giảm kích thước tối đa xuống 70%
 
-            // Beat detection to add ripple
-            let sum = 0;
-            for(let i=0; i<10; i++) sum += dataArray[i];
-            if (sum/10 > 200 && (!ripples.length || ripples[ripples.length-1].age > 10)) {
-                 ripples.push({ r: 10, age: 0, speed: (2 + (sum/10)/50) }); // Khôi phục tốc độ và kích thước ban đầu
+            // 1. Analyze Audio
+            // Bass (Low Frequencies) - Đại diện cho âm trầm/thấp
+            let bassSum = 0;
+            for(let i=0; i<10; i++) bassSum += dataArray[i];
+            const bassAvg = bassSum / 10;
+            const bassLevel = bassAvg / 255; // 0.0 - 1.0
+
+            // Treble (High Frequencies) - Đại diện cho âm cao
+            let trebleSum = 0;
+            const trebleStart = Math.floor(bufferLength * 0.6); // Lấy 40% dải tần cao
+            for(let i = trebleStart; i < bufferLength; i++) trebleSum += dataArray[i];
+            const trebleAvg = trebleSum / (bufferLength - trebleStart);
+            const trebleLevel = trebleAvg / 255;
+
+            // Energy (Overall) - Đại diện cho mạnh/yếu và nhanh/chậm
+            let totalSum = 0;
+            for(let i = 0; i < bufferLength; i++) totalSum += dataArray[i];
+            const energy = totalSum / bufferLength / 255;
+
+            // Calculate Dynamic Width based on Audio Properties
+            // Bass (Thấp) -> Dày hơn | Treble (Cao) -> Mỏng hơn | Energy (Mạnh) -> Dày hơn
+            // Scale width by 0.7, but base thickness increased 3x as requested
+            let dynamicWidth = (6 + (bassLevel * 12) + (energy * 6) - (trebleLevel * 6)) * 0.7;
+            if (dynamicWidth < 2.1) dynamicWidth = 2.1; // Đảm bảo độ dày tối thiểu (0.7 * 3)
+
+            // 2. Dynamic Color Update
+            const hueSpeed = 0.5 + (energy * 4.0);
+            currentHueValue = (currentHueValue + hueSpeed) % 360;
+
+            // 3. Ripple Spawning Logic
+            // Spawn faint background ripples regularly to keep it alive
+            if (!ripples.length || ripples[ripples.length-1].age > 10) { 
+                 ripples.push({ 
+                     r: 10 * 0.7, // Scale initial radius
+                     age: 0, 
+                     speed: (1 + energy * 3) * 0.7, // Scale speed
+                     width: dynamicWidth * 0.2, // Sóng nền mỏng hơn sóng chính
+                     hue: currentHueValue,
+                     maxR: maxRadius,
+                     isBeat: false,
+                     opacityFactor: 0.3 + energy * 0.4 // Base opacity
+                 });
             }
 
-            visualizerCtx.strokeStyle = '#ffffff';
-            visualizerCtx.lineWidth = 1;
+            // Spawn strong beat ripples
+            // Lower threshold to 80 to catch more beats
+            if (bassAvg > 80 && (!ripples.length || ripples[ripples.length-1].age > 5)) {
+                 // Avoid clustering strong ripples too close
+                 const lastWasBeat = ripples.length > 0 && ripples[ripples.length-1].isBeat;
+                 if (!lastWasBeat || ripples[ripples.length-1].age > 8) {
+                     ripples.push({ 
+                         r: 10 * 0.7, // Scale initial radius
+                         age: 0, 
+                         speed: (3 + (bassLevel * 6)) * 0.7, // Scale speed
+                         width: dynamicWidth, // Sử dụng độ dày động đã tính toán
+                         hue: currentHueValue,
+                         maxR: maxRadius,
+                         isBeat: true,
+                         opacityFactor: 1.0
+                     });
+                 }
+            }
 
+            // 4. Draw Central Core (Pulse) - Always visible
+            visualizerCtx.shadowBlur = (20 * bassLevel + 10) * 0.7; // Scale shadow
+            visualizerCtx.shadowColor = `hsl(${currentHueValue}, 100%, 50%)`;
+            
+            // Outer glow of core
+            visualizerCtx.beginPath();
+            visualizerCtx.arc(centerX, centerY, ((10 + bassLevel * 30) * 0.7) / 3, 0, Math.PI * 2); // Scale radius reduced by 3x
+            visualizerCtx.fillStyle = `hsla(${currentHueValue}, 100%, 60%, ${0.6 + bassLevel * 0.4})`;
+            visualizerCtx.fill();
+            
+            // Inner bright core
+            visualizerCtx.beginPath();
+            visualizerCtx.arc(centerX, centerY, ((5 + bassLevel * 15) * 0.7) / 3, 0, Math.PI * 2); // Scale radius reduced by 3x
+            visualizerCtx.fillStyle = '#ffffff';
+            visualizerCtx.fill();
+            
+            visualizerCtx.shadowBlur = 0; // Reset shadow for ripples
+
+            // 5. Draw Ripples
             for (let i = ripples.length - 1; i >= 0; i--) {
                 const r = ripples[i];
                 r.r += r.speed;
                 r.age++;
                 
-                const opacity = Math.max(0, 1 - r.r / maxRadius); // Mờ dần khi chạm giới hạn vùng an toàn
+                const progress = r.r / r.maxR;
+                // Fade out as it expands
+                let opacity = (1 - Math.pow(progress, 1.5)) * r.opacityFactor;
                 
-                if (opacity <= 0) {
+                if (opacity <= 0.01) {
                     ripples.splice(i, 1);
                     continue;
                 }
 
                 visualizerCtx.beginPath();
-                visualizerCtx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                // Beat ripples are brighter/thicker
+                visualizerCtx.strokeStyle = `hsla(${r.hue}, 100%, ${r.isBeat ? '80%' : '50%'}, ${opacity})`;
+                visualizerCtx.lineWidth = r.width * (1 - progress * 0.2); 
+                
                 visualizerCtx.arc(centerX, centerY, r.r, 0, Math.PI * 2);
                 visualizerCtx.stroke();
+
+                // Echo effect for beat ripples (double ring)
+                if (r.isBeat && r.width > 3 * 0.7) { // Scale threshold
+                    visualizerCtx.beginPath();
+                    visualizerCtx.strokeStyle = `hsla(${r.hue}, 100%, 50%, ${opacity * 0.4})`;
+                    visualizerCtx.lineWidth = 1 * 0.7; // Scale line width
+                    visualizerCtx.arc(centerX, centerY, r.r * 0.85, 0, Math.PI * 2);
+                    visualizerCtx.stroke();
+                }
             }
         }
 
