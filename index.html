@@ -1719,7 +1719,7 @@
         // New time display toggle elements
         const toggleTimeDisplayBtn = document.getElementById('toggle-time-display-btn');
         const toggleTimeDisplayLabel = toggleTimeDisplayBtn.querySelector('label');
-        let isTimeDisplayVisible = true; // Default state: time is visible
+        let isTimeDisplayVisible = false; // Default state: time is hidden
 
         // New volume control elements
         const volumeBtn = document.getElementById('volume-btn');
@@ -1766,7 +1766,7 @@
                 const orbitsVisible = settings.orbitsVisible === false ? false : true;
                 // Load visualizer visibility, defaulting to true if not found or not explicitly false
                 const visualizerVisible = settings.visualizerVisible === false ? false : true;
-                const timeDisplayVisible = settings.timeDisplayVisible === false ? false : true;
+                const timeDisplayVisible = false; // Luôn ẩn thời gian khi khởi động
                 const savedVisualizerStyle = (settings.visualizerStyle !== undefined) ? settings.visualizerStyle : 4;
                 // Load volume, defaulting to 100 if not found
                 const volume = settings.volume || '100';
