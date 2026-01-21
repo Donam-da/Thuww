@@ -2690,6 +2690,130 @@
         let songBtnPressTimer;
         let isSongBtnLongPress = false;
 
+        function renderQueueBox() {
+            clearQueueBox.innerHTML = '';
+            
+            if (songQueue.length === 0) {
+                clearQueueBox.style.justifyContent = 'center';
+                clearQueueBox.innerHTML = '<span>Không có danh sách phát nào</span><br><button id="btn-close-queue-empty" style="margin-top: 15px; background: transparent; border: 1px solid white; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;">Thoát</button>';
+                document.getElementById('btn-close-queue-empty').onclick = (e) => { e.stopPropagation(); clearQueueBox.style.display = 'none'; };
+                clearQueueBox.style.cursor = 'default';
+                return;
+            }
+
+            clearQueueBox.style.justifyContent = 'flex-start';
+            
+            const title = document.createElement('div');
+            title.style.cssText = 'text-align: center; margin-bottom: 10px; font-weight: bold; font-size: 18px; flex-shrink: 0;';
+            title.textContent = 'Danh sách phát riêng';
+            clearQueueBox.appendChild(title);
+
+            const listContainer = document.createElement('div');
+            listContainer.style.cssText = 'flex-grow: 1; width: 100%; overflow-y: auto; text-align: left; margin-bottom: 15px; padding-right: 5px; font-size: 14px;';
+            
+            const queueItemsSelected = new Set();
+            const actionBtn = document.createElement('button');
+            
+            const updateActionButton = () => {
+                if (queueItemsSelected.size > 0) {
+                    actionBtn.textContent = 'Xóa khỏi danh sách';
+                    actionBtn.style.background = 'rgba(0, 255, 255, 0.3)';
+                    actionBtn.style.borderColor = '#00ffff';
+                    actionBtn.style.color = '#00ffff';
+                } else {
+                    actionBtn.textContent = 'Hủy danh sách';
+                    actionBtn.style.background = 'rgba(255, 0, 0, 0.6)';
+                    actionBtn.style.borderColor = '#ff4d4d';
+                    actionBtn.style.color = 'white';
+                }
+            };
+
+            songQueue.forEach((songIndex, i) => {
+                const songName = songs[songIndex].name;
+                const itemDiv = document.createElement('div');
+                itemDiv.style.cssText = 'margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px; transition: all 0.2s; cursor: pointer;';
+                itemDiv.textContent = `${i + 1}. ${songName}`;
+                
+                let itemPressTimer;
+                let isItemLongPress = false;
+
+                const startItemPress = (e) => {
+                    if (e.type === 'mousedown' && e.button !== 0) return;
+                    isItemLongPress = false;
+                    itemPressTimer = setTimeout(() => {
+                        isItemLongPress = true;
+                        if (queueItemsSelected.has(songIndex)) {
+                            queueItemsSelected.delete(songIndex);
+                            itemDiv.style.color = 'white';
+                            itemDiv.style.borderBottomColor = 'rgba(255,255,255,0.1)';
+                        } else {
+                            queueItemsSelected.add(songIndex);
+                            itemDiv.style.color = '#00ffff';
+                            itemDiv.style.borderBottomColor = '#00ffff';
+                        }
+                        updateActionButton();
+                        if (navigator.vibrate) navigator.vibrate(50);
+                    }, 500);
+                };
+
+                const cancelItemPress = () => { clearTimeout(itemPressTimer); };
+
+                itemDiv.addEventListener('mousedown', startItemPress);
+                itemDiv.addEventListener('touchstart', startItemPress, { passive: true });
+                itemDiv.addEventListener('mouseup', cancelItemPress);
+                itemDiv.addEventListener('mouseleave', cancelItemPress);
+                itemDiv.addEventListener('touchend', cancelItemPress);
+                
+                itemDiv.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (isItemLongPress) { isItemLongPress = false; return; }
+                    if (queueItemsSelected.size > 0) {
+                        if (queueItemsSelected.has(songIndex)) {
+                            queueItemsSelected.delete(songIndex);
+                            itemDiv.style.color = 'white';
+                            itemDiv.style.borderBottomColor = 'rgba(255,255,255,0.1)';
+                        } else {
+                            queueItemsSelected.add(songIndex);
+                            itemDiv.style.color = '#00ffff';
+                            itemDiv.style.borderBottomColor = '#00ffff';
+                        }
+                        updateActionButton();
+                    }
+                });
+
+                listContainer.appendChild(itemDiv);
+            });
+            clearQueueBox.appendChild(listContainer);
+
+            const btnContainer = document.createElement('div');
+            btnContainer.style.cssText = 'display: flex; justify-content: center; gap: 15px; flex-shrink: 0;';
+
+            actionBtn.style.cssText = 'background: rgba(255, 0, 0, 0.6); border: 1px solid #ff4d4d; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
+            actionBtn.textContent = 'Hủy danh sách';
+            actionBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (queueItemsSelected.size > 0) {
+                    songQueue = songQueue.filter(idx => !queueItemsSelected.has(idx));
+                    populateSongList();
+                    renderQueueBox();
+                } else {
+                    songQueue = [];
+                    populateSongList();
+                    clearQueueBox.style.display = 'none';
+                }
+            };
+            btnContainer.appendChild(actionBtn);
+
+            const closeBtn = document.createElement('button');
+            closeBtn.style.cssText = 'background: transparent; border: 1px solid white; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
+            closeBtn.textContent = 'Thoát';
+            closeBtn.onclick = (e) => { e.stopPropagation(); clearQueueBox.style.display = 'none'; };
+            btnContainer.appendChild(closeBtn);
+
+            clearQueueBox.appendChild(btnContainer);
+            clearQueueBox.style.cursor = 'default';
+        }
+
         const startSongBtnPress = (e) => {
             if (e.type === 'mousedown' && e.button !== 0) return;
             isSongBtnLongPress = false;
@@ -2700,29 +2824,7 @@
                     hideSongList();
                 }
 
-                if (songQueue.length === 0) {
-                    clearQueueBox.style.justifyContent = 'center';
-                    clearQueueBox.innerHTML = '<span>Không có danh sách phát nào</span><br><button style="margin-top: 15px; background: transparent; border: 1px solid white; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;">Thoát</button>';
-                    clearQueueBox.style.cursor = 'default';
-                } else {
-                    clearQueueBox.style.justifyContent = 'flex-start';
-                    // Hiển thị danh sách phát
-                    let listHtml = '<div style="text-align: center; margin-bottom: 10px; font-weight: bold; font-size: 18px; flex-shrink: 0;">Danh sách phát riêng</div>';
-                    listHtml += '<div style="flex-grow: 1; width: 100%; overflow-y: auto; text-align: left; margin-bottom: 15px; padding-right: 5px; font-size: 14px;">';
-                    songQueue.forEach((songIndex, i) => {
-                        const songName = songs[songIndex].name;
-                        listHtml += `<div style="margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px;">${i + 1}. ${songName}</div>`;
-                    });
-                    listHtml += '</div>';
-                    
-                    listHtml += '<div style="display: flex; justify-content: center; gap: 15px; flex-shrink: 0;">';
-                    listHtml += '<button id="btn-clear-queue" style="background: rgba(255, 0, 0, 0.6); border: 1px solid #ff4d4d; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;">Hủy danh sách</button>';
-                    listHtml += '<button id="btn-close-queue" style="background: transparent; border: 1px solid white; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;">Thoát</button>';
-                    listHtml += '</div>';
-
-                    clearQueueBox.innerHTML = listHtml;
-                    clearQueueBox.style.cursor = 'default';
-                }
+                renderQueueBox();
 
                 clearQueueBox.style.display = 'flex'; // Hiện box hủy
                 if (navigator.vibrate) navigator.vibrate(50);
@@ -2738,23 +2840,6 @@
         selectSongBtn.addEventListener('mouseup', cancelSongBtnPress);
         selectSongBtn.addEventListener('mouseleave', cancelSongBtnPress);
         selectSongBtn.addEventListener('touchend', cancelSongBtnPress);
-
-        clearQueueBox.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const target = e.target;
-            
-            if (songQueue.length === 0) {
-                 clearQueueBox.style.display = 'none';
-            } else {
-                if (target.id === 'btn-clear-queue') {
-                    songQueue = []; // Xóa danh sách chờ
-                    populateSongList(); // Cập nhật lại giao diện (xóa số thứ tự)
-                    clearQueueBox.style.display = 'none';
-                } else if (target.id === 'btn-close-queue') {
-                    clearQueueBox.style.display = 'none';
-                }
-            }
-        });
 
         selectSongBtn.addEventListener('click', (event) => {
             event.stopPropagation();
