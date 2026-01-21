@@ -1061,6 +1061,10 @@
                     <!-- The text inside the label will be controlled by JavaScript -->
                     <label style="pointer-events: none; margin-bottom: 0;">Đổi kiểu sóng nhạc</label>
                 </li>
+                <li class="settings-list-item" id="toggle-time-display-btn" style="cursor: pointer;">
+                    <!-- The text inside the label will be controlled by JavaScript -->
+                    <label style="pointer-events: none; margin-bottom: 0;">Ẩn Thời gian</label>
+                </li>
                 <li class="settings-list-item">
                     <label for="radius-slider">Mở rộng vũ trụ (<span id="radius-value">10.00</span>x)</label>
                     <input type="range" id="radius-slider" min="1" max="50" value="30" step="0.01">
@@ -1712,6 +1716,11 @@
         let currentVisualizerStyle = 4; // 0: Lightning, 1: Cyberpunk, 2: Circular, 3: Vertical, 4: Mirror, 5: Particles
         if (changeVisualizerStyleLabel) changeVisualizerStyleLabel.textContent = `Kiểu: ${visualizerStyleNames[currentVisualizerStyle]}`;
 
+        // New time display toggle elements
+        const toggleTimeDisplayBtn = document.getElementById('toggle-time-display-btn');
+        const toggleTimeDisplayLabel = toggleTimeDisplayBtn.querySelector('label');
+        let isTimeDisplayVisible = true; // Default state: time is visible
+
         // New volume control elements
         const volumeBtn = document.getElementById('volume-btn');
         const volumeSliderContainer = document.getElementById('volume-slider-container');
@@ -1736,6 +1745,7 @@
                 orbitsVisible: areOrbitsVisible,
                 visualizerVisible: isVisualizerVisible,
                 visualizerStyle: currentVisualizerStyle,
+                timeDisplayVisible: isTimeDisplayVisible,
                 volume: volumeSlider.value,
                 fov: camera.fov
             };
@@ -1756,6 +1766,7 @@
                 const orbitsVisible = settings.orbitsVisible === false ? false : true;
                 // Load visualizer visibility, defaulting to true if not found or not explicitly false
                 const visualizerVisible = settings.visualizerVisible === false ? false : true;
+                const timeDisplayVisible = settings.timeDisplayVisible === false ? false : true;
                 const savedVisualizerStyle = (settings.visualizerStyle !== undefined) ? settings.visualizerStyle : 4;
                 // Load volume, defaulting to 100 if not found
                 const volume = settings.volume || '100';
@@ -1790,6 +1801,12 @@
                 isVisualizerVisible = visualizerVisible;
                 if (toggleVisualizerLabel) {
                     toggleVisualizerLabel.textContent = isVisualizerVisible ? 'Ẩn Sóng nhạc' : 'Hiện Sóng nhạc';
+                }
+
+                // Apply time display visibility
+                isTimeDisplayVisible = timeDisplayVisible;
+                if (toggleTimeDisplayLabel) {
+                    toggleTimeDisplayLabel.textContent = isTimeDisplayVisible ? 'Ẩn Thời gian' : 'Hiện Thời gian';
                 }
                 
                 // Apply visualizer style
@@ -1938,16 +1955,27 @@
                 if (visualizerCanvas) {
                     visualizerCanvas.style.display = isVisualizerVisible ? 'block' : 'none';
                 }
-                const timeContainer = musicPlayerObject.element.querySelector('.music-player-time');
-                if (timeContainer) {
-                    timeContainer.style.display = isVisualizerVisible ? 'flex' : 'none';
-                }
             }
 
             // Update the button text
             toggleVisualizerLabel.textContent = isVisualizerVisible ? 'Ẩn Sóng nhạc' : 'Hiện Sóng nhạc';
 
             // Save the new setting
+            saveSettings();
+        });
+
+        // Add event listener for the new time display toggle button
+        toggleTimeDisplayBtn.addEventListener('click', () => {
+            isTimeDisplayVisible = !isTimeDisplayVisible;
+
+            if (musicPlayerObject) {
+                const timeContainer = musicPlayerObject.element.querySelector('.music-player-time');
+                if (timeContainer) {
+                    timeContainer.style.display = isTimeDisplayVisible ? 'flex' : 'none';
+                }
+            }
+
+            toggleTimeDisplayLabel.textContent = isTimeDisplayVisible ? 'Ẩn Thời gian' : 'Hiện Thời gian';
             saveSettings();
         });
 
@@ -2862,7 +2890,7 @@
 
             // Set initial visibility based on the global setting
             visualizerCanvasElement.style.display = isVisualizerVisible ? 'block' : 'none';
-            timeDiv.style.display = isVisualizerVisible ? 'flex' : 'none';
+            timeDiv.style.display = isTimeDisplayVisible ? 'flex' : 'none';
 
             // Append elements in the desired order: close, title, visualizer, time
             titleDiv.appendChild(scrollContainer); // Add scroll container to title div
