@@ -595,6 +595,27 @@
             background-color: transparent;
         }
         /* --- 2D Music Controls Styles --- */
+        #gif-tv-container {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 220px;
+            height: 150px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            z-index: 1000;
+            display: none;
+            overflow: hidden;
+            pointer-events: none;
+            top: 120px; /* Desktop: Nằm dưới thanh điều khiển trên cùng */
+        }
+        #gif-tv-screen {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
         #music-controls-2d {
             position: fixed;
             /* Position handled by #main-ui-controls on desktop */ /* Removed fixed positioning here */
@@ -995,6 +1016,13 @@
                 height: 240px;
             }
 
+            #gif-tv-container {
+                top: auto;
+                bottom: 140px; /* Mobile: Nằm trên thanh điều khiển dưới cùng */
+                width: 180px;
+                height: 120px;
+            }
+
             /* 3D Music Player (internal styling) */
             .music-player-container-3d {
                 width: 225px;
@@ -1094,6 +1122,9 @@
             </ul>
         </div> <!-- Đóng thẻ div cho song-list-overlay -->
         <div id="clear-queue-box">Hủy danh sách riêng đó</div>
+        <div id="gif-tv-container">
+            <img id="gif-tv-screen" src="" alt="TV">
+        </div>
         <!-- New Settings Overlay -->
         <div id="settings-overlay">
             <span id="close-settings-menu-btn">&times;</span>
@@ -4014,6 +4045,41 @@
             }
         });
 
+        // --- GIF TV Player Logic ---
+        // Danh sách các file hiển thị trên TV (hỗ trợ cả .gif và .jpg, .png)
+        const tvPlaylist = [];
+        
+        // Thêm file gif
+        tvPlaylist.push('gifs/gif1.gif');
+        
+        // Thêm các file jpg (gif1.jpg đến gif3.jpg)
+        for (let i = 1; i <= 3; i++) {
+            tvPlaylist.push(`gifs/gif${i}.jpg`);
+        }
+
+        const gifTvContainer = document.getElementById('gif-tv-container');
+        const gifTvScreen = document.getElementById('gif-tv-screen');
+        let gifInterval;
+
+        function startTvPlayer() {
+            gifTvContainer.style.display = 'block';
+            playRandomTvContent();
+            // Đổi GIF mỗi 5 giây
+            gifInterval = setInterval(playRandomTvContent, 5000);
+        }
+
+        function stopTvPlayer() {
+            gifTvContainer.style.display = 'none';
+            clearInterval(gifInterval);
+            gifTvScreen.src = ''; 
+        }
+
+        function playRandomTvContent() {
+            if (tvPlaylist.length === 0) return;
+            const randomIndex = Math.floor(Math.random() * tvPlaylist.length);
+            gifTvScreen.src = tvPlaylist[randomIndex];
+        }
+
         function applyScrollingToTitle(titleElement, songName) {
             const scrollContainer = titleElement.querySelector('.music-player-title-scroll-container');
             const titleText = titleElement.querySelector('.music-player-title-text');
@@ -4108,6 +4174,9 @@
 
             // Di chuyển trình phát nhạc xuống
             document.getElementById('music-controls-2d').style.transform = 'translateY(20px)';
+            
+            // Bắt đầu phát TV GIF
+            startTvPlayer();
 
             // Đặt lại FOV (zoom) về mặc định và tính toán lại vị trí toàn cảnh
             camera.fov = 75; // Đặt lại về FOV mặc định
@@ -4199,6 +4268,7 @@
             // Kích hoạt lại hiệu ứng trôi nổi khi chọn một hành tinh.
             // Điều này đảm bảo sóng nhạc sẽ bắt đầu di chuyển trở lại nếu trước đó đang ở chế độ "Toàn cảnh".
             musicPlayerFloatInfo.enabled = true;
+            stopTvPlayer(); // Tắt TV khi chọn hành tinh (thoát chế độ toàn cảnh)
             selectedPlanetObject = planet; // Cập nhật hành tinh đang được chọn
             document.getElementById('music-controls-2d').style.transform = '';
             // Đặt lại kích thước và vị trí của trình phát nhạc 3D
@@ -4671,6 +4741,7 @@
             if (musicPlayerFloatInfo.enabled === false) {
                 musicPlayerFloatInfo.enabled = true;
 
+                stopTvPlayer(); // Tắt TV khi người dùng tự xoay camera (thoát chế độ toàn cảnh)
                 // Đặt lại vị trí và kích thước của trình phát nhạc 3D về trạng thái mặc định
                 if (musicPlayerObject && musicPlayerObject.element) {
                     musicPlayerObject.element.style.transform = 'scale(1) translateY(0)';
