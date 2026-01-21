@@ -3978,8 +3978,17 @@
         audioPlayer.addEventListener('ended', () => {
             if (songQueue.length > 0) {
                 const nextIndex = songQueue.shift();
-                showMusicPlayer(nextIndex);
+                
+                // Nếu bài tiếp theo trong hàng đợi trùng với bài đang phát, chỉ cần phát lại
+                if (nextIndex === currentSongIndex) {
+                    audioPlayer.currentTime = 0;
+                    audioPlayer.play();
+                } else {
+                    showMusicPlayer(nextIndex);
+                }
+
                 if (isSongListOpen) populateSongList();
+                if (clearQueueBox.style.display === 'flex') renderQueueBox();
                 return;
             }
             let newIndex;
