@@ -2612,38 +2612,41 @@
             scrollContainer.appendChild(titleText1);
             titleElement.appendChild(scrollContainer);
         
-            // Clear any previous animation state
+            // Xóa mọi trạng thái hoạt ảnh trước đó
             titleElement.classList.remove('scrolling');
             titleElement.style.removeProperty('--scroll-start');
             titleElement.style.removeProperty('--scroll-end');
             titleElement.style.removeProperty('--scroll-duration');
             
-            // We need to wait for the DOM to update to get correct widths
-            const containerWidth = titleElement.offsetWidth; // Get the width of the visible container
-            const textWidth = titleText1.offsetWidth; // Get the actual width of the text
-        
-            // Duplicate text for seamless scroll
-            const titleText2 = document.createElement('span');
-            titleText2.textContent = songName;
-            titleText2.style.display = 'inline-block';
-            titleText2.style.paddingLeft = '50px'; // Space between texts
-            scrollContainer.appendChild(titleText2);
-        
-            // Calculate scroll parameters for right-to-left continuous scroll
-            // The animation starts with the text fully to the right, just outside the container.
-            // It ends when the first instance of the text has moved completely off the left side,
-            // and the second instance is just starting to appear from the right.
-            const scrollStart = containerWidth; // Start position: The right edge of the text is at the right edge of the container.
-            const scrollEnd = -(textWidth + 50); // End position: The left edge of the first text instance is at -(textWidth + padding).
-            const totalScrollDistance = containerWidth + textWidth + 50; // Total distance for one full cycle
-        
-            const scrollSpeedPxPerSec = 40; // Adjust speed as needed
-            const scrollDuration = (totalScrollDistance / scrollSpeedPxPerSec) * 1000; // in milliseconds
-        
-            titleElement.classList.add('scrolling');
-            titleElement.style.setProperty('--scroll-start', `${scrollStart}px`);
-            titleElement.style.setProperty('--scroll-end', `${scrollEnd}px`);
-            titleElement.style.setProperty('--scroll-duration', `${scrollDuration}ms`);
+            // Cần đợi DOM cập nhật để có chiều rộng chính xác
+            setTimeout(() => {
+                const containerWidth = titleElement.offsetWidth; // Chiều rộng của container hiển thị
+                const textWidth = titleText1.offsetWidth; // Chiều rộng thực tế của văn bản
+            
+                // Chỉ cuộn nếu văn bản tràn ra ngoài container
+                if (textWidth > containerWidth) {
+                    // Tạo và thêm văn bản trùng lặp để tạo vòng lặp liền mạch
+                    const titleText2 = document.createElement('span');
+                    titleText2.textContent = songName;
+                    titleText2.style.display = 'inline-block';
+                    titleText2.style.paddingLeft = '50px'; // Khoảng cách giữa các văn bản
+                    scrollContainer.appendChild(titleText2);
+                
+                    // Tổng khoảng cách cuộn cho một chu kỳ đầy đủ (văn bản gốc + khoảng đệm)
+                    const totalScrollDistance = textWidth + 50;
+                
+                    const scrollStart = 0; // Bắt đầu từ vị trí 0
+                    const scrollEnd = -totalScrollDistance; // Cuộn sang trái bằng một chu kỳ đầy đủ
+                
+                    const scrollSpeedPxPerSec = 40; // Điều chỉnh tốc độ cuộn
+                    const scrollDuration = (totalScrollDistance / scrollSpeedPxPerSec) * 1000; // Thời gian hoạt ảnh (ms)
+                
+                    titleElement.classList.add('scrolling');
+                    titleElement.style.setProperty('--scroll-start', `${scrollStart}px`);
+                    titleElement.style.setProperty('--scroll-end', `${scrollEnd}px`);
+                    titleElement.style.setProperty('--scroll-duration', `${scrollDuration}ms`);
+                }
+            }, 50); // Độ trễ nhỏ
         }
 
         function updateSongTitle() {
