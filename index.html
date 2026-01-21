@@ -1688,6 +1688,20 @@
         const toggleVisualizerBtn = document.getElementById('toggle-visualizer-btn');
         const toggleVisualizerLabel = toggleVisualizerBtn.querySelector('label');
         let isVisualizerVisible = true; // Default state: visualizer is visible
+        
+        // New visualizer style change elements
+        const changeVisualizerStyleBtn = document.getElementById('change-visualizer-style-btn');
+        const changeVisualizerStyleLabel = changeVisualizerStyleBtn.querySelector('label');
+        const visualizerStyleNames = [
+            "Tia Chớp",
+            "Vòng Neon",
+            "Gợn Sóng",
+            "Mandala",
+            "Thanh Tròn",
+            "Dòng Chảy"
+        ];
+        let currentVisualizerStyle = 0; // 0: Lightning, 1: Cyberpunk, 2: Circular, 3: Vertical, 4: Mirror, 5: Particles
+        if (changeVisualizerStyleLabel) changeVisualizerStyleLabel.textContent = `Kiểu: ${visualizerStyleNames[currentVisualizerStyle]}`;
 
         // New volume control elements
         const volumeBtn = document.getElementById('volume-btn');
@@ -1712,6 +1726,7 @@
                 speed: speedSlider.value,
                 orbitsVisible: areOrbitsVisible,
                 visualizerVisible: isVisualizerVisible,
+                visualizerStyle: currentVisualizerStyle,
                 volume: volumeSlider.value,
                 fov: camera.fov
             };
@@ -1732,6 +1747,7 @@
                 const orbitsVisible = settings.orbitsVisible === false ? false : true;
                 // Load visualizer visibility, defaulting to true if not found or not explicitly false
                 const visualizerVisible = settings.visualizerVisible === false ? false : true;
+                const savedVisualizerStyle = settings.visualizerStyle || 0;
                 // Load volume, defaulting to 100 if not found
                 const volume = settings.volume || '100';
                 const fov = settings.fov || 75; // Load FOV, default to 75
@@ -1765,6 +1781,12 @@
                 isVisualizerVisible = visualizerVisible;
                 if (toggleVisualizerLabel) {
                     toggleVisualizerLabel.textContent = isVisualizerVisible ? 'Ẩn Sóng nhạc' : 'Hiện Sóng nhạc';
+                }
+                
+                // Apply visualizer style
+                currentVisualizerStyle = parseInt(savedVisualizerStyle);
+                if (changeVisualizerStyleLabel) {
+                    changeVisualizerStyleLabel.textContent = `Kiểu: ${visualizerStyleNames[currentVisualizerStyle]}`;
                 }
 
                 // Apply volume setting
@@ -1919,6 +1941,17 @@
             // Save the new setting
             saveSettings();
         });
+
+        // Add event listener for changing visualizer style
+        if (changeVisualizerStyleBtn) {
+            changeVisualizerStyleBtn.addEventListener('click', () => {
+                currentVisualizerStyle = (currentVisualizerStyle + 1) % 6; // Cycle through 6 styles
+                if (changeVisualizerStyleLabel) {
+                    changeVisualizerStyleLabel.textContent = `Kiểu: ${visualizerStyleNames[currentVisualizerStyle]}`;
+                }
+                saveSettings();
+            });
+        }
 
         // Volume slider logic
         volumeBtn.addEventListener('click', (event) => {
@@ -2869,6 +2902,12 @@
             if (totalTimeSpan) totalTimeSpan.textContent = formatTime(audioPlayer.duration);
         }
 
+        // --- Visualizer Helper Variables ---
+        let ripples = [];
+        let particles = [];
+        let mandalaAngle = 0;
+        let flowPhase = 0;
+
         function drawVisualizer() {
             if (!isVisualizerVisible || !analyser || !visualizerCtx || !audioPlayer || audioPlayer.paused || audioPlayer.ended) {
                 // Clear canvas if no audio is playing or analyser is not ready
@@ -2880,13 +2919,38 @@
 
             analyser.getByteFrequencyData(dataArray); // Get frequency data
 
-            // --- New Style: Single-sided Electric Lightning (Center Source) ---
+            visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
 
+            switch (currentVisualizerStyle) {
+                case 0:
+                    drawLightningVisualizer();
+                    break;
+                case 1:
+                    drawCyberpunkNeonRing();
+                    break;
+                case 2:
+                    drawMinimalistRipples();
+                    break;
+                case 3:
+                    drawParticleMandala();
+                    break;
+                case 4:
+                    drawRadialBars();
+                    break;
+                case 5:
+                    drawAbstractFlowingLines();
+                    break;
+                default:
+                    drawLightningVisualizer();
+            }
+        }
+
+        function drawLightningVisualizer() {
+            // --- Style 0: Single-sided Electric Lightning (Original) ---
             const width = visualizerCanvas.width;
             const height = visualizerCanvas.height;
-            const centerY = height - 30; // Đẩy đáy sóng lên 20px
 
-            visualizerCtx.clearRect(0, 0, width, height); // Xóa canvas để nền trong suốt
+            const centerY = height - 30; // Đẩy đáy sóng lên 20px
 
             // Kiểm tra xem đã đến lúc bắt đầu một quá trình chuyển màu mới chưa
             const now = Date.now();
@@ -2964,6 +3028,247 @@
             }
             visualizerCtx.stroke();
         }
+
+        function drawCyberpunkNeonRing() {
+            // --- Style 1: Cyberpunk Neon Ring ---
+            const width = visualizerCanvas.width;
+            const height = visualizerCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const minDim = Math.min(width, height);
+            
+            // Bass detection for pulse
+            let bassSum = 0;
+            const bassBins = 10; // Use first 10 bins for bass
+            for(let i = 0; i < bassBins; i++) {
+                bassSum += dataArray[i];
+            }
+            const bassAvg = bassSum / bassBins;
+            const pulse = 1 + (bassAvg / 255) * 0.2; // Pulse factor
+
+            const baseRadius = minDim * 0.125 * pulse; // Giảm kích thước vòng tròn cơ sở đi 2 lần
+
+            // Background Rings (Static/Slow rotate)
+            visualizerCtx.lineWidth = 1;
+            visualizerCtx.strokeStyle = 'rgba(0, 255, 255, 0.2)'; // Cyan
+            visualizerCtx.beginPath();
+            visualizerCtx.arc(centerX, centerY, baseRadius * 0.8, 0, Math.PI * 2);
+            visualizerCtx.stroke();
+
+            visualizerCtx.strokeStyle = 'rgba(138, 43, 226, 0.2)'; // BlueViolet
+            visualizerCtx.beginPath();
+            visualizerCtx.arc(centerX, centerY, baseRadius * 1.3, 0, Math.PI * 2);
+            visualizerCtx.stroke();
+
+            // Main Reactive Ring
+            visualizerCtx.shadowBlur = 20;
+            visualizerCtx.shadowColor = '#00ffff'; // Neon Glow
+            
+            const numDashes = 40;
+            const angleStep = (Math.PI * 2) / numDashes;
+            
+            for (let i = 0; i < numDashes; i++) {
+                const value = dataArray[i % bufferLength];
+                const dashLen = ((value / 255) * 20 + 5) * 0.5; // Giảm chiều dài vạch đi 2 lần
+                
+                const angle = i * angleStep + (Date.now() * 0.0005); // Slow rotation
+                
+                visualizerCtx.save();
+                visualizerCtx.translate(centerX, centerY);
+                visualizerCtx.rotate(angle);
+                
+                // Gradient color: Blue to Purple
+                const gradient = visualizerCtx.createLinearGradient(baseRadius, 0, baseRadius + dashLen, 0);
+                gradient.addColorStop(0, '#00ffff');
+                gradient.addColorStop(1, '#8a2be2');
+                
+                visualizerCtx.strokeStyle = gradient;
+                visualizerCtx.lineWidth = 3;
+                visualizerCtx.lineCap = 'round';
+                
+                visualizerCtx.beginPath();
+                visualizerCtx.moveTo(baseRadius, 0);
+                visualizerCtx.lineTo(baseRadius + dashLen, 0);
+                visualizerCtx.stroke();
+                
+                visualizerCtx.restore();
+            }
+            visualizerCtx.shadowBlur = 0; // Reset shadow
+        }
+
+        function drawMinimalistRipples() {
+            // --- Style 2: Minimalist Concentric Ripples ---
+            const width = visualizerCanvas.width;
+            const height = visualizerCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            // Beat detection to add ripple
+            let sum = 0;
+            for(let i=0; i<10; i++) sum += dataArray[i];
+            if (sum/10 > 200 && (!ripples.length || ripples[ripples.length-1].age > 10)) {
+                 ripples.push({ r: 5, age: 0, speed: (2 + (sum/10)/50) * 0.5 }); // Giảm kích thước và tốc độ đi 2 lần
+            }
+
+            visualizerCtx.strokeStyle = '#ffffff';
+            visualizerCtx.lineWidth = 1;
+
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                const r = ripples[i];
+                r.r += r.speed;
+                r.age++;
+                
+                const opacity = Math.max(0, 1 - r.r / ((Math.max(width, height)/1.5) * 0.5)); // Thu hẹp phạm vi mờ dần để tránh chạm viền
+                
+                if (opacity <= 0) {
+                    ripples.splice(i, 1);
+                    continue;
+                }
+
+                visualizerCtx.beginPath();
+                visualizerCtx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                visualizerCtx.arc(centerX, centerY, r.r, 0, Math.PI * 2);
+                visualizerCtx.stroke();
+            }
+        }
+
+        function drawParticleMandala() {
+            // --- Style 3: Particle Burst Mandala ---
+            const width = visualizerCanvas.width;
+            const height = visualizerCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            // Beat detection
+            let sum = 0;
+            for(let i=0; i<10; i++) sum += dataArray[i];
+            const isBeat = sum/10 > 210;
+
+            if (isBeat) {
+                // Burst
+                for(let i=0; i<20; i++) {
+                    const angle = (Math.PI * 2 * i) / 20;
+                    particles.push({
+                        x: centerX, y: centerY,
+                        vx: Math.cos(angle) * (Math.random() * 5 + 2) * 0.5, // Giảm tốc độ nổ đi 2 lần
+                        vy: Math.sin(angle) * (Math.random() * 5 + 2) * 0.5,
+                        life: 1.0,
+                        color: Math.random() > 0.5 ? '#ffd700' : '#ffffff' // Gold or White
+                    });
+                }
+            }
+
+            visualizerCtx.globalCompositeOperation = 'lighter';
+            
+            // Draw Mandala Center
+            mandalaAngle += 0.01;
+            const radius = (30 + (sum/10) * 0.2) * 0.5; // Giảm bán kính mandala đi 2 lần
+            visualizerCtx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+            visualizerCtx.lineWidth = 2;
+            visualizerCtx.beginPath();
+            for(let i=0; i<8; i++) {
+                const angle = mandalaAngle + (i * Math.PI * 2) / 8;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                visualizerCtx.moveTo(centerX, centerY);
+                visualizerCtx.lineTo(x, y);
+            }
+            visualizerCtx.stroke();
+
+            // Update and draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.02;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                visualizerCtx.fillStyle = p.color;
+                visualizerCtx.globalAlpha = p.life;
+                visualizerCtx.beginPath();
+                visualizerCtx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                visualizerCtx.fill();
+            }
+            visualizerCtx.globalAlpha = 1.0;
+            visualizerCtx.globalCompositeOperation = 'source-over';
+        }
+
+        function drawRadialBars() {
+            // --- Style 4: Radial Bar Equalizer ---
+            const width = visualizerCanvas.width;
+            const height = visualizerCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = 20; // Giảm bán kính vòng tròn trong đi 2 lần
+            const bars = 64;
+            const step = (Math.PI * 2) / bars;
+
+            for (let i = 0; i < bars; i++) {
+                // Map to frequency data (mirrored)
+                let dataIndex = i;
+                if (i >= bars / 2) {
+                    dataIndex = bars - i;
+                }
+                // Scale index to buffer length
+                dataIndex = Math.floor(dataIndex * (bufferLength / (bars/2)));
+                
+                const value = dataArray[dataIndex];
+                const barLen = ((value / 255) * 60) * 0.5; // Giảm chiều dài thanh đi 2 lần
+                const angle = i * step - Math.PI / 2;
+
+                visualizerCtx.save();
+                visualizerCtx.translate(centerX, centerY);
+                visualizerCtx.rotate(angle);
+
+                const hue = (i / bars) * 360;
+                visualizerCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+                visualizerCtx.fillRect(radius, -2, barLen, 4);
+
+                visualizerCtx.restore();
+            }
+        }
+
+        function drawAbstractFlowingLines() {
+            // --- Style 5: Abstract Flowing Lines ---
+            const width = visualizerCanvas.width;
+            const height = visualizerCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            flowPhase += 0.02;
+            
+            visualizerCtx.globalCompositeOperation = 'screen';
+            visualizerCtx.lineWidth = 2;
+
+            // Draw multiple lines
+            for (let j = 0; j < 5; j++) {
+                visualizerCtx.beginPath();
+                const hue = 120 + j * 20; // Green to Cyan
+                visualizerCtx.strokeStyle = `hsla(${hue}, 100%, 50%, 0.5)`;
+                
+                for (let x = 0; x < width; x += 5) {
+                    // Map x to frequency
+                    const dataIndex = Math.floor((x / width) * bufferLength);
+                    const value = dataArray[dataIndex];
+                    
+                    // Perturb y with sine waves and audio data
+                    const y = centerY + 
+                              (Math.sin(x * 0.02 + flowPhase + j) * 30 + 
+                              Math.cos(x * 0.05 - flowPhase) * 20 +
+                              (value / 255) * 50 * (j % 2 === 0 ? 1 : -1)) * 0.5; // Giảm biên độ sóng đi 2 lần
+                    
+                    if (x === 0) visualizerCtx.moveTo(x, y);
+                    else visualizerCtx.lineTo(x, y);
+                }
+                visualizerCtx.stroke();
+            }
+            visualizerCtx.globalCompositeOperation = 'source-over';
+        }
+
         audioPlayer.addEventListener('timeupdate', updateMusicPlayerUI);
         audioPlayer.addEventListener('loadedmetadata', updateMusicPlayerUI);
         audioPlayer.addEventListener('play', () => {
