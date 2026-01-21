@@ -574,19 +574,17 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.8); /* Box tối hơn */
+            background-color: transparent;
             color: white;
             padding: 15px;
             border-radius: 8px;
-            border: 1px solid rgba(0, 255, 255, 0.3);
             z-index: 2005;
             display: none;
             cursor: default;
             font-family: 'VN Time', Arial, sans-serif;
             font-size: 16px;
             text-align: center;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-            backdrop-filter: blur(5px);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
             width: 270px;
             height: 320px;
             box-sizing: border-box;
@@ -594,8 +592,7 @@
             align-items: center;
         }
         #clear-queue-box:hover {
-            background-color: rgba(0, 0, 0, 0.8);
-            border-color: rgba(0, 255, 255, 0.8);
+            background-color: transparent;
         }
         /* --- 2D Music Controls Styles --- */
         #music-controls-2d {
