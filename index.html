@@ -1145,6 +1145,10 @@
                     <!-- The text inside the label will be controlled by JavaScript -->
                     <label style="pointer-events: none; margin-bottom: 0;">Ẩn Thời gian</label>
                 </li>
+                <li class="settings-list-item" id="toggle-tv-btn" style="cursor: pointer;">
+                    <!-- The text inside the label will be controlled by JavaScript -->
+                    <label style="pointer-events: none; margin-bottom: 0;">Hiện TV</label>
+                </li>
                 <li class="settings-list-item">
                     <label for="radius-slider">Mở rộng vũ trụ (<span id="radius-value">10.00</span>x)</label>
                     <input type="range" id="radius-slider" min="1" max="50" value="30" step="0.01">
@@ -1802,6 +1806,10 @@
         const toggleTimeDisplayLabel = toggleTimeDisplayBtn.querySelector('label');
         let isTimeDisplayVisible = false; // Default state: time is hidden
 
+        // New TV toggle elements
+        const toggleTvBtn = document.getElementById('toggle-tv-btn');
+        const toggleTvLabel = toggleTvBtn.querySelector('label');
+
         // New volume control elements
         const volumeBtn = document.getElementById('volume-btn');
         const volumeSliderContainer = document.getElementById('volume-slider-container');
@@ -2058,6 +2066,15 @@
 
             toggleTimeDisplayLabel.textContent = isTimeDisplayVisible ? 'Ẩn Thời gian' : 'Hiện Thời gian';
             saveSettings();
+        });
+
+        // Add event listener for the new TV toggle button
+        toggleTvBtn.addEventListener('click', () => {
+            if (gifTvContainer.style.display === 'none' || gifTvContainer.style.display === '') {
+                startTvPlayer();
+            } else {
+                stopTvPlayer();
+            }
         });
 
         // Add event listener for changing visualizer style
@@ -4066,12 +4083,14 @@
             playRandomTvContent();
             // Đổi GIF mỗi 5 giây
             gifInterval = setInterval(playRandomTvContent, 5000);
+            if (toggleTvLabel) toggleTvLabel.textContent = 'Ẩn TV';
         }
 
         function stopTvPlayer() {
             gifTvContainer.style.display = 'none';
             clearInterval(gifInterval);
             gifTvScreen.src = ''; 
+            if (toggleTvLabel) toggleTvLabel.textContent = 'Hiện TV';
         }
 
         function playRandomTvContent() {
