@@ -2946,6 +2946,7 @@
         let neonParticles = [];
         let mandalaAngle = 0;
         let flowPhase = 0;
+        let mandalaColorPhase = 0;
 
         function drawVisualizer() {
             if (!isVisualizerVisible || !analyser || !visualizerCtx || !audioPlayer || audioPlayer.paused || audioPlayer.ended) {
@@ -3372,14 +3373,26 @@
             const bassAvg = bassSum / 10;
             const bassLevel = bassAvg / 255; // 0.0 - 1.0
 
+            // Calculate Energy (Overall) for color speed
+            let totalSum = 0;
+            for(let i = 0; i < bufferLength; i++) totalSum += dataArray[i];
+            const energy = totalSum / bufferLength / 255;
+
             visualizerCtx.globalCompositeOperation = 'lighter';
             
             // Draw Mandala (8 rays with bursting particles)
             mandalaAngle += 0.01;
+            // Tốc độ đổi màu của thanh dựa vào năng lượng nhạc (nhanh/chậm)
+            mandalaColorPhase += 0.02 + (energy * 0.2);
+            
+            // Tính toán màu giữa Cyan (0, 255, 255) và Trắng (255, 255, 255)
+            const colorMix = (Math.sin(mandalaColorPhase) + 1) / 2; // 0.0 -> 1.0
+            const redChannel = Math.floor(colorMix * 255);
+
             const numRays = 8;
             
             // Draw Center/Rays (Visual Structure)
-            visualizerCtx.strokeStyle = 'rgba(0, 255, 255, 0.3)'; // Đổi màu tia thành Cyan
+            visualizerCtx.strokeStyle = `rgba(${redChannel}, 255, 255, 0.5)`; // Màu thay đổi giữa Cyan và Trắng
             visualizerCtx.lineWidth = 2;
             visualizerCtx.beginPath();
             for(let i=0; i<numRays; i++) {
