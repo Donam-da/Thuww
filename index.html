@@ -3328,66 +3328,77 @@
             const centerX = width / 2;
             const centerY = height / 2; // Căn giữa theo chiều dọc
             
-            const maxRadius = (width * 0.6) / 2; // Giới hạn vùng nổ
+            const maxRadius = (width * 0.6) / 4; // Giới hạn vùng nổ (Giảm kích thước tổng thể 2 lần)
 
-            // Beat detection
-            let sum = 0;
-            for(let i=0; i<10; i++) sum += dataArray[i];
-            const isBeat = sum/10 > 210;
-
-            if (isBeat) {
-                // Burst
-                for(let i=0; i<20; i++) {
-                    const angle = (Math.PI * 2 * i) / 20;
-                    particles.push({
-                        x: centerX, y: centerY,
-                        vx: Math.cos(angle) * (Math.random() * 5 + 2), // Khôi phục tốc độ nổ
-                        vy: Math.sin(angle) * (Math.random() * 5 + 2),
-                        life: 1.0,
-                        color: Math.random() > 0.5 ? '#ffd700' : '#ffffff' // Gold or White
-                    });
-                }
-            }
+            // Analyze Audio
+            let bassSum = 0;
+            for(let i=0; i<10; i++) bassSum += dataArray[i];
+            const bassAvg = bassSum / 10;
+            const bassLevel = bassAvg / 255; // 0.0 - 1.0
 
             visualizerCtx.globalCompositeOperation = 'lighter';
             
-            // Draw Mandala Center
+            // Draw Mandala (8 rays with bursting particles)
             mandalaAngle += 0.01;
-            const radius = (30 + (sum/10) * 0.2); // Khôi phục kích thước mandala
-            visualizerCtx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+            const numRays = 8;
+            
+            // Draw Center/Rays (Visual Structure)
+            visualizerCtx.strokeStyle = 'rgba(0, 255, 255, 0.3)'; // Đổi màu tia thành Cyan
             visualizerCtx.lineWidth = 2;
             visualizerCtx.beginPath();
-            for(let i=0; i<8; i++) {
-                const angle = mandalaAngle + (i * Math.PI * 2) / 8;
-                const x = centerX + Math.cos(angle) * radius;
-                const y = centerY + Math.sin(angle) * radius;
+            for(let i=0; i<numRays; i++) {
+                const angle = mandalaAngle + (i * Math.PI * 2) / numRays;
+                const rayLen = 15 + (bassLevel * 25); // Base length + pulse (Giảm 2 lần)
+                const x = centerX + Math.cos(angle) * rayLen;
+                const y = centerY + Math.sin(angle) * rayLen;
                 visualizerCtx.moveTo(centerX, centerY);
                 visualizerCtx.lineTo(x, y);
             }
             visualizerCtx.stroke();
 
-            // Update and draw particles
+            // Spawn Particles Logic
+            // Spawn symmetrically on all 8 rays
+            // Probability increases with bass
+            if (Math.random() < bassLevel * 1.5) { 
+                for(let i=0; i<numRays; i++) {
+                    const angle = mandalaAngle + (i * Math.PI * 2) / numRays;
+                    
+                    // Speed depends on bass
+                    const speed = 1.5 + Math.random() * 1 + (bassLevel * 4); // Giảm tốc độ 2 lần
+                    
+                    particles.push({
+                        x: centerX, 
+                        y: centerY,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        life: 1.0,
+                        decay: 0.01 + Math.random() * 0.02,
+                        color: i % 2 === 0 ? '#00ffff' : '#ffffff', // Cyan or White
+                        size: (2 + Math.random() * 2) / 5 // Giảm kích thước hạt 5 lần
+                    });
+                }
+            }
+
+            // Update and Draw Particles
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 p.x += p.vx;
                 p.y += p.vy;
-                p.life -= 0.02;
+                p.life -= p.decay;
 
-                // Làm mờ nhanh hơn nếu hạt bay ra ngoài vùng an toàn
+                // Distance check to fade out if too far
                 const dist = Math.sqrt((p.x - centerX)**2 + (p.y - centerY)**2);
-                if (dist > maxRadius) {
-                    p.life -= 0.1;
-                }
+                if (dist > maxRadius) p.life -= 0.05;
 
                 if (p.life <= 0) {
                     particles.splice(i, 1);
                     continue;
                 }
 
-                visualizerCtx.fillStyle = p.color;
                 visualizerCtx.globalAlpha = p.life;
+                visualizerCtx.fillStyle = p.color;
                 visualizerCtx.beginPath();
-                visualizerCtx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                visualizerCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                 visualizerCtx.fill();
             }
             visualizerCtx.globalAlpha = 1.0;
