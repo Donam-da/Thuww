@@ -684,6 +684,7 @@
             backdrop-filter: none; /* Bỏ hiệu ứng làm mờ nền */
             -webkit-backdrop-filter: none; /* Bỏ hiệu ứng làm mờ nền cho trình duyệt Webkit */
             position: relative;
+            overflow: visible; /* Đảm bảo không cắt bớt các phần tử con tràn ra ngoài */
             pointer-events: auto; /* Allow interaction with the player */
         }
         .music-player-title {
@@ -699,6 +700,7 @@
             overflow: hidden; /* Hide anything outside the container */
             text-overflow: ellipsis; /* Fallback for non-scrolling state */
             position: relative; /* Needed for positioning inner elements */
+            z-index: 2; /* Đảm bảo nằm trên visualizer */
             width: 100%; /* Take full width of parent */
             height: 24px; /* Điều chỉnh chiều cao cho vừa khít */
             line-height: 24px; /* Căn chỉnh dòng */
@@ -727,18 +729,24 @@
             display: flex;
             justify-content: space-between;
             font-size: 15px;
-            margin-top: -25px; /* Đẩy lên sát đáy sóng hơn */
+            margin-top: 130px; /* Tạo khoảng trống cho visualizer vì nó đã được đưa ra khỏi luồng (absolute) */
             line-height: 1; /* Thu gọn chiều cao sát vào số */
             align-items: center;
+            position: relative;
+            z-index: 2; /* Đảm bảo nằm trên visualizer */
         }
         .music-player-visualizer {
-            display: block; /* Đảm bảo canvas là block element để căn giữa */
-            margin: 8px auto; /* Căn giữa bên dưới tiêu đề/thời gian */
+            position: absolute; /* Đưa ra khỏi luồng để không bị giới hạn bởi kích thước container */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Căn giữa tuyệt đối */
             background-color: transparent; /* Nền trong suốt */
             border-radius: 4px;
             border: none; /* Bỏ viền */
-            width: 100%; /* Set width to 100% to match parent */
-            height: 150px;
+            width: 150%; /* Rộng hơn container để tránh bị cắt */
+            height: 300px; /* Cao hơn để hiển thị đầy đủ hiệu ứng */
+            z-index: 1; /* Nằm dưới text */
+            pointer-events: none; /* Cho phép click xuyên qua */
         }
 
         /* New container for main UI buttons */
@@ -951,10 +959,11 @@
             }
             .music-player-time {
                 font-size: 11px;
+                margin-top: 90px; /* Điều chỉnh khoảng cách cho mobile */
             }
             .music-player-visualizer {
-                width: 207px;
-                height: 100px;
+                width: 150%; /* Rộng hơn container */
+                height: 200px; /* Chiều cao cho mobile */
             }
         }
     </style>
@@ -2847,8 +2856,9 @@
             visualizerCanvasElement.className = 'music-player-visualizer';
             // Dynamically set canvas width and height attributes based on screen size
             const isMobile = window.innerWidth <= 768;
-            visualizerCanvasElement.width = isMobile ? 207 : 345;
-            visualizerCanvasElement.height = isMobile ? 100 : 150;
+            // Tăng độ phân giải canvas để vẽ sắc nét hơn và rộng hơn
+            visualizerCanvasElement.width = isMobile ? 400 : 600;
+            visualizerCanvasElement.height = isMobile ? 300 : 450;
 
             // Set initial visibility based on the global setting
             visualizerCanvasElement.style.display = isVisualizerVisible ? 'block' : 'none';
@@ -2905,6 +2915,7 @@
         // --- Visualizer Helper Variables ---
         let ripples = [];
         let particles = [];
+        let neonParticles = [];
         let mandalaAngle = 0;
         let flowPhase = 0;
 
@@ -2950,7 +2961,11 @@
             const width = visualizerCanvas.width;
             const height = visualizerCanvas.height;
 
-            const centerY = height - 30; // Đẩy đáy sóng lên 20px
+            // Xác định vùng an toàn (bằng chiều rộng thanh thời gian, khoảng 60% canvas)
+            const safeZone = width * 0.6;
+            const startX = (width - safeZone) / 2;
+            const endX = startX + safeZone;
+            const centerY = height / 2 + 50; // Điều chỉnh vị trí đáy sóng cho canvas lớn
 
             // Kiểm tra xem đã đến lúc bắt đầu một quá trình chuyển màu mới chưa
             const now = Date.now();
@@ -2999,11 +3014,11 @@
             const step = 3; // Tăng mật độ: Giảm khoảng cách giữa các điểm (từ 10 xuống 3)
 
             visualizerCtx.beginPath();
-            visualizerCtx.moveTo(0, centerY);
+            visualizerCtx.moveTo(startX, centerY); // Bắt đầu từ mép trái của vùng an toàn
 
-            for (let x = 0; x <= width; x += step) {
-                // Calculate distance from center (0.0 at center, 1.0 at edges)
-                const distFromCenter = Math.abs(x - width / 2) / (width / 2);
+            for (let x = startX; x <= endX; x += step) {
+                // Calculate distance from center (0.0 at center, 1.0 at edges of safe zone)
+                const distFromCenter = Math.abs(x - width / 2) / (safeZone / 2);
                 // Map x position to frequency data index (Center = Low Freq, Edges = High Freq)
                 const dataIndex = Math.floor(distFromCenter * (bufferLength - 1));
                 const value = dataArray[dataIndex];
@@ -3030,66 +3045,152 @@
         }
 
         function drawCyberpunkNeonRing() {
-            // --- Style 1: Cyberpunk Neon Ring ---
+            // --- Style 1: Cyberpunk Neon Ring (Enhanced) ---
             const width = visualizerCanvas.width;
             const height = visualizerCanvas.height;
             const centerX = width / 2;
-            const centerY = height / 2;
-            const minDim = Math.min(width, height);
+            const centerY = height / 2; // Căn giữa theo chiều dọc vì canvas giờ đã lớn và căn giữa tuyệt đối
             
-            // Bass detection for pulse
+            // Sử dụng vùng an toàn (60% chiều rộng) làm kích thước tham chiếu để không vượt quá thanh thời gian
+            const refDim = width * 0.6;
+            
+            // 1. Analyze Audio Data
+            // Bass (Low freqs)
             let bassSum = 0;
             const bassBins = 10; // Use first 10 bins for bass
-            for(let i = 0; i < bassBins; i++) {
-                bassSum += dataArray[i];
-            }
+            for(let i = 0; i < bassBins; i++) bassSum += dataArray[i];
             const bassAvg = bassSum / bassBins;
-            const pulse = 1 + (bassAvg / 255) * 0.2; // Pulse factor
-
-            const baseRadius = minDim * 0.125 * pulse; // Giảm kích thước vòng tròn cơ sở đi 2 lần
-
-            // Background Rings (Static/Slow rotate)
-            visualizerCtx.lineWidth = 1;
-            visualizerCtx.strokeStyle = 'rgba(0, 255, 255, 0.2)'; // Cyan
-            visualizerCtx.beginPath();
-            visualizerCtx.arc(centerX, centerY, baseRadius * 0.8, 0, Math.PI * 2);
-            visualizerCtx.stroke();
-
-            visualizerCtx.strokeStyle = 'rgba(138, 43, 226, 0.2)'; // BlueViolet
-            visualizerCtx.beginPath();
-            visualizerCtx.arc(centerX, centerY, baseRadius * 1.3, 0, Math.PI * 2);
-            visualizerCtx.stroke();
-
-            // Main Reactive Ring
-            visualizerCtx.shadowBlur = 20;
-            visualizerCtx.shadowColor = '#00ffff'; // Neon Glow
+            const bassLevel = bassAvg / 255; // 0.0 to 1.0
             
-            const numDashes = 40;
+            // Overall Energy
+            let totalSum = 0;
+            for(let i = 0; i < bufferLength; i++) totalSum += dataArray[i];
+            const energy = totalSum / bufferLength / 255; // 0.0 to 1.0
+
+            // --- Dynamic Color Change based on Energy ---
+            // Tốc độ đổi màu phụ thuộc vào năng lượng (đại diện cho tốc độ/cường độ nhạc)
+            const hueSpeed = 0.5 + (energy * 4.0); // Tốc độ cơ bản + tăng tốc khi nhạc mạnh
+            currentHueValue = (currentHueValue + hueSpeed) % 360;
+
+            // Pulse effect: Non-linear for snappier beat detection
+            const pulse = 1 + Math.pow(bassLevel, 3) * 0.3; 
+            const baseRadius = refDim * 0.2 * pulse; // Kích thước dựa trên vùng an toàn
+
+            // 2. Draw Inner Core (Bass Glow)
+            // A soft glow in the center that reacts purely to bass
+            const coreGradient = visualizerCtx.createRadialGradient(centerX, centerY, 0, centerX, centerY, baseRadius * 1.5);
+            coreGradient.addColorStop(0, `hsla(${currentHueValue}, 100%, 70%, ${bassLevel * 0.8})`); // Bright center
+            coreGradient.addColorStop(0.6, `hsla(${currentHueValue}, 100%, 50%, ${bassLevel * 0.4})`); // Mid
+            coreGradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Transparent edge
+            
+            visualizerCtx.fillStyle = coreGradient;
+            visualizerCtx.beginPath();
+            visualizerCtx.arc(centerX, centerY, baseRadius * 2, 0, Math.PI * 2);
+            visualizerCtx.fill();
+
+            // --- Sparkling Particles in Core ---
+            // Spawn particles
+            if (neonParticles.length < 20) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = Math.random() * baseRadius * 1.5; // Inside core area
+                neonParticles.push({
+                    x: centerX + Math.cos(angle) * r,
+                    y: centerY + Math.sin(angle) * r,
+                    vx: (Math.random() - 0.5) * 1.0, // Tăng tốc độ cơ bản
+                    vy: (Math.random() - 0.5) * 1.0,
+                    life: Math.random() * 0.5 + 0.5,
+                    size: Math.random() * 1.5 + 0.5
+                });
+            }
+            // Update and Draw
+            visualizerCtx.fillStyle = '#ffffff';
+            for (let i = neonParticles.length - 1; i >= 0; i--) {
+                const p = neonParticles[i];
+                // Hạt di chuyển nhanh hơn khi nhạc mạnh
+                p.x += p.vx * (1 + energy * 3);
+                p.y += p.vy * (1 + energy * 3);
+                p.life -= 0.01;
+                
+                // Keep particles somewhat contained or just let them fade
+                const dist = Math.sqrt((p.x - centerX)**2 + (p.y - centerY)**2);
+                if (dist > baseRadius * 2) p.life -= 0.05; // Fade faster if outside
+
+                if (p.life <= 0) {
+                    neonParticles.splice(i, 1);
+                    continue;
+                }
+                
+                visualizerCtx.globalAlpha = p.life * (0.5 + Math.sin(Date.now() * 0.01 + i) * 0.5); // Twinkle
+                visualizerCtx.beginPath();
+                visualizerCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                visualizerCtx.fill();
+            }
+            visualizerCtx.globalAlpha = 1.0;
+
+            // 3. Draw Static/Slow Background Rings (Context)
+            visualizerCtx.lineWidth = 1;
+            // Outer ring
+            visualizerCtx.strokeStyle = `hsla(${currentHueValue}, 100%, 50%, ${0.1 + energy * 0.2})`; 
+            visualizerCtx.beginPath();
+            visualizerCtx.arc(centerX, centerY, baseRadius * 1.1, 0, Math.PI * 2);
+            visualizerCtx.stroke();
+            // Inner ring
+            visualizerCtx.strokeStyle = `hsla(${(currentHueValue + 30) % 360}, 100%, 50%, ${0.1 + energy * 0.2})`; 
+            visualizerCtx.beginPath();
+            visualizerCtx.arc(centerX, centerY, baseRadius * 0.9, 0, Math.PI * 2);
+            visualizerCtx.stroke();
+
+            // 4. Draw Main Reactive Dashes (Frequency Spectrum)
+            // Setup Glow
+            visualizerCtx.shadowBlur = 5 + bassLevel * 15; // Glow intensifies with bass
+            visualizerCtx.shadowColor = `hsl(${currentHueValue}, 100%, 50%)`; 
+            
+            const numDashes = 64; 
             const angleStep = (Math.PI * 2) / numDashes;
+            // Rotate the whole ring slowly, faster with high energy
+            const rotation = Date.now() * (0.0002 + energy * 0.0005);
             
             for (let i = 0; i < numDashes; i++) {
-                const value = dataArray[i % bufferLength];
-                const dashLen = ((value / 255) * 20 + 5) * 0.5; // Giảm chiều dài vạch đi 2 lần
+                // Map dash index to frequency data
+                const dataIndex = Math.floor((i / numDashes) * (bufferLength * 0.8));
+                const value = dataArray[dataIndex];
+                const level = value / 255;
+
+                // Calculate Dash Length
+                // Use power function to suppress noise and exaggerate loud sounds
+                // Chiều dài phụ thuộc vào âm lượng tần số (level) và tổng năng lượng (energy - đại diện cho tốc độ/cường độ)
+                const speedFactor = 1 + energy * 2.0; // Hệ số tăng cường độ dài khi nhạc mạnh/nhanh
+                let dashLen = (Math.pow(level, 2.5) * (refDim * 0.25) * speedFactor); 
+                dashLen = Math.max(2, dashLen); // Minimum length
                 
-                const angle = i * angleStep + (Date.now() * 0.0005); // Slow rotation
+                const angle = i * angleStep + rotation;
                 
                 visualizerCtx.save();
                 visualizerCtx.translate(centerX, centerY);
                 visualizerCtx.rotate(angle);
                 
-                // Gradient color: Blue to Purple
-                const gradient = visualizerCtx.createLinearGradient(baseRadius, 0, baseRadius + dashLen, 0);
-                gradient.addColorStop(0, '#00ffff');
-                gradient.addColorStop(1, '#8a2be2');
+                // Dynamic Color based on intensity
+                // Base hue -> Brighter/Whiter
+                const lightness = 50 + level * 50; // 50% to 100%
+                const hue = currentHueValue;
                 
-                visualizerCtx.strokeStyle = gradient;
-                visualizerCtx.lineWidth = 3;
+                visualizerCtx.strokeStyle = `hsl(${hue}, 100%, ${lightness}%)`;
+                visualizerCtx.lineWidth = 1.5 + level * 2.5; // Thicker when louder
                 visualizerCtx.lineCap = 'round';
                 
                 visualizerCtx.beginPath();
                 visualizerCtx.moveTo(baseRadius, 0);
                 visualizerCtx.lineTo(baseRadius + dashLen, 0);
                 visualizerCtx.stroke();
+
+                // Add a "peak" dot for strong signals
+                if (level > 0.6) {
+                    visualizerCtx.fillStyle = `rgba(255, 255, 255, ${level})`;
+                    visualizerCtx.beginPath();
+                    // Position the dot slightly past the end of the dash
+                    visualizerCtx.arc(baseRadius + dashLen + 3, 0, 1 + level * 1.5, 0, Math.PI * 2);
+                    visualizerCtx.fill();
+                }
                 
                 visualizerCtx.restore();
             }
@@ -3101,13 +3202,15 @@
             const width = visualizerCanvas.width;
             const height = visualizerCanvas.height;
             const centerX = width / 2;
-            const centerY = height / 2;
+            const centerY = height / 2; // Căn giữa theo chiều dọc
+            
+            const maxRadius = (width * 0.6) / 2; // Bán kính tối đa bằng một nửa vùng an toàn
 
             // Beat detection to add ripple
             let sum = 0;
             for(let i=0; i<10; i++) sum += dataArray[i];
             if (sum/10 > 200 && (!ripples.length || ripples[ripples.length-1].age > 10)) {
-                 ripples.push({ r: 5, age: 0, speed: (2 + (sum/10)/50) * 0.5 }); // Giảm kích thước và tốc độ đi 2 lần
+                 ripples.push({ r: 10, age: 0, speed: (2 + (sum/10)/50) }); // Khôi phục tốc độ và kích thước ban đầu
             }
 
             visualizerCtx.strokeStyle = '#ffffff';
@@ -3118,7 +3221,7 @@
                 r.r += r.speed;
                 r.age++;
                 
-                const opacity = Math.max(0, 1 - r.r / ((Math.max(width, height)/1.5) * 0.5)); // Thu hẹp phạm vi mờ dần để tránh chạm viền
+                const opacity = Math.max(0, 1 - r.r / maxRadius); // Mờ dần khi chạm giới hạn vùng an toàn
                 
                 if (opacity <= 0) {
                     ripples.splice(i, 1);
@@ -3137,7 +3240,9 @@
             const width = visualizerCanvas.width;
             const height = visualizerCanvas.height;
             const centerX = width / 2;
-            const centerY = height / 2;
+            const centerY = height / 2; // Căn giữa theo chiều dọc
+            
+            const maxRadius = (width * 0.6) / 2; // Giới hạn vùng nổ
 
             // Beat detection
             let sum = 0;
@@ -3150,8 +3255,8 @@
                     const angle = (Math.PI * 2 * i) / 20;
                     particles.push({
                         x: centerX, y: centerY,
-                        vx: Math.cos(angle) * (Math.random() * 5 + 2) * 0.5, // Giảm tốc độ nổ đi 2 lần
-                        vy: Math.sin(angle) * (Math.random() * 5 + 2) * 0.5,
+                        vx: Math.cos(angle) * (Math.random() * 5 + 2), // Khôi phục tốc độ nổ
+                        vy: Math.sin(angle) * (Math.random() * 5 + 2),
                         life: 1.0,
                         color: Math.random() > 0.5 ? '#ffd700' : '#ffffff' // Gold or White
                     });
@@ -3162,7 +3267,7 @@
             
             // Draw Mandala Center
             mandalaAngle += 0.01;
-            const radius = (30 + (sum/10) * 0.2) * 0.5; // Giảm bán kính mandala đi 2 lần
+            const radius = (30 + (sum/10) * 0.2); // Khôi phục kích thước mandala
             visualizerCtx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
             visualizerCtx.lineWidth = 2;
             visualizerCtx.beginPath();
@@ -3181,6 +3286,12 @@
                 p.x += p.vx;
                 p.y += p.vy;
                 p.life -= 0.02;
+
+                // Làm mờ nhanh hơn nếu hạt bay ra ngoài vùng an toàn
+                const dist = Math.sqrt((p.x - centerX)**2 + (p.y - centerY)**2);
+                if (dist > maxRadius) {
+                    p.life -= 0.1;
+                }
 
                 if (p.life <= 0) {
                     particles.splice(i, 1);
@@ -3202,8 +3313,10 @@
             const width = visualizerCanvas.width;
             const height = visualizerCanvas.height;
             const centerX = width / 2;
-            const centerY = height / 2;
-            const radius = 20; // Giảm bán kính vòng tròn trong đi 2 lần
+            const centerY = height / 2; // Căn giữa theo chiều dọc
+            
+            const maxRadius = (width * 0.6) / 2;
+            const radius = maxRadius * 0.3; // Bán kính vòng tròn trong
             const bars = 64;
             const step = (Math.PI * 2) / bars;
 
@@ -3217,7 +3330,7 @@
                 dataIndex = Math.floor(dataIndex * (bufferLength / (bars/2)));
                 
                 const value = dataArray[dataIndex];
-                const barLen = ((value / 255) * 60) * 0.5; // Giảm chiều dài thanh đi 2 lần
+                const barLen = (value / 255) * (maxRadius * 0.6); // Chiều dài thanh tự động điều chỉnh theo vùng an toàn
                 const angle = i * step - Math.PI / 2;
 
                 visualizerCtx.save();
@@ -3237,7 +3350,11 @@
             const width = visualizerCanvas.width;
             const height = visualizerCanvas.height;
             const centerX = width / 2;
-            const centerY = height / 2;
+            const centerY = height / 2; // Căn giữa theo chiều dọc
+            
+            const safeZone = width * 0.6;
+            const startX = (width - safeZone) / 2;
+            const endX = startX + safeZone;
             
             flowPhase += 0.02;
             
@@ -3250,18 +3367,18 @@
                 const hue = 120 + j * 20; // Green to Cyan
                 visualizerCtx.strokeStyle = `hsla(${hue}, 100%, 50%, 0.5)`;
                 
-                for (let x = 0; x < width; x += 5) {
-                    // Map x to frequency
-                    const dataIndex = Math.floor((x / width) * bufferLength);
+                for (let x = startX; x < endX; x += 5) {
+                    // Map x to frequency within safe zone
+                    const dataIndex = Math.floor(((x - startX) / safeZone) * bufferLength);
                     const value = dataArray[dataIndex];
                     
                     // Perturb y with sine waves and audio data
                     const y = centerY + 
                               (Math.sin(x * 0.02 + flowPhase + j) * 30 + 
                               Math.cos(x * 0.05 - flowPhase) * 20 +
-                              (value / 255) * 50 * (j % 2 === 0 ? 1 : -1)) * 0.5; // Giảm biên độ sóng đi 2 lần
+                              (value / 255) * 50 * (j % 2 === 0 ? 1 : -1)); // Khôi phục biên độ sóng
                     
-                    if (x === 0) visualizerCtx.moveTo(x, y);
+                    if (x === startX) visualizerCtx.moveTo(x, y);
                     else visualizerCtx.lineTo(x, y);
                 }
                 visualizerCtx.stroke();
