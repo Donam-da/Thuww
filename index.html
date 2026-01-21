@@ -737,7 +737,7 @@
         }
         .music-player-visualizer {
             position: absolute; /* Đưa ra khỏi luồng để không bị giới hạn bởi kích thước container */
-            top: 50%;
+            top: calc(50% + 15px);
             left: 50%;
             transform: translate(-50%, -50%); /* Căn giữa tuyệt đối */
             background-color: transparent; /* Nền trong suốt */
@@ -1709,7 +1709,7 @@
             "Thanh Tròn",
             "Dòng Chảy"
         ];
-        let currentVisualizerStyle = 0; // 0: Lightning, 1: Cyberpunk, 2: Circular, 3: Vertical, 4: Mirror, 5: Particles
+        let currentVisualizerStyle = 4; // 0: Lightning, 1: Cyberpunk, 2: Circular, 3: Vertical, 4: Mirror, 5: Particles
         if (changeVisualizerStyleLabel) changeVisualizerStyleLabel.textContent = `Kiểu: ${visualizerStyleNames[currentVisualizerStyle]}`;
 
         // New volume control elements
@@ -1756,7 +1756,7 @@
                 const orbitsVisible = settings.orbitsVisible === false ? false : true;
                 // Load visualizer visibility, defaulting to true if not found or not explicitly false
                 const visualizerVisible = settings.visualizerVisible === false ? false : true;
-                const savedVisualizerStyle = settings.visualizerStyle || 0;
+                const savedVisualizerStyle = (settings.visualizerStyle !== undefined) ? settings.visualizerStyle : 4;
                 // Load volume, defaulting to 100 if not found
                 const volume = settings.volume || '100';
                 const fov = settings.fov || 75; // Load FOV, default to 75
@@ -3414,8 +3414,32 @@
             
             const maxRadius = (width * 0.6) / 2;
             const radius = maxRadius * 0.3; // Bán kính vòng tròn trong
-            const bars = 64;
+            const bars = 180; // Tăng mật độ số lượng thanh lên gấp 3 lần
             const step = (Math.PI * 2) / bars;
+
+            // Logic đổi màu ngẫu nhiên mượt mà
+            const now = Date.now();
+            if (now - lastColorChangeTime > colorChangeIntervalMs) {
+                lastColorChangeTime = now;
+                startTransitionHue = currentHueValue;
+                targetTransitionHue = Math.floor(Math.random() * 360);
+                transitionStartTime = now;
+                transitionActive = true;
+            }
+
+            if (transitionActive) {
+                const transitionElapsedTime = now - transitionStartTime;
+                if (transitionElapsedTime < colorTransitionDurationMs) {
+                    const progress = transitionElapsedTime / colorTransitionDurationMs;
+                    let diff = targetTransitionHue - startTransitionHue;
+                    if (diff > 180) diff -= 360;
+                    if (diff < -180) diff += 360;
+                    currentHueValue = (startTransitionHue + diff * progress + 360) % 360;
+                } else {
+                    currentHueValue = targetTransitionHue;
+                    transitionActive = false;
+                }
+            }
 
             for (let i = 0; i < bars; i++) {
                 // Map to frequency data (mirrored)
@@ -3434,12 +3458,85 @@
                 visualizerCtx.translate(centerX, centerY);
                 visualizerCtx.rotate(angle);
 
-                const hue = (i / bars) * 360;
-                visualizerCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-                visualizerCtx.fillRect(radius, -2, barLen, 4);
+                // Màu sắc thẩm mỹ: Hue chính + biến thiên nhẹ (60 độ) + độ sáng theo âm lượng
+                const hue = (currentHueValue + (i / bars) * 60) % 360;
+                const lightness = 50 + (value / 255) * 30;
+                visualizerCtx.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`;
+                
+                // Vẽ thanh mảnh hơn (1/3 kích thước cũ: 4 -> 1.4)
+                visualizerCtx.fillRect(radius, -0.7, barLen, 1.4);
 
                 visualizerCtx.restore();
             }
+
+            // Draw Current Time in Center (Digital Segment Style)
+            const date = new Date();
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
+            
+            const h1 = Math.floor(hours / 10);
+            const h2 = hours % 10;
+            const m1 = Math.floor(minutes / 10);
+            const m2 = minutes % 10;
+            
+            visualizerCtx.save();
+            
+            // Settings for digital clock
+            const digitHeight = radius * 0.45; // Height of the digit (Reduced to 90%)
+            const digitWidth = digitHeight * 0.6; // Width of the digit
+            const segmentThickness = digitWidth * 0.2; // Thickness of the bars (x2)
+            const spacing = digitWidth * 0.3; // Space between digits
+            const colonWidth = digitWidth * 0.8; // Width allocated for colon (Increased spacing)
+            
+            // Total width: 4 digits + 3 spacings (between digits) + 1 colon space (middle)
+            const totalWidth = (digitWidth * 4) + (spacing * 2) + colonWidth;
+            
+            let startX = centerX - totalWidth / 2;
+            const startY = centerY - digitHeight / 2;
+            
+            visualizerCtx.fillStyle = 'white';
+            visualizerCtx.shadowBlur = 15;
+            visualizerCtx.shadowColor = `hsl(${currentHueValue}, 100%, 50%)`;
+
+            // Helper to draw a single digit (7-segment)
+            function drawSegmentDigit(x, y, w, h, val) {
+                const t = segmentThickness;
+                const segs = [
+                    [1, 1, 1, 1, 1, 1, 0], // 0
+                    [0, 1, 1, 0, 0, 0, 0], // 1
+                    [1, 1, 0, 1, 1, 0, 1], // 2
+                    [1, 1, 1, 1, 0, 0, 1], // 3
+                    [0, 1, 1, 0, 0, 1, 1], // 4
+                    [1, 0, 1, 1, 0, 1, 1], // 5
+                    [1, 0, 1, 1, 1, 1, 1], // 6
+                    [1, 1, 1, 0, 0, 0, 0], // 7
+                    [1, 1, 1, 1, 1, 1, 1], // 8
+                    [1, 1, 1, 1, 0, 1, 1]  // 9
+                ];
+                const active = segs[val];
+                
+                if(active[0]) visualizerCtx.fillRect(x + t, y, w - 2*t, t); // Top
+                if(active[1]) visualizerCtx.fillRect(x + w - t, y + t, t, h/2 - 1.5*t); // Top Right
+                if(active[2]) visualizerCtx.fillRect(x + w - t, y + h/2 + 0.5*t, t, h/2 - 1.5*t); // Bottom Right
+                if(active[3]) visualizerCtx.fillRect(x + t, y + h - t, w - 2*t, t); // Bottom
+                if(active[4]) visualizerCtx.fillRect(x, y + h/2 + 0.5*t, t, h/2 - 1.5*t); // Bottom Left
+                if(active[5]) visualizerCtx.fillRect(x, y + t, t, h/2 - 1.5*t); // Top Left
+                if(active[6]) visualizerCtx.fillRect(x + t, y + h/2 - t/2, w - 2*t, t); // Middle
+            }
+
+            drawSegmentDigit(startX, startY, digitWidth, digitHeight, h1); startX += digitWidth + spacing;
+            drawSegmentDigit(startX, startY, digitWidth, digitHeight, h2); startX += digitWidth + colonWidth;
+            
+            if (date.getSeconds() % 2 === 0) { // Blink colon
+                const colonX = startX - colonWidth/2 - segmentThickness/2;
+                visualizerCtx.fillRect(colonX, startY + digitHeight * 0.3, segmentThickness, segmentThickness);
+                visualizerCtx.fillRect(colonX, startY + digitHeight * 0.7, segmentThickness, segmentThickness);
+            }
+            
+            drawSegmentDigit(startX, startY, digitWidth, digitHeight, m1); startX += digitWidth + spacing;
+            drawSegmentDigit(startX, startY, digitWidth, digitHeight, m2);
+
+            visualizerCtx.restore();
         }
 
         function drawAbstractFlowingLines() {
