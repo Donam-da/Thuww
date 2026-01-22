@@ -277,6 +277,88 @@
             border: 1px solid rgba(0, 255, 255, 0.5);
             box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
         }
+
+        /* --- Gallery Overlays Styles --- */
+        .gallery-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            background-color: rgba(0, 0, 0, 0.9);
+            border: 1px solid #00ffff;
+            border-radius: 10px;
+            z-index: 3000;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            font-family: 'VN Time', Arial, sans-serif;
+        }
+        .gallery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #00ffff;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .gallery-close-btn {
+            cursor: pointer;
+            font-size: 24px;
+            color: white;
+        }
+        .gallery-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 1 hàng 4 ảnh */
+            gap: 10px;
+        }
+        .gallery-item {
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .gallery-item:hover {
+            transform: scale(1.05);
+            border-color: #00ffff;
+            z-index: 1;
+        }
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            aspect-ratio: 1 / 1; /* Giữ tỉ lệ vuông cho đẹp */
+        }
+        .music-download-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .music-download-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+        }
+        .music-download-item:hover {
+            background-color: rgba(0, 255, 255, 0.1);
+            color: #00ffff;
+        }
+
         /* Desktop styles for main-ui-controls */
         #planet-list-overlay {
             position: fixed;
@@ -1253,6 +1335,21 @@
         <div id="gif-tv-container">
             <img id="gif-tv-screen" src="" alt="TV">
         </div>
+        
+        <!-- New Gallery Overlays -->
+        <div id="tv-gallery-overlay" class="gallery-overlay">
+            <div class="gallery-header"><span>Thư viện TV</span><span class="gallery-close-btn" onclick="document.getElementById('tv-gallery-overlay').style.display='none'">&times;</span></div>
+            <div class="gallery-content"><div id="tv-gallery-grid" class="gallery-grid"></div></div>
+        </div>
+        <div id="music-gallery-overlay" class="gallery-overlay">
+            <div class="gallery-header"><span>Thư viện Nhạc</span><span class="gallery-close-btn" onclick="document.getElementById('music-gallery-overlay').style.display='none'">&times;</span></div>
+            <div class="gallery-content"><ul id="music-gallery-list" class="music-download-list"></ul></div>
+        </div>
+        <div id="image-gallery-overlay" class="gallery-overlay">
+            <div class="gallery-header"><span>Thư viện Ảnh</span><span class="gallery-close-btn" onclick="document.getElementById('image-gallery-overlay').style.display='none'">&times;</span></div>
+            <div class="gallery-content"><div id="image-gallery-grid" class="gallery-grid"></div></div>
+        </div>
+
         <!-- New Settings Overlay -->
         <div id="settings-overlay">
             <span id="close-settings-menu-btn">&times;</span>
@@ -1280,13 +1377,13 @@
                     <button id="toggle-tv-mode-btn" style="background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; margin-left: 10px;">Kĩ thuật số</button>
                 </li>
                 <li class="settings-list-item" id="download-tv-btn" style="cursor: pointer;">
-                    <label style="pointer-events: none; margin-bottom: 0;">Tải ảnh TV</label>
+                    <label style="pointer-events: none; margin-bottom: 0;">Ảnh tv</label>
                 </li>
                 <li class="settings-list-item" id="download-mp3-btn" style="cursor: pointer;">
-                    <label style="pointer-events: none; margin-bottom: 0;">Tải nhạc MP3</label>
+                    <label style="pointer-events: none; margin-bottom: 0;">Music</label>
                 </li>
                 <li class="settings-list-item" id="download-planet-img-btn" style="cursor: pointer;">
-                    <label style="pointer-events: none; margin-bottom: 0;">Tải ảnh hành tinh</label>
+                    <label style="pointer-events: none; margin-bottom: 0;">Images</label>
                 </li>
                 <li class="settings-list-item" id="screenshot-btn" style="cursor: pointer;">
                     <label style="pointer-events: none; margin-bottom: 0;">Chụp ảnh màn hình</label>
@@ -2278,69 +2375,77 @@
             document.body.removeChild(link);
         }
 
-        // 1. Tải ảnh TV (Kĩ thuật số hoặc Gốc tùy theo chế độ hiện tại)
+        // 1. Ảnh TV (Mở thư viện GIF/JPG)
         const downloadTvBtn = document.getElementById('download-tv-btn');
         if (downloadTvBtn) {
             downloadTvBtn.addEventListener('click', () => {
-                const src = document.getElementById('gif-tv-screen').src;
-                if (!src || document.getElementById('gif-tv-container').style.display === 'none') {
-                    alert("TV đang tắt hoặc chưa có nội dung.");
-                    return;
-                }
-                let filename = 'tv_capture';
-                if (isTvDigitalMode) {
-                    filename += '_digital.png'; // Ảnh kĩ thuật số là base64 png
-                } else {
-                    // Ảnh gốc, lấy tên file từ đường dẫn
-                    const urlParts = src.split('/');
-                    const lastPart = urlParts[urlParts.length - 1];
-                    filename = lastPart.split('?')[0] || 'tv_original.gif';
-                }
-                downloadURI(src, filename);
+                hideSettingsMenu();
+                const overlay = document.getElementById('tv-gallery-overlay');
+                const grid = document.getElementById('tv-gallery-grid');
+                grid.innerHTML = ''; // Clear old content
+                
+                tvPlaylist.forEach(src => {
+                    const div = document.createElement('div');
+                    div.className = 'gallery-item';
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.loading = 'lazy'; // Tải lười để tối ưu hiệu suất
+                    div.appendChild(img);
+                    div.onclick = () => {
+                        const filename = src.split('/').pop();
+                        downloadURI(src, filename);
+                    };
+                    grid.appendChild(div);
+                });
+                overlay.style.display = 'flex';
             });
         }
 
-        // 2. Tải nhạc MP3 đang phát
+        // 2. Music (Mở danh sách nhạc để tải)
         const downloadMp3Btn = document.getElementById('download-mp3-btn');
         if (downloadMp3Btn) {
             downloadMp3Btn.addEventListener('click', () => {
-                if (currentSongIndex === -1 || !songs[currentSongIndex]) {
-                    alert("Chưa có bài hát nào được chọn.");
-                    return;
-                }
-                const song = songs[currentSongIndex];
-                downloadURI(song.file, `${song.name}.mp3`);
+                hideSettingsMenu();
+                const overlay = document.getElementById('music-gallery-overlay');
+                const list = document.getElementById('music-gallery-list');
+                list.innerHTML = '';
+
+                songs.forEach(song => {
+                    const li = document.createElement('li');
+                    li.className = 'music-download-item';
+                    li.innerHTML = `<span>${song.name}</span><i class="fas fa-download"></i>`;
+                    li.onclick = () => {
+                        downloadURI(song.file, `${song.name}.mp3`);
+                    };
+                    list.appendChild(li);
+                });
+                overlay.style.display = 'flex';
             });
         }
 
-        // 3. Tải ảnh hành tinh (Ưu tiên ảnh đang mở Fullscreen, sau đó đến ảnh của hành tinh đang chọn)
+        // 3. Images (Mở thư viện toàn bộ ảnh hành tinh)
         const downloadPlanetImgBtn = document.getElementById('download-planet-img-btn');
         if (downloadPlanetImgBtn) {
             downloadPlanetImgBtn.addEventListener('click', () => {
-                // Kiểm tra xem có đang mở ảnh toàn màn hình không
-                const fullscreenOverlay = document.getElementById('fullscreen-overlay');
-                if (fullscreenOverlay.style.display === 'flex') {
-                    const src = document.getElementById('fullscreen-image').src;
-                    const filename = src.split('/').pop().split('?')[0] || 'planet_image.png';
-                    downloadURI(src, filename);
-                    return;
-                }
+                hideSettingsMenu();
+                const overlay = document.getElementById('image-gallery-overlay');
+                const grid = document.getElementById('image-gallery-grid');
+                grid.innerHTML = '';
                 
-                // Kiểm tra xem có hành tinh nào đang được chọn và có ảnh hiển thị không
-                if (selectedPlanetObject && selectedPlanetObject.userData.imageGroup && selectedPlanetObject.userData.imageGroup.visible) {
-                     const children = selectedPlanetObject.userData.imageGroup.children;
-                     if (children.length > 0) {
-                         // Tải ảnh đầu tiên tìm thấy trong nhóm ảnh của hành tinh
-                         const imgUrl = children[0].userData.imageUrl;
-                         if (imgUrl) {
-                             const filename = imgUrl.split('/').pop().split('?')[0] || 'planet_image.png';
-                             downloadURI(imgUrl, filename);
-                             return;
-                         }
-                     }
-                }
-                
-                alert("Vui lòng chọn một hành tinh có ảnh đang hiển thị hoặc mở ảnh toàn màn hình.");
+                allImageUrls.forEach(src => {
+                    const div = document.createElement('div');
+                    div.className = 'gallery-item';
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.loading = 'lazy';
+                    div.appendChild(img);
+                    div.onclick = () => {
+                        const filename = src.split('/').pop();
+                        downloadURI(src, filename);
+                    };
+                    grid.appendChild(div);
+                });
+                overlay.style.display = 'flex';
             });
         }
 
