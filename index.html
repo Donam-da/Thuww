@@ -1428,15 +1428,15 @@
         
         <!-- New Gallery Overlays -->
         <div id="tv-gallery-overlay" class="gallery-overlay">
-            <div class="gallery-header"><span>Thư viện TV</span><span class="gallery-close-btn" onclick="document.getElementById('tv-gallery-overlay').style.display='none'">&times;</span></div>
+            <div class="gallery-header"><span>Thư viện TV</span><span class="gallery-close-btn" onclick="hideGalleries()">&times;</span></div>
             <div class="gallery-content"><div id="tv-gallery-grid" class="gallery-grid"></div></div>
         </div>
         <div id="music-gallery-overlay" class="gallery-overlay">
-            <div class="gallery-header"><span>Thư viện Nhạc</span><span class="gallery-close-btn" onclick="document.getElementById('music-gallery-overlay').style.display='none'">&times;</span></div>
+            <div class="gallery-header"><span>Thư viện Nhạc</span><span class="gallery-close-btn" onclick="hideGalleries()">&times;</span></div>
             <div class="gallery-content"><ul id="music-gallery-list" class="music-download-list"></ul></div>
         </div>
         <div id="image-gallery-overlay" class="gallery-overlay">
-            <div class="gallery-header"><span>Thư viện Ảnh</span><span class="gallery-close-btn" onclick="document.getElementById('image-gallery-overlay').style.display='none'">&times;</span></div>
+            <div class="gallery-header"><span>Thư viện Ảnh</span><span class="gallery-close-btn" onclick="hideGalleries()">&times;</span></div>
             <div class="gallery-content"><div id="image-gallery-grid" class="gallery-grid"></div></div>
         </div>
 
@@ -2024,6 +2024,22 @@
             document.getElementById('tv-gallery-overlay').style.display = 'none';
             document.getElementById('music-gallery-overlay').style.display = 'none';
             document.getElementById('image-gallery-overlay').style.display = 'none';
+            document.removeEventListener('click', handleOutsideGalleryInteraction);
+            document.removeEventListener('touchend', handleOutsideGalleryInteraction);
+        }
+
+        function handleOutsideGalleryInteraction(event) {
+            const tvOverlay = document.getElementById('tv-gallery-overlay');
+            const musicOverlay = document.getElementById('music-gallery-overlay');
+            const imageOverlay = document.getElementById('image-gallery-overlay');
+            
+            // Nếu click vào bên trong bất kỳ overlay nào đang mở thì không làm gì
+            if (tvOverlay.style.display === 'flex' && tvOverlay.contains(event.target)) return;
+            if (musicOverlay.style.display === 'flex' && musicOverlay.contains(event.target)) return;
+            if (imageOverlay.style.display === 'flex' && imageOverlay.contains(event.target)) return;
+
+            // Nếu click ra ngoài, đóng tất cả
+            hideGalleries();
         }
 
         selectPlanetBtn.addEventListener('click', (event) => {
@@ -2556,7 +2572,8 @@
         // 1. Ảnh TV (Mở thư viện GIF/JPG)
         const downloadTvBtn = document.getElementById('download-tv-btn');
         if (downloadTvBtn) {
-            downloadTvBtn.addEventListener('click', () => {
+            downloadTvBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 hideMoreOptionsMenu();
                 const overlay = document.getElementById('tv-gallery-overlay');
                 const grid = document.getElementById('tv-gallery-grid');
@@ -2576,13 +2593,18 @@
                     grid.appendChild(div);
                 });
                 overlay.style.display = 'flex';
+                setTimeout(() => {
+                    document.addEventListener('click', handleOutsideGalleryInteraction);
+                    document.addEventListener('touchend', handleOutsideGalleryInteraction);
+                }, 0);
             });
         }
 
         // 2. Music (Mở danh sách nhạc để tải)
         const downloadMp3Btn = document.getElementById('download-mp3-btn');
         if (downloadMp3Btn) {
-            downloadMp3Btn.addEventListener('click', () => {
+            downloadMp3Btn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 hideMoreOptionsMenu();
                 const overlay = document.getElementById('music-gallery-overlay');
                 const list = document.getElementById('music-gallery-list');
@@ -2598,13 +2620,18 @@
                     list.appendChild(li);
                 });
                 overlay.style.display = 'flex';
+                setTimeout(() => {
+                    document.addEventListener('click', handleOutsideGalleryInteraction);
+                    document.addEventListener('touchend', handleOutsideGalleryInteraction);
+                }, 0);
             });
         }
 
         // 3. Images (Mở thư viện toàn bộ ảnh hành tinh)
         const downloadPlanetImgBtn = document.getElementById('download-planet-img-btn');
         if (downloadPlanetImgBtn) {
-            downloadPlanetImgBtn.addEventListener('click', () => {
+            downloadPlanetImgBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 hideMoreOptionsMenu();
                 const overlay = document.getElementById('image-gallery-overlay');
                 const grid = document.getElementById('image-gallery-grid');
@@ -2624,6 +2651,10 @@
                     grid.appendChild(div);
                 });
                 overlay.style.display = 'flex';
+                setTimeout(() => {
+                    document.addEventListener('click', handleOutsideGalleryInteraction);
+                    document.addEventListener('touchend', handleOutsideGalleryInteraction);
+                }, 0);
             });
         }
 
