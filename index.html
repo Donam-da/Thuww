@@ -1173,8 +1173,10 @@
             #main-ui-controls {
                 top: auto; /* Remove top positioning */
                 bottom: 10px; /* Position at the bottom */
-                left: 10px;
-                right: 10px;
+                left: 0;
+                right: 0;
+                width: 100%;
+                box-sizing: border-box;
                 display: flex;
                 flex-wrap: wrap; /* Allow items to wrap to the next line */
                 justify-content: center; /* Center items when they wrap */
@@ -1194,7 +1196,8 @@
                 border: none; /* Bỏ viền */
             }
             .ui-button-group {
-                width: 90px; /* Fixed width for mobile to prevent shifting */
+                width: auto; /* Fixed width for mobile to prevent shifting */
+                min-width: 80px;
             }
             /* Đảm bảo font size của nút "Ẩn tên" và "Tắt ảnh" cũng được áp dụng trên mobile */
             #toggle-labels-btn, #toggle-images-btn {
@@ -1206,6 +1209,7 @@
                 padding: 2px 6px; /* Smaller padding */
                 gap: 4px; /* Smaller gap */
                 border: none; /* Bỏ viền */
+                max-width: 100%;
             }
 
             #music-controls-2d button {
