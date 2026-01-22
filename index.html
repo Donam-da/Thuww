@@ -2841,12 +2841,19 @@
             galleryPreviewImg.src = '';
         }
 
-        galleryPreviewCloseBtn.addEventListener('click', hideGalleryPreview);
-        galleryPreviewDownloadBtn.addEventListener('click', () => {
+        galleryPreviewCloseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hideGalleryPreview();
+        });
+        galleryPreviewDownloadBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             downloadURI(currentPreviewUrl, currentPreviewName);
         });
         galleryPreviewOverlay.addEventListener('click', (e) => {
-            if (e.target === galleryPreviewOverlay) hideGalleryPreview();
+            if (e.target === galleryPreviewOverlay) {
+                e.stopPropagation();
+                hideGalleryPreview();
+            }
         });
 
         // Add event listener for changing visualizer style
