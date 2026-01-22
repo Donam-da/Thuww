@@ -622,6 +622,28 @@
         #singer-search-input::placeholder {
             color: rgba(255, 255, 255, 0.5);
         }
+        #play-all-list-btn {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            background: transparent;
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #play-all-list-btn:hover {
+            background: rgba(0, 255, 255, 0.1);
+        }
+        #play-all-list-btn.active {
+            background: rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            border-color: #00ffff;
+            color: #ffffff;
+            text-shadow: 0 0 5px #00ffff;
+        }
         
         /* Làm đậm bài hát đang phát trong danh sách */
         .song-list-item.current-song {
@@ -1196,6 +1218,7 @@
         </div>
         <div id="song-list-overlay">
             <input type="text" id="song-search-input" placeholder="Tìm kiếm theo tên bài hát, ca sĩ...">
+            <button id="play-all-list-btn" title="Đưa lên trình phát (Tất cả)"><i class="fas fa-upload"></i></button>
             <ul id="song-selection-list">
                 <!-- Song items will be inserted here -->
             </ul>
@@ -1952,7 +1975,7 @@
                 // Load queues
                 if (settings.customQueue) customQueue = settings.customQueue;
                 if (settings.singerQueue) singerQueue = settings.singerQueue;
-                if (settings.activeQueueType) activeQueueType = settings.activeQueueType;
+                activeQueueType = settings.activeQueueType || 'all'; // Mặc định là 'all'
 
                 // Cập nhật giá trị cho các thanh trượt
                 radiusSlider.value = radius;
@@ -2485,12 +2508,13 @@
         const selectSongBtn = document.getElementById('select-song-btn');
         const songListOverlay = document.getElementById('song-list-overlay');
         const clearQueueBox = document.getElementById('clear-queue-box');
+        const playAllListBtn = document.getElementById('play-all-list-btn'); // Nút mới
         const songSelectionList = document.getElementById('song-selection-list');
         const songSearchInput = document.getElementById('song-search-input');
         let isSongListOpen = false;
         let customQueue = []; // Danh sách phát riêng do người dùng chọn
         let singerQueue = []; // Danh sách phát theo ca sĩ (Album)
-        let activeQueueType = 'custom'; // 'custom' hoặc 'singer' để biết đang phát danh sách nào
+        let activeQueueType = 'all'; // 'all', 'custom' hoặc 'singer' để biết đang phát danh sách nào
         let isPlanetListOpen = false; // New: Track if planet list is open
         // Global variables for audio visualization
         let audioContext = null;
@@ -2773,6 +2797,22 @@
             saveSettings();
         }
 
+        function updatePlayAllButtonState() {
+            if (activeQueueType === 'all') {
+                playAllListBtn.classList.add('active');
+                playAllListBtn.innerHTML = '<i class="fas fa-upload"></i>';
+                playAllListBtn.title = 'Đang phát danh sách này (Tất cả)';
+                playAllListBtn.style.color = '#00ffff';
+                playAllListBtn.style.borderColor = '#00ffff';
+            } else {
+                playAllListBtn.classList.remove('active');
+                playAllListBtn.innerHTML = '<i class="fas fa-upload"></i>';
+                playAllListBtn.title = 'Đưa lên trình phát (Tất cả)';
+                playAllListBtn.style.color = '#ff4d4d';
+                playAllListBtn.style.borderColor = '#ff4d4d';
+            }
+        }
+
         function showSongList() {
             songListOverlay.style.display = 'flex';
             isSongListOpen = true;
@@ -2790,6 +2830,7 @@
             // musicControls2D.style.display = 'none'; // Removed: Keep 2D music controls visible when song list is open
             controls.enabled = false; // Tắt điều khiển 3D khi mở danh sách nhạc
             populateSongList();
+            updatePlayAllButtonState(); // Cập nhật trạng thái nút
 
             // Add global listener to close menu
             document.addEventListener('click', handleOutsideSongInteraction, true);
@@ -2819,6 +2860,12 @@
             document.removeEventListener('touchend', handleOutsideSongInteraction, true);
             songSearchInput.value = ''; // Clear search input
         }
+
+        playAllListBtn.addEventListener('click', () => {
+            activeQueueType = 'all';
+            saveSettings();
+            updatePlayAllButtonState();
+        });
 
         function handleOutsideSongInteraction(event) {
             if (isSongListOpen && !songListOverlay.contains(event.target) && !selectSongBtn.contains(event.target)) {
@@ -3018,7 +3065,7 @@
         let songBtnPressTimer;
         let isSongBtnLongPress = false;
 
-        function renderQueueBox(viewType = activeQueueType) {
+        function renderQueueBox(viewType = (activeQueueType === 'all' ? 'custom' : activeQueueType)) {
             clearQueueBox.innerHTML = '';
             clearQueueBox.style.display = 'flex';
             
@@ -3156,6 +3203,26 @@
 
             const btnContainer = document.createElement('div');
             btnContainer.style.cssText = 'display: flex; justify-content: center; gap: 15px; flex-shrink: 0;';
+
+            // Nút "Đưa lên trình phát" cho DS Riêng / DS Ca sĩ
+            const setActiveBtn = document.createElement('button');
+            const isActive = activeQueueType === viewType;
+            const btnColor = isActive ? '#00ffff' : '#ff4d4d';
+            const btnBg = isActive ? 'rgba(0, 255, 255, 0.3)' : 'transparent';
+            setActiveBtn.style.cssText = `background: ${btnBg}; border: 1px solid ${btnColor}; color: ${btnColor}; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: bold;`;
+            setActiveBtn.innerHTML = '<i class="fas fa-upload"></i>';
+            setActiveBtn.title = isActive ? 'Đang phát danh sách này' : 'Đưa lên trình phát';
+            if (isActive) {
+                setActiveBtn.style.boxShadow = '0 0 5px rgba(0, 255, 255, 0.5)';
+            }
+            setActiveBtn.onclick = (e) => {
+                e.stopPropagation();
+                activeQueueType = viewType;
+                saveSettings();
+                renderQueueBox(viewType); // Render lại để cập nhật trạng thái nút
+            };
+            btnContainer.appendChild(setActiveBtn);
+
 
             if (viewType === 'singer') {
                 const changeSingerBtn = document.createElement('button');
@@ -4354,24 +4421,32 @@
         audioPlayer.addEventListener('pause', updateMusicPlayerUI);        
         audioPlayer.addEventListener('ended', () => {
             // Xác định danh sách đang phát dựa trên activeQueueType
-            const currentQueue = activeQueueType === 'custom' ? customQueue : singerQueue;
-            
-            if (currentQueue.length > 0) {
-                const nextIndex = currentQueue.shift();
-                saveSettings();
+            if (activeQueueType === 'custom' || activeQueueType === 'singer') {
+                const currentQueue = activeQueueType === 'custom' ? customQueue : singerQueue;
                 
-                // Nếu bài tiếp theo trong hàng đợi trùng với bài đang phát, chỉ cần phát lại
-                if (nextIndex === currentSongIndex) {
-                    audioPlayer.currentTime = 0;
-                    audioPlayer.play();
-                } else {
-                    showMusicPlayer(nextIndex);
-                }
+                if (currentQueue.length > 0) {
+                    const nextIndex = currentQueue.shift();
+                    saveSettings();
+                    
+                    // Nếu bài tiếp theo trong hàng đợi trùng với bài đang phát, chỉ cần phát lại
+                    if (nextIndex === currentSongIndex) {
+                        audioPlayer.currentTime = 0;
+                        audioPlayer.play();
+                    } else {
+                        showMusicPlayer(nextIndex);
+                    }
 
-                if (isSongListOpen) populateSongList();
-                if (clearQueueBox.style.display === 'flex') renderQueueBox(activeQueueType);
-                return;
+                    if (isSongListOpen) populateSongList();
+                    if (clearQueueBox.style.display === 'flex') renderQueueBox(activeQueueType);
+                    return;
+                } else {
+                    // Nếu danh sách riêng/ca sĩ đã hết, dừng lại (không phát tiếp danh sách tất cả)
+                    // vì yêu cầu là "chỉ được phát các bài hát của 1 danh sách"
+                    return; 
+                }
             }
+
+            // Nếu activeQueueType là 'all', chạy logic phát ngẫu nhiên/tuần tự bên dưới
             let newIndex;
             if (playbackMode === 'repeat-one') {
                 audioPlayer.currentTime = 0;
