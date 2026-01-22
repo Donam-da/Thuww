@@ -1279,6 +1279,18 @@
                     </div>
                     <button id="toggle-tv-mode-btn" style="background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; margin-left: 10px;">Kĩ thuật số</button>
                 </li>
+                <li class="settings-list-item" id="download-tv-btn" style="cursor: pointer;">
+                    <label style="pointer-events: none; margin-bottom: 0;">Tải ảnh TV</label>
+                </li>
+                <li class="settings-list-item" id="download-mp3-btn" style="cursor: pointer;">
+                    <label style="pointer-events: none; margin-bottom: 0;">Tải nhạc MP3</label>
+                </li>
+                <li class="settings-list-item" id="download-planet-img-btn" style="cursor: pointer;">
+                    <label style="pointer-events: none; margin-bottom: 0;">Tải ảnh hành tinh</label>
+                </li>
+                <li class="settings-list-item" id="screenshot-btn" style="cursor: pointer;">
+                    <label style="pointer-events: none; margin-bottom: 0;">Chụp ảnh màn hình</label>
+                </li>
                 <li class="settings-list-item" id="select-singer-btn" style="cursor: pointer;">
                     <label style="pointer-events: none; margin-bottom: 0;">Ca sĩ</label>
                 </li>
@@ -1411,7 +1423,7 @@
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 60000);
         
         // Foreground WebGL Renderer (Planets)
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // alpha:true for transparent background
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); // alpha:true for transparent background
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.domElement.style.position = 'absolute';
         renderer.domElement.style.top = '0px';
@@ -1419,7 +1431,7 @@
         document.getElementById('main-scene').appendChild(renderer.domElement);
         
         // Background WebGL Renderer (Stars)
-        const renderer_bg = new THREE.WebGLRenderer({ antialias: true });
+        const renderer_bg = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
         renderer_bg.setSize(window.innerWidth, window.innerHeight);
         renderer_bg.domElement.style.position = 'absolute';
         renderer_bg.domElement.style.top = '0px';
@@ -2253,6 +2265,121 @@
                     if (gifInterval) clearInterval(gifInterval);
                     gifInterval = setInterval(playNextTvContent, 5000);
                 }
+            });
+        }
+
+        // --- Download Functions ---
+        function downloadURI(uri, name) {
+            const link = document.createElement("a");
+            link.download = name;
+            link.href = uri;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 1. Tải ảnh TV (Kĩ thuật số hoặc Gốc tùy theo chế độ hiện tại)
+        const downloadTvBtn = document.getElementById('download-tv-btn');
+        if (downloadTvBtn) {
+            downloadTvBtn.addEventListener('click', () => {
+                const src = document.getElementById('gif-tv-screen').src;
+                if (!src || document.getElementById('gif-tv-container').style.display === 'none') {
+                    alert("TV đang tắt hoặc chưa có nội dung.");
+                    return;
+                }
+                let filename = 'tv_capture';
+                if (isTvDigitalMode) {
+                    filename += '_digital.png'; // Ảnh kĩ thuật số là base64 png
+                } else {
+                    // Ảnh gốc, lấy tên file từ đường dẫn
+                    const urlParts = src.split('/');
+                    const lastPart = urlParts[urlParts.length - 1];
+                    filename = lastPart.split('?')[0] || 'tv_original.gif';
+                }
+                downloadURI(src, filename);
+            });
+        }
+
+        // 2. Tải nhạc MP3 đang phát
+        const downloadMp3Btn = document.getElementById('download-mp3-btn');
+        if (downloadMp3Btn) {
+            downloadMp3Btn.addEventListener('click', () => {
+                if (currentSongIndex === -1 || !songs[currentSongIndex]) {
+                    alert("Chưa có bài hát nào được chọn.");
+                    return;
+                }
+                const song = songs[currentSongIndex];
+                downloadURI(song.file, `${song.name}.mp3`);
+            });
+        }
+
+        // 3. Tải ảnh hành tinh (Ưu tiên ảnh đang mở Fullscreen, sau đó đến ảnh của hành tinh đang chọn)
+        const downloadPlanetImgBtn = document.getElementById('download-planet-img-btn');
+        if (downloadPlanetImgBtn) {
+            downloadPlanetImgBtn.addEventListener('click', () => {
+                // Kiểm tra xem có đang mở ảnh toàn màn hình không
+                const fullscreenOverlay = document.getElementById('fullscreen-overlay');
+                if (fullscreenOverlay.style.display === 'flex') {
+                    const src = document.getElementById('fullscreen-image').src;
+                    const filename = src.split('/').pop().split('?')[0] || 'planet_image.png';
+                    downloadURI(src, filename);
+                    return;
+                }
+                
+                // Kiểm tra xem có hành tinh nào đang được chọn và có ảnh hiển thị không
+                if (selectedPlanetObject && selectedPlanetObject.userData.imageGroup && selectedPlanetObject.userData.imageGroup.visible) {
+                     const children = selectedPlanetObject.userData.imageGroup.children;
+                     if (children.length > 0) {
+                         // Tải ảnh đầu tiên tìm thấy trong nhóm ảnh của hành tinh
+                         const imgUrl = children[0].userData.imageUrl;
+                         if (imgUrl) {
+                             const filename = imgUrl.split('/').pop().split('?')[0] || 'planet_image.png';
+                             downloadURI(imgUrl, filename);
+                             return;
+                         }
+                     }
+                }
+                
+                alert("Vui lòng chọn một hành tinh có ảnh đang hiển thị hoặc mở ảnh toàn màn hình.");
+            });
+        }
+
+        // 4. Chụp ảnh màn hình (Screenshot)
+        const screenshotBtn = document.getElementById('screenshot-btn');
+        if (screenshotBtn) {
+            screenshotBtn.addEventListener('click', () => {
+                // Tạo canvas tạm thời để kết hợp các lớp WebGL
+                const canvas = document.createElement('canvas');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                const ctx = canvas.getContext('2d');
+
+                // Vẽ lớp nền (Sao)
+                ctx.drawImage(renderer_bg.domElement, 0, 0);
+                
+                // Vẽ lớp tiền cảnh (Hành tinh, Quỹ đạo, v.v.)
+                ctx.drawImage(renderer.domElement, 0, 0);
+
+                // Vẽ TV nếu đang hiển thị
+                const tvContainer = document.getElementById('gif-tv-container');
+                const tvScreen = document.getElementById('gif-tv-screen');
+                if (tvContainer && tvContainer.style.display !== 'none' && tvScreen) {
+                    const rect = tvScreen.getBoundingClientRect();
+                    ctx.drawImage(tvScreen, rect.left, rect.top, rect.width, rect.height);
+                }
+
+                // Vẽ Sóng nhạc (Visualizer) nếu đang hiển thị
+                if (isVisualizerVisible && visualizerCanvas && visualizerCanvas.style.display !== 'none') {
+                    const rect = visualizerCanvas.getBoundingClientRect();
+                    // Chỉ vẽ nếu kích thước hợp lệ và nằm trong vùng nhìn thấy
+                    if (rect.width > 0 && rect.height > 0) {
+                        ctx.drawImage(visualizerCanvas, rect.left, rect.top, rect.width, rect.height);
+                    }
+                }
+
+                // Tải xuống
+                const dataURL = canvas.toDataURL('image/png');
+                downloadURI(dataURL, 'solar_system_screenshot.png');
             });
         }
 
