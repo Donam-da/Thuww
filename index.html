@@ -623,9 +623,9 @@
             color: rgba(255, 255, 255, 0.5);
         }
         #play-all-list-btn {
-            width: 100%;
-            padding: 5px;
-            margin-bottom: 8px;
+            width: auto;
+            padding: 8px 15px;
+            margin-bottom: 0;
             font-size: 14px;
             background: transparent;
             border: 1px solid #00ffff;
@@ -1217,8 +1217,10 @@
             </ul>
         </div>
         <div id="song-list-overlay">
-            <input type="text" id="song-search-input" placeholder="Tìm kiếm theo tên bài hát, ca sĩ...">
-            <button id="play-all-list-btn" title="Đưa lên trình phát (Tất cả)"><i class="fas fa-upload"></i></button>
+            <div style="display: flex; gap: 5px; margin-bottom: 10px; width: 100%;">
+                <input type="text" id="song-search-input" placeholder="Nhập tên bài hát/ca sĩ" style="margin-bottom: 0; width: auto; flex-grow: 1;">
+                <button id="play-all-list-btn" title="Đưa lên trình phát (Tất cả)"><i class="fas fa-upload"></i></button>
+            </div>
             <ul id="song-selection-list">
                 <!-- Song items will be inserted here -->
             </ul>
