@@ -3404,11 +3404,13 @@
             }
         });
 
-        document.addEventListener('click', (e) => {
-            if (clearQueueBox.style.display === 'flex' && !clearQueueBox.contains(e.target)) {
+        const handleOutsideQueueBoxInteraction = (e) => {
+            if (clearQueueBox.style.display === 'flex' && !clearQueueBox.contains(e.target) && !selectSongBtn.contains(e.target)) {
                 clearQueueBox.style.display = 'none';
             }
-        });
+        };
+        document.addEventListener('click', handleOutsideQueueBoxInteraction);
+        document.addEventListener('touchend', handleOutsideQueueBoxInteraction);
 
         // --- 2D Music Controls Logic ---
 
