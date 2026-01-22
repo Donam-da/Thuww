@@ -3107,7 +3107,15 @@
             currentPreviewName = name;
             
             if (isImage) {
-                galleryPreviewImg.src = url;
+                if (tvOriginalCache.has(url)) {
+                    galleryPreviewImg.src = tvOriginalCache.get(url);
+                    currentPreviewUrl = tvOriginalCache.get(url);
+                } else if (imageCache.has(url)) {
+                    galleryPreviewImg.src = imageCache.get(url);
+                    currentPreviewUrl = imageCache.get(url);
+                } else {
+                    galleryPreviewImg.src = url;
+                }
                 galleryPreviewImg.style.display = 'block';
                 galleryPreviewCustomControls.style.display = 'none';
                 galleryPreviewAudio.pause();
