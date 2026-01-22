@@ -2877,7 +2877,6 @@
             activeQueueType = 'all';
             saveSettings();
             updatePlayAllButtonState();
-            populateSongList(); // Cập nhật lại danh sách để hiển thị màu xanh cho bài đang phát
             
             // Phát ngay lập tức bài tiếp theo trong danh sách "Tất cả"
             let nextIndex;
@@ -2891,6 +2890,14 @@
                 nextIndex = (currentSongIndex + 1) % songs.length;
             }
             showMusicPlayer(nextIndex);
+            populateSongList(); // Cập nhật lại danh sách để hiển thị màu xanh cho bài đang phát
+
+            setTimeout(() => {
+                const currentSongItem = songSelectionList.querySelector('.current-song');
+                if (currentSongItem) {
+                    currentSongItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 50);
         });
 
         function handleOutsideSongInteraction(event) {
@@ -3265,6 +3272,10 @@
             }
             setActiveBtn.onclick = (e) => {
                 e.stopPropagation();
+                if (activeQueueType === viewType) {
+                    renderQueueBox(viewType);
+                    return;
+                }
                 activeQueueType = viewType;
                 saveSettings();
                 
