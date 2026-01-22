@@ -627,6 +627,17 @@
         #singer-search-input::placeholder {
             color: rgba(255, 255, 255, 0.5);
         }
+        .song-search-controls {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .song-search-controls #song-search-input {
+            width: auto;
+            flex: 1;
+            margin-bottom: 0;
+        }
         #play-all-list-btn {
             width: auto;
             padding: 8px 15px;
@@ -1088,13 +1099,6 @@
                 flex-direction: column; /* Stack items vertically */
             }
 
-            #song-search-input {
-                margin-right: 15px;
-            }
-            #play-all-list-btn {
-                margin-left: -15px;
-            }
-
             #close-dropmenu-btn,
             #close-song-menu-btn,
             #close-singer-menu-btn {
@@ -1229,8 +1233,8 @@
             </ul>
         </div>
         <div id="song-list-overlay">
-            <div style="display: flex; gap: 5px; margin-bottom: 3px; width: 100%;">
-                <input type="text" id="song-search-input" placeholder="Nhập tên bài hát/ca sĩ" style="margin-bottom: 0; width: auto; flex-grow: 1;">
+            <div class="song-search-controls">
+                <input type="text" id="song-search-input" placeholder="Nhập tên bài hát/ca sĩ" style="margin-bottom: 0;">
                 <button id="play-all-list-btn" title="Đưa lên trình phát (Tất cả)"><i class="fas fa-upload"></i></button>
             </div>
             <ul id="song-selection-list">
