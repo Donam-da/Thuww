@@ -1117,13 +1117,11 @@
         </div>
         <!-- Existing overlays -->
         <div id="planet-list-overlay">
-            <span id="close-dropmenu-btn">&times;</span>
             <ul id="planet-selection-list" style="list-style: none; padding: 0; margin: 0;">
                 <!-- Planet items will be inserted here -->
             </ul>
         </div>
         <div id="song-list-overlay">
-            <span id="close-song-menu-btn">&times;</span>
             <input type="text" id="song-search-input" placeholder="Tìm kiếm theo tên bài hát, ca sĩ...">
             <ul id="song-selection-list">
                 <!-- Song items will be inserted here -->
@@ -1659,7 +1657,6 @@
         const selectPlanetBtn = document.getElementById('select-planet-btn');
         const planetListOverlay = document.getElementById('planet-list-overlay');
         const planetSelectionList = document.getElementById('planet-selection-list');
-        const closeDropmenuBtn = document.getElementById('close-dropmenu-btn');
 
         let selectedPlanetObject = null; // Biến toàn cục để theo dõi hành tinh đang được chọn
         let isSettingsMenuOpen = false; // Track if settings menu is open
@@ -1680,10 +1677,6 @@
                 }
                 showPlanetList();
             }
-        });
-        closeDropmenuBtn.addEventListener('click', (event) => {
-            event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
-            hidePlanetList();
         });
 
         function showPlanetList() {
@@ -2401,7 +2394,6 @@
         const songListOverlay = document.getElementById('song-list-overlay');
         const clearQueueBox = document.getElementById('clear-queue-box');
         const songSelectionList = document.getElementById('song-selection-list');
-        const closeSongMenuBtn = document.getElementById('close-song-menu-btn');
         const songSearchInput = document.getElementById('song-search-input');
         let isSongListOpen = false;
         let songQueue = []; // Queue for songs
@@ -2927,11 +2919,6 @@
             if (clearQueueBox.style.display === 'flex' && !clearQueueBox.contains(e.target)) {
                 clearQueueBox.style.display = 'none';
             }
-        });
-
-        closeSongMenuBtn.addEventListener('click', (event) => {
-            event.stopPropagation();
-            hideSongList();
         });
 
         // --- 2D Music Controls Logic ---
