@@ -3990,6 +3990,40 @@
             }
         }
 
+        // Function to handle Next/Prev logic based on active queue and playback mode
+        function playNextSong(direction) {
+            let nextIndex;
+            
+            if (activeQueueType === 'custom' || activeQueueType === 'singer') {
+                const currentQueue = activeQueueType === 'custom' ? customQueue : singerQueue;
+                if (currentQueue.length === 0) return;
+
+                if (playbackMode === 'random') {
+                    // Pick random song from current queue
+                    const randPos = Math.floor(Math.random() * currentQueue.length);
+                    nextIndex = currentQueue[randPos];
+                } else {
+                    // Sequential or Repeat One (manual nav)
+                    let queueIndex = currentQueue.indexOf(currentSongIndex);
+                    if (queueIndex === -1) queueIndex = currentQueue.indexOf(lastActiveQueueSongIndex);
+                    if (queueIndex === -1) queueIndex = 0;
+
+                    let newQueueIndex = (queueIndex + direction + currentQueue.length) % currentQueue.length;
+                    nextIndex = currentQueue[newQueueIndex];
+                }
+            } else {
+                // 'all'
+                if (playbackMode === 'random') {
+                    if (shuffledSongIndices.length === 0) generateShuffledPlaylist();
+                    currentShuffledIndex = (currentShuffledIndex + direction + shuffledSongIndices.length) % shuffledSongIndices.length;
+                    nextIndex = shuffledSongIndices[currentShuffledIndex];
+                } else {
+                    nextIndex = (currentSongIndex + direction + songs.length) % songs.length;
+                }
+            }
+            showMusicPlayer(nextIndex);
+        }
+
         // Function to show 2D music controls and set up event listeners
         function show2DMusicControls() {
             musicControls2D.style.display = 'flex';
@@ -4003,13 +4037,11 @@
             };
 
             prevBtn2D.onclick = () => {
-                const newIndex = (currentSongIndex - 1 + songs.length) % songs.length;
-                showMusicPlayer(newIndex);
+                playNextSong(-1);
             };
 
             nextBtn2D.onclick = () => {
-                const newIndex = (currentSongIndex + 1) % songs.length;
-                showMusicPlayer(newIndex);
+                playNextSong(1);
             };
 
             progressContainer2D.onclick = (e) => {
