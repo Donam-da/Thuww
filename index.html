@@ -2648,7 +2648,25 @@
                 const tvScreen = document.getElementById('gif-tv-screen');
                 if (tvContainer && tvContainer.style.display !== 'none' && tvScreen) {
                     const rect = tvScreen.getBoundingClientRect();
-                    ctx.drawImage(tvScreen, rect.left, rect.top, rect.width, rect.height);
+                    
+                    // Mô phỏng object-fit: cover khi vẽ lên canvas để ảnh không bị méo
+                    const img = tvScreen;
+                    const nW = img.naturalWidth;
+                    const nH = img.naturalHeight;
+                    const rW = rect.width;
+                    const rH = rect.height;
+                    
+                    let sX = 0, sY = 0, sW = nW, sH = nH;
+                    const imgAspect = nW / nH;
+                    const rectAspect = rW / rH;
+                    
+                    if (rectAspect > imgAspect) { // Container rộng hơn ảnh (tương đối) -> Cắt trên/dưới
+                        sH = nW / rectAspect; sY = (nH - sH) / 2;
+                    } else { // Container cao hơn ảnh (tương đối) -> Cắt trái/phải
+                        sW = nH * rectAspect; sX = (nW - sW) / 2;
+                    }
+                    
+                    ctx.drawImage(img, sX, sY, sW, sH, rect.left, rect.top, rW, rH);
                 }
 
                 // Vẽ Sóng nhạc (Visualizer) nếu đang hiển thị
