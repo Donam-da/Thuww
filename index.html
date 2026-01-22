@@ -3192,21 +3192,7 @@
             listContainer.style.cssText = 'flex-grow: 1; width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; text-align: left; margin-bottom: 15px; padding-right: 5px; font-size: 14px;';
             
             const queueItemsSelected = new Set();
-            const actionBtn = document.createElement('button');
-            
-            const updateActionButton = () => {
-                if (queueItemsSelected.size > 0) {
-                    actionBtn.textContent = 'Xóa khỏi danh sách';
-                    actionBtn.style.background = 'rgba(0, 255, 255, 0.3)';
-                    actionBtn.style.borderColor = '#00ffff';
-                    actionBtn.style.color = '#00ffff';
-                } else {
-                    actionBtn.textContent = 'Hủy danh sách';
-                    actionBtn.style.background = 'rgba(255, 0, 0, 0.6)';
-                    actionBtn.style.borderColor = '#ff4d4d';
-                    actionBtn.style.color = 'white';
-                }
-            };
+            let isDeleteMode = false;
 
             targetQueue.forEach((songIndex, i) => {
                 const songName = songs[songIndex].name;
@@ -3227,70 +3213,40 @@
                     itemDiv.classList.add('playing-item');
                 }
 
-                // Hàm cập nhật style cho item (xử lý cả trạng thái chọn và trạng thái đang phát)
-                const updateItemStyle = () => {
+                // Hàm cập nhật style cho item
+                const updateItemStyle = (div) => {
                     const isSelected = queueItemsSelected.has(songIndex);
                     const isPlaying = (songIndex === currentSongIndex);
                     
                     if (isSelected) {
-                        itemDiv.style.color = '#00ffff';
-                        itemDiv.style.borderBottomColor = '#00ffff';
-                        itemDiv.style.textShadow = 'none';
-                        itemDiv.style.fontWeight = 'normal';
+                        div.style.color = '#00ffff';
+                        div.style.borderBottomColor = '#00ffff';
+                        div.style.textShadow = 'none';
+                        div.style.fontWeight = 'normal';
                     } else if (isPlaying) {
-                        itemDiv.style.color = '#00ffff';
-                        itemDiv.style.borderBottomColor = 'rgba(255,255,255,0.1)';
-                        itemDiv.style.textShadow = '0 0 5px #00ffff';
-                        itemDiv.style.fontWeight = 'bold';
+                        div.style.color = '#00ffff';
+                        div.style.borderBottomColor = 'rgba(255,255,255,0.1)';
+                        div.style.textShadow = '0 0 5px #00ffff';
+                        div.style.fontWeight = 'bold';
                     } else {
-                        itemDiv.style.color = 'white';
-                        itemDiv.style.borderBottomColor = 'rgba(255,255,255,0.1)';
-                        itemDiv.style.textShadow = 'none';
-                        itemDiv.style.fontWeight = 'normal';
+                        div.style.color = 'white';
+                        div.style.borderBottomColor = 'rgba(255,255,255,0.1)';
+                        div.style.textShadow = 'none';
+                        div.style.fontWeight = 'normal';
                     }
                 };
-                updateItemStyle(); // Gọi lần đầu
+                updateItemStyle(itemDiv);
 
                 if (viewType === 'custom') {
-                    let itemPressTimer;
-                    let isItemLongPress = false;
-
-                    const startItemPress = (e) => {
-                        if (e.type === 'mousedown' && e.button !== 0) return;
-                        isItemLongPress = false;
-                        itemPressTimer = setTimeout(() => {
-                            isItemLongPress = true;
-                            if (queueItemsSelected.has(songIndex)) {
-                                queueItemsSelected.delete(songIndex);
-                            } else {
-                                queueItemsSelected.add(songIndex);
-                            }
-                            updateItemStyle();
-                            updateActionButton();
-                            if (navigator.vibrate) navigator.vibrate(50);
-                        }, 500);
-                    };
-
-                    const cancelItemPress = () => { clearTimeout(itemPressTimer); };
-
-                    itemDiv.addEventListener('mousedown', startItemPress);
-                    itemDiv.addEventListener('touchstart', startItemPress, { passive: true });
-                    itemDiv.addEventListener('mouseup', cancelItemPress);
-                    itemDiv.addEventListener('mouseleave', cancelItemPress);
-                    itemDiv.addEventListener('touchend', cancelItemPress);
-                    itemDiv.addEventListener('touchmove', cancelItemPress); // Hủy nhấn giữ khi cuộn
-                    
                     itemDiv.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        if (isItemLongPress) { isItemLongPress = false; return; }
-                        if (queueItemsSelected.size > 0) {
+                        if (isDeleteMode) {
                             if (queueItemsSelected.has(songIndex)) {
                                 queueItemsSelected.delete(songIndex);
                             } else {
                                 queueItemsSelected.add(songIndex);
                             }
-                            updateItemStyle();
-                            updateActionButton();
+                            updateItemStyle(itemDiv);
                         } else {
                             // Phát bài hát khi nhấn vào
                             showMusicPlayer(songIndex);
@@ -3356,22 +3312,50 @@
                 btnContainer.appendChild(changeSingerBtn);
             }
 
+            // Nút thùng rác (Chỉ hiện cho DS Riêng)
+            if (viewType === 'custom') {
+                const trashBtn = document.createElement('button');
+                trashBtn.style.cssText = 'background: transparent; border: 1px solid white; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 14px;';
+                trashBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                trashBtn.title = 'Xóa bài hát đã chọn';
+                
+                trashBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (!isDeleteMode) {
+                        isDeleteMode = true;
+                        trashBtn.style.color = '#00ffff';
+                        trashBtn.style.borderColor = '#00ffff';
+                        trashBtn.style.background = 'rgba(0, 255, 255, 0.3)';
+                        trashBtn.style.boxShadow = '0 0 5px #00ffff';
+                    } else {
+                        if (queueItemsSelected.size > 0) {
+                            customQueue = customQueue.filter(idx => !queueItemsSelected.has(idx));
+                            saveSettings();
+                            populateSongList(); // Đồng bộ với danh sách chính
+                            renderQueueBox('custom'); // Render lại
+                        } else {
+                            // Tắt chế độ xóa nếu không chọn gì
+                            isDeleteMode = false;
+                            trashBtn.style.color = 'white';
+                            trashBtn.style.borderColor = 'white';
+                            trashBtn.style.background = 'transparent';
+                            trashBtn.style.boxShadow = 'none';
+                            renderQueueBox('custom'); // Render lại để xóa các lựa chọn
+                        }
+                    }
+                };
+                btnContainer.appendChild(trashBtn);
+            }
+
+            const actionBtn = document.createElement('button');
             actionBtn.style.cssText = 'background: rgba(255, 0, 0, 0.6); border: 1px solid #ff4d4d; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
             actionBtn.textContent = 'Hủy danh sách';
             actionBtn.onclick = (e) => {
                 e.stopPropagation();
                 if (viewType === 'custom') {
-                    if (queueItemsSelected.size > 0) {
-                        customQueue = customQueue.filter(idx => !queueItemsSelected.has(idx));
-                    } else {
-                        customQueue = [];
-                    }
+                    customQueue = [];
                 } else {
-                    if (queueItemsSelected.size > 0) {
-                        singerQueue = singerQueue.filter(idx => !queueItemsSelected.has(idx));
-                    } else {
-                        singerQueue = [];
-                    }
+                    singerQueue = [];
                 }
                 saveSettings();
                 populateSongList();
