@@ -1201,6 +1201,7 @@
         <div id="singer-list-overlay" style="display: none;">
             <span id="close-singer-menu-btn">&times;</span>
             <input type="text" id="singer-search-input" placeholder="Tìm kiếm ca sĩ...">
+            <div id="singer-list-header"></div>
             <ul id="singer-selection-list">
                 <!-- Singer items will be inserted here -->
             </ul>
@@ -2815,6 +2816,7 @@
         // --- Singer List Logic ---
         const selectSingerBtn = document.getElementById('select-singer-btn');
         const singerListOverlay = document.getElementById('singer-list-overlay');
+        const singerListHeader = document.getElementById('singer-list-header');
         const singerSelectionList = document.getElementById('singer-selection-list');
         const singerSearchInput = document.getElementById('singer-search-input');
         const closeSingerMenuBtn = document.getElementById('close-singer-menu-btn');
@@ -2850,22 +2852,54 @@
 
         function renderSingerMenu() {
             singerSelectionList.innerHTML = '';
+            singerListHeader.innerHTML = '';
             const query = singerSearchInput.value.toLowerCase().trim();
 
             if (selectedSinger) {
-                const backLi = document.createElement('li');
-                backLi.className = 'singer-list-item';
-                backLi.style.fontWeight = 'bold';
-                backLi.style.borderBottom = '1px solid rgba(0, 255, 255, 0.3)';
-                backLi.style.marginBottom = '10px';
-                backLi.innerHTML = `<i class="fas fa-arrow-left" style="margin-right: 10px;"></i> ${selectedSinger}`;
-                backLi.onclick = () => {
+                const headerContainer = document.createElement('div');
+                headerContainer.style.display = 'flex';
+                headerContainer.style.alignItems = 'center';
+                headerContainer.style.justifyContent = 'space-between';
+                headerContainer.style.marginBottom = '10px';
+                headerContainer.style.borderBottom = '1px solid rgba(0, 255, 255, 0.3)';
+                headerContainer.style.paddingBottom = '5px';
+
+                const backDiv = document.createElement('div');
+                backDiv.className = 'singer-list-item';
+                backDiv.style.fontWeight = 'bold';
+                backDiv.style.marginBottom = '0';
+                backDiv.style.flex = '1';
+                backDiv.innerHTML = `<i class="fas fa-arrow-left" style="margin-right: 10px;"></i> ${selectedSinger}`;
+                backDiv.onclick = () => {
                     selectedSinger = null;
                     singerSearchInput.value = '';
                     singerSearchInput.placeholder = "Tìm kiếm ca sĩ...";
                     renderSingerMenu();
                 };
-                singerSelectionList.appendChild(backLi);
+                headerContainer.appendChild(backDiv);
+
+                const playAlbumDiv = document.createElement('div');
+                playAlbumDiv.className = 'singer-list-item';
+                playAlbumDiv.style.fontWeight = 'bold';
+                playAlbumDiv.style.color = '#00ffff';
+                playAlbumDiv.style.marginBottom = '0';
+                playAlbumDiv.style.textAlign = 'center';
+                playAlbumDiv.style.border = '1px solid #00ffff';
+                playAlbumDiv.style.width = '40%';
+                playAlbumDiv.style.padding = '5px';
+                playAlbumDiv.style.fontSize = '13px';
+                playAlbumDiv.style.marginLeft = '10px';
+                playAlbumDiv.innerHTML = `<i class="fas fa-play" style="margin-right: 5px;"></i> Phát album`;
+                playAlbumDiv.onclick = () => {
+                    const artistSongs = singersMap.get(selectedSinger);
+                    songQueue = [];
+                    artistSongs.forEach(song => songQueue.push(song.id - 1));
+                    const firstIndex = songQueue.shift();
+                    showMusicPlayer(firstIndex);
+                    hideSingerList();
+                };
+                headerContainer.appendChild(playAlbumDiv);
+                singerListHeader.appendChild(headerContainer);
 
                 const artistSongs = singersMap.get(selectedSinger);
                 artistSongs.forEach(song => {
