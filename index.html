@@ -2724,7 +2724,7 @@
                 textDiv.style.pointerEvents = 'none'; // Allow clicks to pass through
 
                 // Highlight the currently playing song by comparing objects or IDs
-                if (activeQueueType === 'all' && currentPlayingSong && song.id === currentPlayingSong.id) {
+                if (currentPlayingSong && song.id === currentPlayingSong.id) {
                     listItem.classList.add('current-song');
                 }
 
@@ -3170,10 +3170,14 @@
                 badge.textContent = songIndex + 1;
                 itemDiv.appendChild(badge);
                 
+                if (songIndex === currentSongIndex) {
+                    itemDiv.classList.add('playing-item');
+                }
+
                 // Hàm cập nhật style cho item (xử lý cả trạng thái chọn và trạng thái đang phát)
                 const updateItemStyle = () => {
                     const isSelected = queueItemsSelected.has(songIndex);
-                    const isPlaying = (activeQueueType === viewType && songIndex === currentSongIndex);
+                    const isPlaying = (songIndex === currentSongIndex);
                     
                     if (isSelected) {
                         itemDiv.style.color = '#00ffff';
@@ -3318,6 +3322,13 @@
 
             clearQueueBox.appendChild(btnContainer);
             clearQueueBox.style.cursor = 'default';
+
+            setTimeout(() => {
+                const playingItem = listContainer.querySelector('.playing-item');
+                if (playingItem) {
+                    playingItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 50);
         }
 
         const startSongBtnPress = (e) => {
