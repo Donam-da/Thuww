@@ -811,6 +811,59 @@
         #clear-queue-box:hover {
             background-color: transparent;
         }
+        /* Confirmation Modal */
+        #confirmation-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 3000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .confirmation-content {
+            background-color: rgba(0, 0, 0, 0.9);
+            border: 1px solid #00ffff;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            font-family: 'VN Time', Arial, sans-serif;
+            color: white;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            min-width: 250px;
+        }
+        .confirmation-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .confirmation-buttons button {
+            background: transparent;
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .confirmation-buttons button:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 5px #00ffff;
+        }
+        #confirm-no-btn {
+            border-color: #ff4d4d;
+            color: #ff4d4d;
+        }
+        #confirm-no-btn:hover {
+            background: rgba(255, 77, 77, 0.2);
+            box-shadow: 0 0 5px #ff4d4d;
+        }
         /* --- 2D Music Controls Styles --- */
         #gif-tv-container {
             position: fixed;
@@ -1359,6 +1412,16 @@
             </ul>
         </div>
         <div id="clear-queue-box">Hủy danh sách riêng đó</div>
+        <!-- Confirmation Modal -->
+        <div id="confirmation-modal" style="display: none;">
+            <div class="confirmation-content">
+                <p>Bạn có chắc chắn muốn xóa danh sách này không?</p>
+                <div class="confirmation-buttons">
+                    <button id="confirm-yes-btn">Có</button>
+                    <button id="confirm-no-btn">Không</button>
+                </div>
+            </div>
+        </div>
         <div id="gif-tv-container">
             <img id="gif-tv-screen" src="" alt="TV">
         </div>
@@ -1504,6 +1567,23 @@
         const loaderOverlay = document.getElementById('loader-overlay');
         const progressCircle = document.querySelector('.progress-circle');
         const progressText = document.getElementById('progress-text');
+
+        // --- TV Playlist & Preloading (Moved here for initialization) ---
+        const tvPlaylist = [];
+        const processedTvImages = new Map(); // Lưu trữ các ảnh đã xử lý thành công
+
+        // Populate Playlist
+        for (let i = 1; i <= 95; i++) tvPlaylist.push(`gifs/gif${i}.gif`);
+        for (let i = 1; i <= 50; i++) tvPlaylist.push(`gifs/gif${i}.jpg`);
+
+        // Preload and Process TV Images
+        tvPlaylist.forEach(src => {
+            loadingManager.itemStart(src); // Đăng ký item với loading manager
+            processImageForTv(src, (resultSrc, isSuccess) => {
+                if (isSuccess) processedTvImages.set(src, resultSrc);
+                loadingManager.itemEnd(src); // Đánh dấu item đã xong
+            });
+        });
 
         loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
             const progress = (itemsLoaded / itemsTotal) * 100;
@@ -3485,6 +3565,47 @@
         let songBtnPressTimer;
         let isSongBtnLongPress = false;
 
+        // --- Confirmation Modal Logic ---
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        const confirmNoBtn = document.getElementById('confirm-no-btn');
+        let pendingClearViewType = null;
+
+        function showConfirmationModal(viewType) {
+            pendingClearViewType = viewType;
+            confirmationModal.style.display = 'flex';
+        }
+
+        function hideConfirmationModal() {
+            confirmationModal.style.display = 'none';
+            pendingClearViewType = null;
+        }
+
+        if (confirmYesBtn) {
+            confirmYesBtn.addEventListener('click', () => {
+                if (pendingClearViewType === 'custom') {
+                    customQueue = [];
+                } else if (pendingClearViewType === 'singer') {
+                    singerQueue = [];
+                    currentSingerName = '';
+                }
+                saveSettings();
+                populateSongList();
+                renderQueueBox(pendingClearViewType);
+                hideConfirmationModal();
+            });
+        }
+
+        if (confirmNoBtn) {
+            confirmNoBtn.addEventListener('click', hideConfirmationModal);
+        }
+        
+        if (confirmationModal) {
+            confirmationModal.addEventListener('click', (e) => {
+                if (e.target === confirmationModal) hideConfirmationModal();
+            });
+        }
+
         function renderQueueBox(viewType = (activeQueueType === 'all' ? 'custom' : activeQueueType)) {
             clearQueueBox.innerHTML = '';
             clearQueueBox.style.display = 'flex';
@@ -3732,6 +3853,7 @@
                 saveSettings();
                 populateSongList();
                 renderQueueBox(viewType);
+                showConfirmationModal(viewType);
             };
             btnContainer.appendChild(actionBtn);
 
@@ -4986,18 +5108,6 @@
         });
 
         // --- GIF TV Player Logic ---
-        // Danh sách các file hiển thị trên TV (hỗ trợ cả .gif và .jpg, .png)
-        const tvPlaylist = [];
-        
-        // Thêm file gif (gif1.gif đến gif95.gif)
-        for (let i = 1; i <= 95; i++) {
-            tvPlaylist.push(`gifs/gif${i}.gif`);
-        }
-        
-        // Thêm các file jpg (gif1.jpg đến gif50.jpg)
-        for (let i = 1; i <= 50; i++) {
-            tvPlaylist.push(`gifs/gif${i}.jpg`);
-        }
 
         const gifTvContainer = document.getElementById('gif-tv-container');
         const gifTvScreen = document.getElementById('gif-tv-screen');
@@ -5039,18 +5149,28 @@
             if (tvShuffledIndices.length === 0 || currentTvShuffledIndex >= tvShuffledIndices.length) {
                 generateTvShuffle();
             }
-
-            const actualIndex = tvShuffledIndices[currentTvShuffledIndex];
-            const selectedSrc = tvPlaylist[actualIndex];
-            currentTvShuffledIndex++; // Chuyển sang ảnh tiếp theo trong nhóm ngẫu nhiên
             
-            if (isTvDigitalMode) {
-                // Xử lý xóa nền và tạo hiệu ứng nét vẽ cho tất cả ảnh (bao gồm cả frame đầu của GIF)
-                processImageForTv(selectedSrc, (processedDataUrl) => {
-                    gifTvScreen.src = processedDataUrl;
-                });
-            } else {
-                gifTvScreen.src = selectedSrc;
+            let found = false;
+            let attempts = 0;
+            // Thử tìm ảnh hợp lệ (đã xử lý thành công) tối đa bằng số lượng ảnh trong playlist
+            while (!found && attempts < tvPlaylist.length) {
+                const actualIndex = tvShuffledIndices[currentTvShuffledIndex];
+                const selectedSrc = tvPlaylist[actualIndex];
+                
+                currentTvShuffledIndex++;
+                if (currentTvShuffledIndex >= tvShuffledIndices.length) generateTvShuffle();
+
+                if (isTvDigitalMode) {
+                    if (processedTvImages.has(selectedSrc)) {
+                        gifTvScreen.src = processedTvImages.get(selectedSrc);
+                        found = true;
+                    }
+                    // Nếu không có trong map (xử lý lỗi), vòng lặp sẽ tiếp tục tìm ảnh khác
+                } else {
+                    gifTvScreen.src = selectedSrc;
+                    found = true;
+                }
+                attempts++;
             }
         }
 
@@ -5116,13 +5236,13 @@
                     }
 
                     ctx.putImageData(imageData, 0, 0);
-                    callback(canvas.toDataURL());
+                    callback(canvas.toDataURL(), true); // Success
                 } catch (e) {
                     console.warn("Không thể xử lý xóa nền (lỗi CORS hoặc file local):", e);
-                    callback(src); // Fallback về ảnh gốc nếu gặp lỗi
+                    callback(src, false); // Failed
                 }
             };
-            img.onerror = () => callback(src);
+            img.onerror = () => callback(src, false); // Failed
             
             // Bỏ timestamp để tận dụng cache trình duyệt, giúp load nhanh hơn và ổn định hơn
             img.src = src;
