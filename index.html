@@ -3206,50 +3206,59 @@
                 };
                 updateItemStyle(); // Gọi lần đầu
 
-                let itemPressTimer;
-                let isItemLongPress = false;
+                if (viewType === 'custom') {
+                    let itemPressTimer;
+                    let isItemLongPress = false;
 
-                const startItemPress = (e) => {
-                    if (e.type === 'mousedown' && e.button !== 0) return;
-                    isItemLongPress = false;
-                    itemPressTimer = setTimeout(() => {
-                        isItemLongPress = true;
-                        if (queueItemsSelected.has(songIndex)) {
-                            queueItemsSelected.delete(songIndex);
+                    const startItemPress = (e) => {
+                        if (e.type === 'mousedown' && e.button !== 0) return;
+                        isItemLongPress = false;
+                        itemPressTimer = setTimeout(() => {
+                            isItemLongPress = true;
+                            if (queueItemsSelected.has(songIndex)) {
+                                queueItemsSelected.delete(songIndex);
+                            } else {
+                                queueItemsSelected.add(songIndex);
+                            }
+                            updateItemStyle();
+                            updateActionButton();
+                            if (navigator.vibrate) navigator.vibrate(50);
+                        }, 500);
+                    };
+
+                    const cancelItemPress = () => { clearTimeout(itemPressTimer); };
+
+                    itemDiv.addEventListener('mousedown', startItemPress);
+                    itemDiv.addEventListener('touchstart', startItemPress, { passive: true });
+                    itemDiv.addEventListener('mouseup', cancelItemPress);
+                    itemDiv.addEventListener('mouseleave', cancelItemPress);
+                    itemDiv.addEventListener('touchend', cancelItemPress);
+                    
+                    itemDiv.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (isItemLongPress) { isItemLongPress = false; return; }
+                        if (queueItemsSelected.size > 0) {
+                            if (queueItemsSelected.has(songIndex)) {
+                                queueItemsSelected.delete(songIndex);
+                            } else {
+                                queueItemsSelected.add(songIndex);
+                            }
+                            updateItemStyle();
+                            updateActionButton();
                         } else {
-                            queueItemsSelected.add(songIndex);
+                            // Phát bài hát khi nhấn vào
+                            showMusicPlayer(songIndex);
+                            clearQueueBox.style.display = 'none';
                         }
-                        updateItemStyle();
-                        updateActionButton();
-                        if (navigator.vibrate) navigator.vibrate(50);
-                    }, 500);
-                };
-
-                const cancelItemPress = () => { clearTimeout(itemPressTimer); };
-
-                itemDiv.addEventListener('mousedown', startItemPress);
-                itemDiv.addEventListener('touchstart', startItemPress, { passive: true });
-                itemDiv.addEventListener('mouseup', cancelItemPress);
-                itemDiv.addEventListener('mouseleave', cancelItemPress);
-                itemDiv.addEventListener('touchend', cancelItemPress);
-                
-                itemDiv.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (isItemLongPress) { isItemLongPress = false; return; }
-                    if (queueItemsSelected.size > 0) {
-                        if (queueItemsSelected.has(songIndex)) {
-                            queueItemsSelected.delete(songIndex);
-                        } else {
-                            queueItemsSelected.add(songIndex);
-                        }
-                        updateItemStyle();
-                        updateActionButton();
-                    } else {
-                        // Phát bài hát khi nhấn vào
+                    });
+                } else {
+                    // Đối với danh sách ca sĩ, chỉ cần click để phát, không có chức năng chọn/xóa
+                    itemDiv.addEventListener('click', (e) => {
+                        e.stopPropagation();
                         showMusicPlayer(songIndex);
                         clearQueueBox.style.display = 'none';
-                    }
-                });
+                    });
+                }
 
                 listContainer.appendChild(itemDiv);
             });
