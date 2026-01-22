@@ -3141,6 +3141,12 @@
                             itemDiv.style.borderBottomColor = '#00ffff';
                         }
                         updateActionButton();
+                    } else {
+                        // Phát bài hát khi nhấn vào
+                        activeQueueType = viewType;
+                        saveSettings();
+                        showMusicPlayer(songIndex);
+                        clearQueueBox.style.display = 'none';
                     }
                 });
 
