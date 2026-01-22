@@ -614,16 +614,6 @@
             color: rgba(255, 255, 255, 0.5);
         }
         
-        #song-list-overlay {
-        }
-        #close-song-menu-btn {
-        }
-        .song-list-item {
-        }
-        #song-selection-list {
-        }
-        .song-list-item:hover {
-        }
         /* Làm đậm bài hát đang phát trong danh sách */
         .song-list-item.current-song {
             color: rgba(0, 255, 255, 0.5);
@@ -2381,7 +2371,7 @@
                 case 8: songName = "ĐỢI - 52Hz"; break;
                 case 9: songName = "ĐEN ĐÁ KHÔNG ĐƯỜNG - AMEE"; break;
                 case 10: songName = "Ex's Hate Me (Part 2) - AMEE, B RAY"; break;
-                case 11: songName = "MỘNG YU - AMEE, MCK"; break;
+                case 11: songName = "MỘNG YU - AMEE, RPT MCK"; break;
                 case 12: songName = "Chờ Anh Về - Ray, AMEE, Masew"; break;
                 case 13: songName = "Nghe kể năm 90s - Ân ngờ, Suzie MK"; break;
                 case 14: songName = "Hà Nội - Obito, VSTRA"; break;
@@ -2827,15 +2817,25 @@
 
         function extractSingers() {
             singersMap.clear();
+            const normalizedNames = new Map();
             songs.forEach(song => {
                 const parts = song.name.split(' - ');
                 if (parts.length > 1) {
                     const artists = parts[1].split(',').map(s => s.trim());
                     artists.forEach(artist => {
-                        if (!singersMap.has(artist)) {
-                            singersMap.set(artist, []);
+                        const lowerKey = artist.toLowerCase();
+                        let displayName = artist;
+                        if (normalizedNames.has(lowerKey)) {
+                            displayName = normalizedNames.get(lowerKey);
+                        } else {
+                            normalizedNames.set(lowerKey, displayName);
                         }
-                        singersMap.get(artist).push(song);
+                        if (!singersMap.has(displayName)) {
+                            singersMap.set(displayName, []);
+                        }
+                        if (!singersMap.get(displayName).includes(song)) {
+                            singersMap.get(displayName).push(song);
+                        }
                     });
                 }
             });
