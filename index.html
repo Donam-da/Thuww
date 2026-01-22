@@ -1428,7 +1428,11 @@
         
         <!-- New Gallery Overlays -->
         <div id="tv-gallery-overlay" class="gallery-overlay">
-            <div class="gallery-header"><span>Thư viện TV</span><span class="gallery-close-btn" onclick="hideGalleries()">&times;</span></div>
+            <div class="gallery-header">
+                <span>Thư viện TV</span>
+                <button id="tv-filter-btn" style="background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 12px;">Hiện: Tất cả</button>
+                <span class="gallery-close-btn" onclick="hideGalleries()">&times;</span>
+            </div>
             <div class="gallery-content"><div id="tv-gallery-grid" class="gallery-grid"></div></div>
         </div>
         <div id="music-gallery-overlay" class="gallery-overlay">
@@ -2571,15 +2575,22 @@
 
         // 1. Ảnh TV (Mở thư viện GIF/JPG)
         const downloadTvBtn = document.getElementById('download-tv-btn');
-        if (downloadTvBtn) {
-            downloadTvBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                hideMoreOptionsMenu();
-                const overlay = document.getElementById('tv-gallery-overlay');
-                const grid = document.getElementById('tv-gallery-grid');
-                grid.innerHTML = ''; // Clear old content
+        const tvFilterBtn = document.getElementById('tv-filter-btn');
+        let tvFilterState = 'all'; // 'all', 'gif', 'jpg'
+
+        function renderTvGalleryContent() {
+            const grid = document.getElementById('tv-gallery-grid');
+            grid.innerHTML = ''; // Clear old content
+            
+            // Phân loại file
+            const gifs = tvPlaylist.filter(src => src.toLowerCase().endsWith('.gif'));
+            const jpgs = tvPlaylist.filter(src => !src.toLowerCase().endsWith('.gif'));
+
+            // Hàm hỗ trợ render nhóm
+            const renderGroup = (items) => {
+                if (items.length === 0) return;
                 
-                tvPlaylist.forEach(src => {
+                items.forEach(src => {
                     const div = document.createElement('div');
                     div.className = 'gallery-item';
                     const img = document.createElement('img');
@@ -2592,6 +2603,44 @@
                     };
                     grid.appendChild(div);
                 });
+            };
+
+            let displayCount = 0;
+            if (tvFilterState === 'all' || tvFilterState === 'gif') {
+                renderGroup(gifs);
+                if (tvFilterState === 'gif') displayCount = gifs.length;
+            }
+            if (tvFilterState === 'all' || tvFilterState === 'jpg') {
+                renderGroup(jpgs);
+                if (tvFilterState === 'jpg') displayCount = jpgs.length;
+            }
+            if (tvFilterState === 'all') displayCount = tvPlaylist.length;
+
+            if (tvFilterBtn) {
+                if (tvFilterState === 'all') tvFilterBtn.textContent = `Hiện: Tất cả (${displayCount})`;
+                else if (tvFilterState === 'gif') tvFilterBtn.textContent = `Hiện: GIF (${displayCount})`;
+                else if (tvFilterState === 'jpg') tvFilterBtn.textContent = `Hiện: JPG (${displayCount})`;
+            }
+        }
+
+        if (tvFilterBtn) {
+            tvFilterBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (tvFilterState === 'all') tvFilterState = 'gif';
+                else if (tvFilterState === 'gif') tvFilterState = 'jpg';
+                else tvFilterState = 'all';
+                renderTvGalleryContent();
+            });
+        }
+
+        if (downloadTvBtn) {
+            downloadTvBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                hideMoreOptionsMenu();
+                const overlay = document.getElementById('tv-gallery-overlay');
+                
+                renderTvGalleryContent();
+
                 overlay.style.display = 'flex';
                 setTimeout(() => {
                     document.addEventListener('click', handleOutsideGalleryInteraction);
