@@ -1921,7 +1921,10 @@
                 visualizerStyle: currentVisualizerStyle,
                 timeDisplayVisible: isTimeDisplayVisible,
                 volume: volumeSlider.value,
-                fov: camera.fov
+                fov: camera.fov,
+                customQueue: customQueue,
+                singerQueue: singerQueue,
+                activeQueueType: activeQueueType
             };
             localStorage.setItem('solarSystemSettings', JSON.stringify(settings));
         }
@@ -1945,6 +1948,11 @@
                 // Load volume, defaulting to 100 if not found
                 const volume = settings.volume || '100';
                 const fov = settings.fov || 75; // Load FOV, default to 75
+
+                // Load queues
+                if (settings.customQueue) customQueue = settings.customQueue;
+                if (settings.singerQueue) singerQueue = settings.singerQueue;
+                if (settings.activeQueueType) activeQueueType = settings.activeQueueType;
 
                 // Cập nhật giá trị cho các thanh trượt
                 radiusSlider.value = radius;
@@ -2762,6 +2770,7 @@
                 customQueue.splice(pos, 1);
             }
             populateSongList();
+            saveSettings();
         }
 
         function showSongList() {
@@ -2900,6 +2909,7 @@
                     artistSongs.forEach(song => singerQueue.push(song.id - 1));
                     activeQueueType = 'singer'; // Chuyển sang chế độ phát danh sách ca sĩ
                     const firstIndex = singerQueue.shift();
+                    saveSettings();
                     showMusicPlayer(firstIndex);
                     hideSingerList();
                 };
@@ -3170,6 +3180,7 @@
                         singerQueue = [];
                     }
                 }
+                saveSettings();
                 populateSongList();
                 renderQueueBox(viewType);
             };
@@ -4341,6 +4352,7 @@
             
             if (currentQueue.length > 0) {
                 const nextIndex = currentQueue.shift();
+                saveSettings();
                 
                 // Nếu bài tiếp theo trong hàng đợi trùng với bài đang phát, chỉ cần phát lại
                 if (nextIndex === currentSongIndex) {
