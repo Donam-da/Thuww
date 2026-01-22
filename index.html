@@ -4409,7 +4409,6 @@
             // Kích hoạt lại hiệu ứng trôi nổi khi chọn một hành tinh.
             // Điều này đảm bảo sóng nhạc sẽ bắt đầu di chuyển trở lại nếu trước đó đang ở chế độ "Toàn cảnh".
             musicPlayerFloatInfo.enabled = true;
-            stopTvPlayer(); // Tắt TV khi chọn hành tinh (thoát chế độ toàn cảnh)
             selectedPlanetObject = planet; // Cập nhật hành tinh đang được chọn
             document.getElementById('music-controls-2d').style.transform = '';
             // Đặt lại kích thước và vị trí của trình phát nhạc 3D
@@ -4882,7 +4881,6 @@
             if (musicPlayerFloatInfo.enabled === false) {
                 musicPlayerFloatInfo.enabled = true;
 
-                stopTvPlayer(); // Tắt TV khi người dùng tự xoay camera (thoát chế độ toàn cảnh)
                 // Đặt lại vị trí và kích thước của trình phát nhạc 3D về trạng thái mặc định
                 if (musicPlayerObject && musicPlayerObject.element) {
                     musicPlayerObject.element.style.transform = 'scale(1) translateY(0)';
