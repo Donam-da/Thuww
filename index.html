@@ -1749,19 +1749,34 @@
         // --- TV Playlist & Preloading (Moved here for initialization) ---
         const tvPlaylist = [];
         const musicCache = new Map(); // Cache for preloaded music blobs
+        const imageCache = new Map(); // Cache for planet images
+        const tvOriginalCache = new Map(); // Cache for original TV images (GIF/JPG)
+        const textureCache = {}; // Cache for THREE.Textures
         const processedTvImages = new Map(); // Lưu trữ các ảnh đã xử lý thành công
 
         // Populate Playlist
         for (let i = 1; i <= 184; i++) tvPlaylist.push(`gifs/gif${i}.gif`);
         for (let i = 1; i <= 64; i++) tvPlaylist.push(`gifs/gif${i}.jpg`);
 
-        // Preload and Process TV Images
+        // Preload and Process TV Images (Fetch as Blob first)
         tvPlaylist.forEach(src => {
             loadingManager.itemStart(src); // Đăng ký item với loading manager
-            processImageForTv(src, (resultSrc, isSuccess) => {
-                if (isSuccess) processedTvImages.set(src, resultSrc);
-                loadingManager.itemEnd(src); // Đánh dấu item đã xong
-            });
+            fetch(src)
+                .then(response => response.blob())
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    tvOriginalCache.set(src, blobUrl);
+                    
+                    // Process using the Blob URL
+                    processImageForTv(blobUrl, (resultSrc, isSuccess) => {
+                        if (isSuccess) processedTvImages.set(src, resultSrc);
+                        loadingManager.itemEnd(src);
+                    });
+                })
+                .catch(err => {
+                    console.error("Failed to preload TV image:", src, err);
+                    loadingManager.itemEnd(src);
+                });
         });
 
         // Preload Music Files
@@ -1777,6 +1792,26 @@
                 .catch(err => {
                     console.error("Failed to preload music:", song.file, err);
                     loadingManager.itemEnd(song.file); // Ensure loader finishes even on error
+                });
+        });
+
+        // Preload Planet Images (Fetch as Blob first)
+        allImageUrls.forEach(url => {
+            loadingManager.itemStart(url);
+            fetch(url)
+                .then(response => response.blob())
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    imageCache.set(url, blobUrl);
+                    // Load texture using Blob URL, but map it to original URL key
+                    textureCache[url] = textureLoader.load(blobUrl);
+                    loadingManager.itemEnd(url);
+                })
+                .catch(err => {
+                    console.error("Failed to preload image:", url, err);
+                    // Fallback to normal load if fetch fails
+                    textureCache[url] = textureLoader.load(url);
+                    loadingManager.itemEnd(url);
                 });
         });
 
@@ -1816,12 +1851,6 @@
             }, 500);
         };
         
-        // --- Preload all images and cache them---
-        const textureCache = {};
-        allImageUrls.forEach(url => {
-            textureCache[url] = textureLoader.load(url);
-        });
-
         // --- Scene Setup ---
         const scene = new THREE.Scene();
         const scene_bg = new THREE.Scene(); // Scene for background elements (stars, music player)
@@ -2787,7 +2816,11 @@
                     const div = document.createElement('div');
                     div.className = 'gallery-item';
                     const img = document.createElement('img');
-                    img.src = src;
+                    if (tvOriginalCache.has(src)) {
+                        img.src = tvOriginalCache.get(src);
+                    } else {
+                        img.src = src;
+                    }
                     img.loading = 'lazy'; // Tải lười để tối ưu hiệu suất
                     div.appendChild(img);
                     div.onclick = () => {
@@ -2883,7 +2916,11 @@
                     const div = document.createElement('div');
                     div.className = 'gallery-item';
                     const img = document.createElement('img');
-                    img.src = src;
+                    if (imageCache.has(src)) {
+                        img.src = imageCache.get(src);
+                    } else {
+                        img.src = src;
+                    }
                     img.loading = 'lazy';
                     div.appendChild(img);
                     div.onclick = () => {
