@@ -1573,8 +1573,8 @@
         const processedTvImages = new Map(); // Lưu trữ các ảnh đã xử lý thành công
 
         // Populate Playlist
-        for (let i = 1; i <= 95; i++) tvPlaylist.push(`gifs/gif${i}.gif`);
-        for (let i = 1; i <= 50; i++) tvPlaylist.push(`gifs/gif${i}.jpg`);
+        for (let i = 1; i <= 184; i++) tvPlaylist.push(`gifs/gif${i}.gif`);
+        for (let i = 1; i <= 64; i++) tvPlaylist.push(`gifs/gif${i}.jpg`);
 
         // Preload and Process TV Images
         tvPlaylist.forEach(src => {
@@ -4054,11 +4054,15 @@
                 } else {
                     // Sequential or Repeat One (manual nav)
                     let queueIndex = currentQueue.indexOf(currentSongIndex);
-                    if (queueIndex === -1) queueIndex = currentQueue.indexOf(lastActiveQueueSongIndex);
-                    if (queueIndex === -1) queueIndex = 0;
-
-                    let newQueueIndex = (queueIndex + direction + currentQueue.length) % currentQueue.length;
-                    nextIndex = currentQueue[newQueueIndex];
+                    
+                    if (queueIndex === -1) {
+                        // Nếu bài hát hiện tại không nằm trong danh sách đang active
+                        // Next (1) -> Bài đầu tiên, Prev (-1) -> Bài cuối cùng
+                        nextIndex = (direction === 1) ? currentQueue[0] : currentQueue[currentQueue.length - 1];
+                    } else {
+                        let newQueueIndex = (queueIndex + direction + currentQueue.length) % currentQueue.length;
+                        nextIndex = currentQueue[newQueueIndex];
+                    }
                 }
             } else {
                 // 'all'
