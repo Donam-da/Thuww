@@ -2867,6 +2867,19 @@
             activeQueueType = 'all';
             saveSettings();
             updatePlayAllButtonState();
+            
+            // Phát ngay lập tức bài tiếp theo trong danh sách "Tất cả"
+            let nextIndex;
+            if (playbackMode === 'repeat-one') {
+                nextIndex = currentSongIndex;
+            } else if (playbackMode === 'random') {
+                if (shuffledSongIndices.length === 0) generateShuffledPlaylist();
+                currentShuffledIndex = (currentShuffledIndex + 1) % shuffledSongIndices.length;
+                nextIndex = shuffledSongIndices[currentShuffledIndex];
+            } else {
+                nextIndex = (currentSongIndex + 1) % songs.length;
+            }
+            showMusicPlayer(nextIndex);
         });
 
         function handleOutsideSongInteraction(event) {
@@ -3221,7 +3234,15 @@
                 e.stopPropagation();
                 activeQueueType = viewType;
                 saveSettings();
-                renderQueueBox(viewType); // Render lại để cập nhật trạng thái nút
+                
+                // Phát ngay lập tức bài đầu tiên trong danh sách
+                const targetQueue = viewType === 'custom' ? customQueue : singerQueue;
+                if (targetQueue.length > 0) {
+                    const nextIndex = targetQueue.shift();
+                    saveSettings();
+                    showMusicPlayer(nextIndex);
+                    renderQueueBox(viewType);
+                }
             };
             btnContainer.appendChild(setActiveBtn);
 
