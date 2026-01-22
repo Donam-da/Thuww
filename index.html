@@ -494,6 +494,11 @@
             display: none; /* Chrome, Safari, Opera */
         }
 
+        /* Thêm hiệu ứng cuộn mượt mà cho danh sách chờ */
+        #queue-list-container {
+            -webkit-overflow-scrolling: touch; /* Smooth, momentum-based scrolling on iOS */
+        }
+
         /* --- Search Input for Song List --- */
         #song-search-input,
         #singer-search-input {
@@ -3169,7 +3174,7 @@
 
             const listContainer = document.createElement('div');
             listContainer.id = 'queue-list-container';
-            listContainer.style.cssText = 'flex-grow: 1; width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; text-align: left; margin-bottom: 15px; padding-right: 5px; font-size: 14px;';
+            listContainer.style.cssText = 'flex-grow: 1; width: 100%; overflow-y: auto; text-align: left; margin-bottom: 15px; padding-right: 5px; font-size: 14px;';
             
             const queueItemsSelected = new Set();
             const actionBtn = document.createElement('button');
