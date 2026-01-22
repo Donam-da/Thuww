@@ -729,7 +729,7 @@
         .song-search-controls {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 0;
             margin-bottom: 10px;
         }
         .song-search-controls #song-search-input {
@@ -743,7 +743,7 @@
             margin-bottom: 0;
             font-size: 14px;
             background: transparent;
-            border: 1px solid #00ffff;
+            border: none;
             color: #00ffff;
             border-radius: 4px;
             cursor: pointer;
@@ -753,9 +753,8 @@
             background: rgba(0, 255, 255, 0.1);
         }
         #play-all-list-btn.active {
-            background: rgba(0, 255, 255, 0.3);
+            background: transparent;
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-            border-color: #00ffff;
             color: #ffffff;
             text-shadow: 0 0 5px #00ffff;
         }
@@ -3123,13 +3122,11 @@
                 playAllListBtn.innerHTML = '<i class="fas fa-upload"></i>';
                 playAllListBtn.title = 'Đang phát danh sách này (Tất cả)';
                 playAllListBtn.style.color = '#00ffff';
-                playAllListBtn.style.borderColor = '#00ffff';
             } else {
                 playAllListBtn.classList.remove('active');
                 playAllListBtn.innerHTML = '<i class="fas fa-upload"></i>';
                 playAllListBtn.title = 'Đưa lên trình phát (Tất cả)';
                 playAllListBtn.style.color = '#ff4d4d';
-                playAllListBtn.style.borderColor = '#ff4d4d';
             }
         }
 
