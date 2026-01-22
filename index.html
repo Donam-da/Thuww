@@ -2902,11 +2902,29 @@
                 singerListHeader.appendChild(headerContainer);
 
                 const artistSongs = singersMap.get(selectedSinger);
-                artistSongs.forEach(song => {
+                artistSongs.forEach((song, index) => {
                     if (query && !song.name.toLowerCase().includes(query)) return;
                     const li = document.createElement('li');
                     li.className = 'singer-list-item';
-                    li.textContent = song.name;
+                    li.style.display = 'flex';
+                    li.style.justifyContent = 'space-between';
+                    li.style.alignItems = 'center';
+
+                    const leftSpan = document.createElement('span');
+                    leftSpan.style.flex = '1';
+                    leftSpan.style.whiteSpace = 'nowrap';
+                    leftSpan.style.overflow = 'hidden';
+                    leftSpan.style.textOverflow = 'ellipsis';
+                    leftSpan.style.marginRight = '10px';
+                    leftSpan.textContent = `${index + 1}. ${song.name}`;
+
+                    const rightSpan = document.createElement('span');
+                    rightSpan.className = 'queue-badge';
+                    rightSpan.textContent = song.id;
+
+                    li.appendChild(leftSpan);
+                    li.appendChild(rightSpan);
+
                     li.onclick = () => {
                         showMusicPlayer(song.id - 1);
                         hideSingerList();
