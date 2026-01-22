@@ -16,7 +16,14 @@
             font-weight: normal; /* Set to specific weights if your font file supports them (e.g., 100, 200, 300) */
             font-style: normal;
         }
-        body { margin: 0; background-color: #000; overflow: hidden; }
+        body { 
+            margin: 0; background-color: #000; overflow: hidden; 
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+/Edge */
+            user-select: none; /* Standard */
+            -webkit-touch-callout: none; /* iOS Safari */
+        }
         canvas { display: block; }
         #main-scene {
             position: relative; z-index: 2; /* Giữ thuộc tính này */
@@ -487,6 +494,8 @@
             font-weight: 100;
             font-size: 14px;
             box-sizing: border-box; /* Ensure padding doesn't affect width */
+            -webkit-user-select: text; /* Allow text selection in input */
+            user-select: text;
         }
         #song-search-input:focus {
             outline: none;
