@@ -3141,6 +3141,18 @@
             const btnContainer = document.createElement('div');
             btnContainer.style.cssText = 'display: flex; justify-content: center; gap: 15px; flex-shrink: 0;';
 
+            if (viewType === 'singer') {
+                const changeSingerBtn = document.createElement('button');
+                changeSingerBtn.style.cssText = 'background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
+                changeSingerBtn.textContent = 'Đổi ca sĩ';
+                changeSingerBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    clearQueueBox.style.display = 'none';
+                    showSingerList();
+                };
+                btnContainer.appendChild(changeSingerBtn);
+            }
+
             actionBtn.style.cssText = 'background: rgba(255, 0, 0, 0.6); border: 1px solid #ff4d4d; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
             actionBtn.textContent = 'Hủy danh sách';
             actionBtn.onclick = (e) => {
