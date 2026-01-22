@@ -2114,6 +2114,7 @@
                 fov: camera.fov,
                 customQueue: customQueue,
                 singerQueue: singerQueue,
+                currentSingerName: currentSingerName,
                 activeQueueType: activeQueueType
             };
             localStorage.setItem('solarSystemSettings', JSON.stringify(settings));
@@ -2143,6 +2144,7 @@
                 // Load queues
                 if (settings.customQueue) customQueue = settings.customQueue;
                 if (settings.singerQueue) singerQueue = settings.singerQueue;
+                if (settings.currentSingerName) currentSingerName = settings.currentSingerName;
                 activeQueueType = settings.activeQueueType || 'all'; // Mặc định là 'all'
 
                 // Cập nhật giá trị cho các thanh trượt
@@ -2833,6 +2835,7 @@
         let customQueue = []; // Danh sách phát riêng do người dùng chọn
         let singerQueue = []; // Danh sách phát theo ca sĩ (Album)
         let activeQueueType = 'all'; // 'all', 'custom' hoặc 'singer' để biết đang phát danh sách nào
+        let currentSingerName = ''; // Tên ca sĩ đang được chọn
         let lastActiveQueueSongIndex = -1; // Ghi nhớ bài hát cuối cùng được phát từ danh sách đang active
         let isPlanetListOpen = false; // New: Track if planet list is open
         // Global variables for audio visualization
@@ -3292,6 +3295,7 @@
                     const artistSongs = singersMap.get(selectedSinger);
                     singerQueue = [];
                     artistSongs.forEach(song => singerQueue.push(song.id - 1));
+                    currentSingerName = selectedSinger;
                     activeQueueType = 'singer'; // Chuyển sang chế độ phát danh sách ca sĩ
                     const firstIndex = singerQueue[0];
                     saveSettings();
@@ -3413,12 +3417,12 @@
             header.style.cssText = 'display: flex; justify-content: space-around; width: 100%; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 5px; flex-shrink: 0;';
             
             const tabCustom = document.createElement('div');
-            tabCustom.textContent = 'DS Riêng';
+            tabCustom.textContent = 'Yêu thích';
             tabCustom.style.cssText = `cursor: pointer; font-weight: bold; font-size: 14px; padding: 5px; ${viewType === 'custom' ? 'color: #00ffff; border-bottom: 2px solid #00ffff;' : 'color: white; opacity: 0.7;'}`;
             tabCustom.onclick = (e) => { e.stopPropagation(); renderQueueBox('custom'); };
             
             const tabSinger = document.createElement('div');
-            tabSinger.textContent = 'DS Ca sĩ';
+            tabSinger.textContent = (singerQueue.length > 0 && currentSingerName) ? currentSingerName : 'Ca sĩ';
             tabSinger.style.cssText = `cursor: pointer; font-weight: bold; font-size: 14px; padding: 5px; ${viewType === 'singer' ? 'color: #00ffff; border-bottom: 2px solid #00ffff;' : 'color: white; opacity: 0.7;'}`;
             tabSinger.onclick = (e) => { e.stopPropagation(); renderQueueBox('singer'); };
             
@@ -3646,6 +3650,7 @@
                     customQueue = [];
                 } else {
                     singerQueue = [];
+                    currentSingerName = '';
                 }
                 saveSettings();
                 populateSongList();
