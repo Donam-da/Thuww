@@ -5113,17 +5113,18 @@
         });
         audioPlayer.addEventListener('pause', updateMusicPlayerUI);        
         audioPlayer.addEventListener('ended', () => {
+            // Ưu tiên kiểm tra chế độ lặp lại 1 bài trước tiên, bất kể danh sách nào
+            if (playbackMode === 'repeat-one') {
+                audioPlayer.currentTime = 0;
+                audioPlayer.play();
+                return;
+            }
+
             // Xác định danh sách đang phát dựa trên activeQueueType
             if (activeQueueType === 'custom' || activeQueueType === 'singer') {
                 const currentQueue = activeQueueType === 'custom' ? customQueue : singerQueue;
                 
                 if (currentQueue.length > 0) {
-                    if (playbackMode === 'repeat-one') {
-                        audioPlayer.currentTime = 0;
-                        audioPlayer.play();
-                        return;
-                    }
-
                     let nextIndex;
                     if (playbackMode === 'random') {
                         const randPos = Math.floor(Math.random() * currentQueue.length);
@@ -5160,11 +5161,7 @@
 
             // Nếu activeQueueType là 'all', chạy logic phát ngẫu nhiên/tuần tự bên dưới
             let newIndex;
-            if (playbackMode === 'repeat-one') {
-                audioPlayer.currentTime = 0;
-                audioPlayer.play();
-                return; // Don't proceed to showMusicPlayer
-            } else if (playbackMode === 'sequential') {
+            if (playbackMode === 'sequential') {
                 newIndex = (currentSongIndex + 1) % songs.length;
             } else if (playbackMode === 'random') {
                 // If shuffled list is empty or we've played all shuffled songs, regenerate
