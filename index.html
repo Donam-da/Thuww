@@ -1794,6 +1794,7 @@
                 if (isSettingsMenuOpen) { // Nếu menu cài đặt đang mở, đóng nó lại
                     hideSettingsMenu();
                 }
+                if (singerListOverlay.style.display === 'flex') hideSingerList();
                 showPlanetList();
             }
         });
@@ -2058,6 +2059,7 @@
             if (isSongListOpen) hideSongList();
             if (isVolumeSliderOpen) hideVolumeSlider();
             if (isZoomSliderOpen) hideZoomSlider();
+            if (singerListOverlay.style.display === 'flex') hideSingerList();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
             controls.enabled = false;
             document.addEventListener('click', handleOutsideSettingsInteraction, true);
@@ -2070,6 +2072,8 @@
             if (isSettingsMenuOpen) hideSettingsMenu();
             if (isSongListOpen) hideSongList();
             if (isZoomSliderOpen) hideZoomSlider();
+            if (isPlanetListOpen) hidePlanetList();
+            if (singerListOverlay.style.display === 'flex') hideSingerList();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
             controls.enabled = false;
             document.addEventListener('click', handleOutsideVolumeInteraction, true);
@@ -2118,6 +2122,7 @@
             if (isPlanetListOpen) hidePlanetList();
             if (isVolumeSliderOpen) hideVolumeSlider();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
+            if (singerListOverlay.style.display === 'flex') hideSingerList();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideZoomInteraction, true);
             document.addEventListener('touchend', handleOutsideZoomInteraction, true);
@@ -3363,9 +3368,12 @@
             songBtnPressTimer = setTimeout(() => {
                 isSongBtnLongPress = true;
                 
-                if (isSongListOpen) {
-                    hideSongList();
-                }
+                if (isSongListOpen) hideSongList();
+                if (isPlanetListOpen) hidePlanetList();
+                if (isSettingsMenuOpen) hideSettingsMenu();
+                if (isVolumeSliderOpen) hideVolumeSlider();
+                if (isZoomSliderOpen) hideZoomSlider();
+                if (singerListOverlay.style.display === 'flex') hideSingerList();
 
                 renderQueueBox();
 
@@ -3400,6 +3408,8 @@
                 if (isSettingsMenuOpen) { // Nếu menu cài đặt đang mở, đóng nó lại
                     hideSettingsMenu();
                 }
+                if (singerListOverlay.style.display === 'flex') hideSingerList();
+                if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
                 showSongList();
             }
         });
