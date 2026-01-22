@@ -3168,6 +3168,16 @@
                         showSingerList();
                     };
                     btnContainer.appendChild(addSingerBtn);
+                } else if (viewType === 'custom') {
+                    const addSongBtn = document.createElement('button');
+                    addSongBtn.style.cssText = 'background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
+                    addSongBtn.textContent = 'Thêm bài';
+                    addSongBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        clearQueueBox.style.display = 'none';
+                        showSongList();
+                    };
+                    btnContainer.appendChild(addSongBtn);
                 }
 
                 clearQueueBox.appendChild(btnContainer);
