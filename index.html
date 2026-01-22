@@ -3162,7 +3162,7 @@
 
             const listContainer = document.createElement('div');
             listContainer.id = 'queue-list-container';
-            listContainer.style.cssText = 'flex-grow: 1; width: 100%; overflow-y: auto; text-align: left; margin-bottom: 15px; padding-right: 5px; font-size: 14px;';
+            listContainer.style.cssText = 'flex-grow: 1; width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; text-align: left; margin-bottom: 15px; padding-right: 5px; font-size: 14px;';
             
             const queueItemsSelected = new Set();
             const actionBtn = document.createElement('button');
