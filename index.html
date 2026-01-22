@@ -1493,8 +1493,21 @@
             <span id="gallery-preview-close">&times;</span>
             <button id="gallery-preview-download"><i class="fas fa-download"></i> Tải xuống</button>
             <img id="gallery-preview-img" src="" alt="Preview">
-            <audio id="gallery-preview-audio" controls></audio>
             <div id="gallery-preview-info"></div>
+            <audio id="gallery-preview-audio" style="display: none;"></audio>
+            <div id="gallery-preview-custom-controls" style="display: none; width: 80%; max-width: 400px; margin-top: 15px; flex-direction: column; gap: 10px;">
+                <div class="preview-progress-area" style="display: flex; align-items: center; gap: 10px; color: #00ffff; font-size: 12px; font-family: 'VN Time', sans-serif; width: 100%;">
+                    <span id="preview-current-time">0:00</span>
+                    <div id="preview-progress-bar-container" style="flex-grow: 1; height: 4px; background: rgba(0, 255, 255, 0.2); border-radius: 2px; cursor: pointer; position: relative;">
+                        <div id="preview-progress-bar" style="width: 0%; height: 100%; background: #00ffff; border-radius: 2px; box-shadow: 0 0 5px #00ffff;"></div>
+                        <div id="preview-progress-handle" style="width: 12px; height: 12px; background: #00ffff; border-radius: 50%; position: absolute; top: 50%; transform: translate(-50%, -50%); left: 0%; cursor: grab; box-shadow: 0 0 5px #00ffff;"></div>
+                    </div>
+                    <span id="preview-duration">0:00</span>
+                </div>
+                <div style="display: flex; justify-content: center; margin-top: 5px;">
+                    <button id="preview-play-pause-btn" style="background: rgba(0, 255, 255, 0.1); border: 1px solid #00ffff; color: #00ffff; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0, 255, 255, 0.2); transition: all 0.2s;"><i class="fas fa-play"></i></button>
+                </div>
+            </div>
         </div>
 
         <!-- More Options Overlay (Menu 3 gạch ngang) -->
@@ -2826,6 +2839,103 @@
         const galleryPreviewInfo = document.getElementById('gallery-preview-info');
         const galleryPreviewDownloadBtn = document.getElementById('gallery-preview-download');
         const galleryPreviewCloseBtn = document.getElementById('gallery-preview-close');
+        
+        // Custom Preview Controls
+        const galleryPreviewCustomControls = document.getElementById('gallery-preview-custom-controls');
+        const previewPlayPauseBtn = document.getElementById('preview-play-pause-btn');
+        const previewProgressBar = document.getElementById('preview-progress-bar');
+        const previewProgressContainer = document.getElementById('preview-progress-bar-container');
+        const previewProgressHandle = document.getElementById('preview-progress-handle');
+        const previewCurrentTime = document.getElementById('preview-current-time');
+        const previewDuration = document.getElementById('preview-duration');
+
+        previewPlayPauseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (galleryPreviewAudio.paused) {
+                galleryPreviewAudio.play();
+                previewPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                galleryPreviewAudio.pause();
+                previewPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        });
+
+        let isPreviewDragging = false;
+
+        function startPreviewDrag(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            isPreviewDragging = true;
+            document.addEventListener('mousemove', doPreviewDrag);
+            document.addEventListener('mouseup', endPreviewDrag);
+            document.addEventListener('touchmove', doPreviewDrag, { passive: false });
+            document.addEventListener('touchend', endPreviewDrag);
+        }
+
+        function doPreviewDrag(e) {
+            if (!isPreviewDragging) return;
+            let clientX;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+            } else {
+                clientX = e.clientX;
+            }
+            
+            const rect = previewProgressContainer.getBoundingClientRect();
+            let pos = (clientX - rect.left) / rect.width;
+            pos = Math.max(0, Math.min(1, pos));
+            
+            const percent = pos * 100;
+            previewProgressBar.style.width = `${percent}%`;
+            previewProgressHandle.style.left = `${percent}%`;
+            
+            if (galleryPreviewAudio.duration) {
+                const time = pos * galleryPreviewAudio.duration;
+                previewCurrentTime.textContent = formatTime(time);
+            }
+        }
+
+        function endPreviewDrag(e) {
+            if (!isPreviewDragging) return;
+            isPreviewDragging = false;
+            
+            let clientX;
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+            } else {
+                clientX = e.clientX;
+            }
+
+            const rect = previewProgressContainer.getBoundingClientRect();
+            let pos = (clientX - rect.left) / rect.width;
+            pos = Math.max(0, Math.min(1, pos));
+
+            if (galleryPreviewAudio.duration) {
+                galleryPreviewAudio.currentTime = pos * galleryPreviewAudio.duration;
+            }
+
+            document.removeEventListener('mousemove', doPreviewDrag);
+            document.removeEventListener('mouseup', endPreviewDrag);
+            document.removeEventListener('touchmove', doPreviewDrag);
+            document.removeEventListener('touchend', endPreviewDrag);
+        }
+
+        previewProgressHandle.addEventListener('mousedown', startPreviewDrag);
+        previewProgressHandle.addEventListener('touchstart', startPreviewDrag, { passive: false });
+
+        previewProgressContainer.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (e.target === previewProgressHandle) return;
+            const rect = previewProgressContainer.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            if (galleryPreviewAudio.duration) {
+                galleryPreviewAudio.currentTime = pos * galleryPreviewAudio.duration;
+                const percent = pos * 100;
+                previewProgressBar.style.width = `${percent}%`;
+                previewProgressHandle.style.left = `${percent}%`;
+            }
+        });
+
         let currentPreviewUrl = '';
         let currentPreviewName = '';
         let wasMainAudioPlaying = false;
@@ -2837,13 +2947,14 @@
             if (isImage) {
                 galleryPreviewImg.src = url;
                 galleryPreviewImg.style.display = 'block';
-                galleryPreviewAudio.style.display = 'none';
+                galleryPreviewCustomControls.style.display = 'none';
                 galleryPreviewAudio.pause();
                 galleryPreviewInfo.innerHTML = ''; 
             } else {
                 galleryPreviewImg.style.display = 'none';
                 galleryPreviewAudio.src = url;
-                galleryPreviewAudio.style.display = 'block';
+                galleryPreviewCustomControls.style.display = 'flex';
+                previewPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                 
                 if (!audioPlayer.paused) {
                     wasMainAudioPlaying = true;
@@ -2856,6 +2967,22 @@
             
             galleryPreviewOverlay.style.display = 'flex';
         }
+
+        galleryPreviewAudio.addEventListener('timeupdate', () => {
+            if (galleryPreviewAudio.duration && !isPreviewDragging) {
+                const percent = (galleryPreviewAudio.currentTime / galleryPreviewAudio.duration) * 100;
+                previewProgressBar.style.width = `${percent}%`;
+                previewProgressHandle.style.left = `${percent}%`;
+                previewCurrentTime.textContent = formatTime(galleryPreviewAudio.currentTime);
+                previewDuration.textContent = formatTime(galleryPreviewAudio.duration);
+            }
+        });
+
+        galleryPreviewAudio.addEventListener('ended', () => {
+            previewPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            previewProgressBar.style.width = '0%';
+            previewProgressHandle.style.left = '0%';
+        });
 
         function hideGalleryPreview() {
             galleryPreviewOverlay.style.display = 'none';
