@@ -844,6 +844,13 @@
             box-shadow: 0 0 20px rgba(0,255,255,0.2);
             object-fit: contain;
         }
+        #gallery-preview-audio {
+            width: 80%;
+            max-width: 400px;
+            margin-top: 20px;
+            display: none;
+            border-radius: 5px;
+        }
         #gallery-preview-info {
             color: white; font-family: 'VN Time', sans-serif; font-size: 20px;
             margin-top: 20px; text-align: center;
@@ -1486,6 +1493,7 @@
             <span id="gallery-preview-close">&times;</span>
             <button id="gallery-preview-download"><i class="fas fa-download"></i> Tải xuống</button>
             <img id="gallery-preview-img" src="" alt="Preview">
+            <audio id="gallery-preview-audio" controls></audio>
             <div id="gallery-preview-info"></div>
         </div>
 
@@ -2814,11 +2822,13 @@
         // --- Gallery Preview Logic ---
         const galleryPreviewOverlay = document.getElementById('gallery-preview-overlay');
         const galleryPreviewImg = document.getElementById('gallery-preview-img');
+        const galleryPreviewAudio = document.getElementById('gallery-preview-audio');
         const galleryPreviewInfo = document.getElementById('gallery-preview-info');
         const galleryPreviewDownloadBtn = document.getElementById('gallery-preview-download');
         const galleryPreviewCloseBtn = document.getElementById('gallery-preview-close');
         let currentPreviewUrl = '';
         let currentPreviewName = '';
+        let wasMainAudioPlaying = false;
 
         function showGalleryPreview(url, name, isImage = true) {
             currentPreviewUrl = url;
@@ -2827,9 +2837,20 @@
             if (isImage) {
                 galleryPreviewImg.src = url;
                 galleryPreviewImg.style.display = 'block';
+                galleryPreviewAudio.style.display = 'none';
+                galleryPreviewAudio.pause();
                 galleryPreviewInfo.innerHTML = ''; 
             } else {
                 galleryPreviewImg.style.display = 'none';
+                galleryPreviewAudio.src = url;
+                galleryPreviewAudio.style.display = 'block';
+                
+                if (!audioPlayer.paused) {
+                    wasMainAudioPlaying = true;
+                    audioPlayer.pause();
+                }
+                galleryPreviewAudio.play().catch(e => console.warn("Preview autoplay blocked", e));
+                
                 galleryPreviewInfo.innerHTML = `<i class="fas fa-music" style="font-size: 60px; color: #00ffff; margin-bottom: 20px; display: block;"></i>${name}`;
             }
             
@@ -2839,6 +2860,14 @@
         function hideGalleryPreview() {
             galleryPreviewOverlay.style.display = 'none';
             galleryPreviewImg.src = '';
+            
+            galleryPreviewAudio.pause();
+            galleryPreviewAudio.currentTime = 0;
+            
+            if (wasMainAudioPlaying) {
+                audioPlayer.play().catch(e => console.warn("Resume main audio failed", e));
+            }
+            wasMainAudioPlaying = false;
         }
 
         galleryPreviewCloseBtn.addEventListener('click', (e) => {
@@ -6118,6 +6147,68 @@
 
                 // Đặt lại vị trí và kích thước của trình phát nhạc 3D về trạng thái mặc định
                 if (musicPlayerObject && musicPlayerObject.element) {
+                    musicPlayerObject.element.style.transform = 'scale(1) translateY(0)';
+                }
+                // Đặt lại vị trí của các nút điều khiển 2D
+                document.getElementById('music-controls-2d').style.transform = '';
+            }
+
+            if (isViewLocked && !isCameraAnimating) {
+                const previouslyLockedPlanet = lockedPlanet; // Store before nulling
+                // If user manually interacts, unlock view
+                lockedPlanet = null;
+                isViewLocked = false;
+                restoreDefaultControls(); // Khôi phục cài đặt điều khiển mặc định
+                console.log('Chế độ xem đã được mở khóa do người dùng tương tác.');
+                // Nếu hành tinh đang ở trạng thái khóa (Trạng thái 1 hoặc Trạng thái 4),
+                // chuyển nó sang trạng thái "hiện ảnh, bỏ khóa" (Trạng thái 2).
+                if (previouslyLockedPlanet && (previouslyLockedPlanet.userData.interactionState === 1 || previouslyLockedPlanet.userData.interactionState === 4)) {
+                    previouslyLockedPlanet.userData.interactionState = 2;
+                }
+            }
+        });
+
+        updateVolumeSliderVisual(volumeSlider.value); // Đặt giao diện ban đầu dựa trên giá trị mặc định của HTML
+        updateZoomSliderVisual(parseFloat(zoomLevelSlider.value)); // Đặt giao diện ban đầu cho thanh trượt zoom
+        // Tải các cài đặt đã lưu sau khi tất cả các phần tử và biến đã được khởi tạo
+        loadSettings();
+
+        // Note: The animate() call is now in loadingManager.onLoad
+    </script>
+
+</body>
+</html>         if (musicPlayerObject && musicPlayerObject.element) {
+                    musicPlayerObject.element.style.transform = 'scale(1) translateY(0)';
+                }
+                // Đặt lại vị trí của các nút điều khiển 2D
+                document.getElementById('music-controls-2d').style.transform = '';
+            }
+
+            if (isViewLocked && !isCameraAnimating) {
+                const previouslyLockedPlanet = lockedPlanet; // Store before nulling
+                // If user manually interacts, unlock view
+                lockedPlanet = null;
+                isViewLocked = false;
+                restoreDefaultControls(); // Khôi phục cài đặt điều khiển mặc định
+                console.log('Chế độ xem đã được mở khóa do người dùng tương tác.');
+                // Nếu hành tinh đang ở trạng thái khóa (Trạng thái 1 hoặc Trạng thái 4),
+                // chuyển nó sang trạng thái "hiện ảnh, bỏ khóa" (Trạng thái 2).
+                if (previouslyLockedPlanet && (previouslyLockedPlanet.userData.interactionState === 1 || previouslyLockedPlanet.userData.interactionState === 4)) {
+                    previouslyLockedPlanet.userData.interactionState = 2;
+                }
+            }
+        });
+
+        updateVolumeSliderVisual(volumeSlider.value); // Đặt giao diện ban đầu dựa trên giá trị mặc định của HTML
+        updateZoomSliderVisual(parseFloat(zoomLevelSlider.value)); // Đặt giao diện ban đầu cho thanh trượt zoom
+        // Tải các cài đặt đã lưu sau khi tất cả các phần tử và biến đã được khởi tạo
+        loadSettings();
+
+        // Note: The animate() call is now in loadingManager.onLoad
+    </script>
+
+</body>
+</html>         if (musicPlayerObject && musicPlayerObject.element) {
                     musicPlayerObject.element.style.transform = 'scale(1) translateY(0)';
                 }
                 // Đặt lại vị trí của các nút điều khiển 2D
