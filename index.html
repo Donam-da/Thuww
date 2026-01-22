@@ -4939,8 +4939,9 @@
 
         function processImageForTv(src, callback) {
             const img = new Image();
-            // Xử lý CORS: Chỉ bật crossOrigin khi chạy trên server (http/https) để tránh lỗi tainted canvas
-            if (window.location.protocol.startsWith('http')) {
+            // Xử lý CORS: Chỉ bật crossOrigin nếu URL là tuyệt đối và khác origin hiện tại
+            // Với file nội bộ (relative path), không cần crossOrigin để tránh lỗi trên GitHub Pages
+            if (src.startsWith('http') && !src.includes(window.location.hostname)) {
                 img.crossOrigin = "Anonymous";
             }
 
@@ -5006,12 +5007,8 @@
             };
             img.onerror = () => callback(src);
             
-            // Thêm timestamp để tránh cache khi chạy trên web, giúp CORS hoạt động ổn định hơn
-            if (window.location.protocol.startsWith('http')) {
-                img.src = src + '?t=' + new Date().getTime();
-            } else {
-                img.src = src;
-            }
+            // Bỏ timestamp để tận dụng cache trình duyệt, giúp load nhanh hơn và ổn định hơn
+            img.src = src;
         }
 
         function applyScrollingToTitle(titleElement, songName) {
