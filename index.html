@@ -478,7 +478,8 @@
         #settings-overlay,
         #song-selection-list,
         #singer-list-overlay,
-        #singer-selection-list {
+        #singer-selection-list,
+        #queue-list-container {
             -ms-overflow-style: none;  /* IE and Edge */
             scrollbar-width: none;  /* Firefox */
         }
@@ -487,7 +488,8 @@
         #settings-overlay::-webkit-scrollbar,
         #song-selection-list::-webkit-scrollbar,
         #singer-list-overlay::-webkit-scrollbar,
-        #singer-selection-list::-webkit-scrollbar
+        #singer-selection-list::-webkit-scrollbar,
+        #queue-list-container::-webkit-scrollbar
         {
             display: none; /* Chrome, Safari, Opera */
         }
@@ -545,7 +547,7 @@
             transform: translate(-50%, -50%);
             width: 300px;
             height: 400px;
-            background-color: rgba(0, 0, 0, 0.6);
+            background-color: transparent;
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 0 20px rgba(0,255,255,0.6);
@@ -2478,7 +2480,9 @@
         const songSelectionList = document.getElementById('song-selection-list');
         const songSearchInput = document.getElementById('song-search-input');
         let isSongListOpen = false;
-        let songQueue = []; // Queue for songs
+        let customQueue = []; // Danh sách phát riêng do người dùng chọn
+        let singerQueue = []; // Danh sách phát theo ca sĩ (Album)
+        let activeQueueType = 'custom'; // 'custom' hoặc 'singer' để biết đang phát danh sách nào
         let isPlanetListOpen = false; // New: Track if planet list is open
         // Global variables for audio visualization
         let audioContext = null;
@@ -2702,7 +2706,7 @@
 
                 // Queue Badge
                 const songIndex = song.id - 1; // 0-based index
-                const queuePos = songQueue.indexOf(songIndex);
+                const queuePos = customQueue.indexOf(songIndex);
                 if (queuePos !== -1) {
                     const badge = document.createElement('span');
                     badge.className = 'queue-badge';
@@ -2751,11 +2755,11 @@
         }
 
         function toggleQueue(index) {
-            const pos = songQueue.indexOf(index);
+            const pos = customQueue.indexOf(index);
             if (pos === -1) {
-                songQueue.push(index);
+                customQueue.push(index);
             } else {
-                songQueue.splice(pos, 1);
+                customQueue.splice(pos, 1);
             }
             populateSongList();
         }
@@ -2892,9 +2896,10 @@
                 playAlbumDiv.innerHTML = `<i class="fas fa-play" style="margin-right: 5px;"></i> Phát album`;
                 playAlbumDiv.onclick = () => {
                     const artistSongs = singersMap.get(selectedSinger);
-                    songQueue = [];
-                    artistSongs.forEach(song => songQueue.push(song.id - 1));
-                    const firstIndex = songQueue.shift();
+                    singerQueue = [];
+                    artistSongs.forEach(song => singerQueue.push(song.id - 1));
+                    activeQueueType = 'singer'; // Chuyển sang chế độ phát danh sách ca sĩ
+                    const firstIndex = singerQueue.shift();
                     showMusicPlayer(firstIndex);
                     hideSingerList();
                 };
@@ -3003,25 +3008,51 @@
         let songBtnPressTimer;
         let isSongBtnLongPress = false;
 
-        function renderQueueBox() {
+        function renderQueueBox(viewType = activeQueueType) {
             clearQueueBox.innerHTML = '';
+            clearQueueBox.style.display = 'flex';
             
-            if (songQueue.length === 0) {
-                clearQueueBox.style.justifyContent = 'center';
-                clearQueueBox.innerHTML = '<span>Không có danh sách phát nào</span><br><button id="btn-close-queue-empty" style="margin-top: 15px; background: transparent; border: 1px solid white; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;">Thoát</button>';
-                document.getElementById('btn-close-queue-empty').onclick = (e) => { e.stopPropagation(); clearQueueBox.style.display = 'none'; };
+            // Header Tabs
+            const header = document.createElement('div');
+            header.style.cssText = 'display: flex; justify-content: space-around; width: 100%; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 5px; flex-shrink: 0;';
+            
+            const tabCustom = document.createElement('div');
+            tabCustom.textContent = 'DS Riêng';
+            tabCustom.style.cssText = `cursor: pointer; font-weight: bold; font-size: 14px; padding: 5px; ${viewType === 'custom' ? 'color: #00ffff; border-bottom: 2px solid #00ffff;' : 'color: white; opacity: 0.7;'}`;
+            tabCustom.onclick = (e) => { e.stopPropagation(); renderQueueBox('custom'); };
+            
+            const tabSinger = document.createElement('div');
+            tabSinger.textContent = 'DS Ca sĩ';
+            tabSinger.style.cssText = `cursor: pointer; font-weight: bold; font-size: 14px; padding: 5px; ${viewType === 'singer' ? 'color: #00ffff; border-bottom: 2px solid #00ffff;' : 'color: white; opacity: 0.7;'}`;
+            tabSinger.onclick = (e) => { e.stopPropagation(); renderQueueBox('singer'); };
+            
+            header.appendChild(tabCustom);
+            header.appendChild(tabSinger);
+            clearQueueBox.appendChild(header);
+
+            const targetQueue = viewType === 'custom' ? customQueue : singerQueue;
+            
+            if (targetQueue.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.innerHTML = '<span>Danh sách trống</span>';
+                emptyMsg.style.cssText = 'flex-grow: 1; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 14px;';
+                clearQueueBox.appendChild(emptyMsg);
+
+                const btnContainer = document.createElement('div');
+                btnContainer.style.cssText = 'display: flex; justify-content: center; margin-top: 10px; flex-shrink: 0;';
+                const closeBtn = document.createElement('button');
+                closeBtn.style.cssText = 'background: transparent; border: 1px solid white; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
+                closeBtn.textContent = 'Thoát';
+                closeBtn.onclick = (e) => { e.stopPropagation(); clearQueueBox.style.display = 'none'; };
+                btnContainer.appendChild(closeBtn);
+                clearQueueBox.appendChild(btnContainer);
+
                 clearQueueBox.style.cursor = 'default';
                 return;
             }
 
-            clearQueueBox.style.justifyContent = 'flex-start';
-            
-            const title = document.createElement('div');
-            title.style.cssText = 'text-align: center; margin-bottom: 10px; font-weight: bold; font-size: 18px; flex-shrink: 0;';
-            title.textContent = 'Danh sách phát riêng';
-            clearQueueBox.appendChild(title);
-
             const listContainer = document.createElement('div');
+            listContainer.id = 'queue-list-container';
             listContainer.style.cssText = 'flex-grow: 1; width: 100%; overflow-y: auto; text-align: left; margin-bottom: 15px; padding-right: 5px; font-size: 14px;';
             
             const queueItemsSelected = new Set();
@@ -3041,7 +3072,7 @@
                 }
             };
 
-            songQueue.forEach((songIndex, i) => {
+            targetQueue.forEach((songIndex, i) => {
                 const songName = songs[songIndex].name;
                 const itemDiv = document.createElement('div');
                 itemDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px; transition: all 0.2s; cursor: pointer;';
@@ -3114,15 +3145,21 @@
             actionBtn.textContent = 'Hủy danh sách';
             actionBtn.onclick = (e) => {
                 e.stopPropagation();
-                if (queueItemsSelected.size > 0) {
-                    songQueue = songQueue.filter(idx => !queueItemsSelected.has(idx));
-                    populateSongList();
-                    renderQueueBox();
+                if (viewType === 'custom') {
+                    if (queueItemsSelected.size > 0) {
+                        customQueue = customQueue.filter(idx => !queueItemsSelected.has(idx));
+                    } else {
+                        customQueue = [];
+                    }
                 } else {
-                    songQueue = [];
-                    populateSongList();
-                    clearQueueBox.style.display = 'none';
+                    if (queueItemsSelected.size > 0) {
+                        singerQueue = singerQueue.filter(idx => !queueItemsSelected.has(idx));
+                    } else {
+                        singerQueue = [];
+                    }
                 }
+                populateSongList();
+                renderQueueBox(viewType);
             };
             btnContainer.appendChild(actionBtn);
 
@@ -4287,8 +4324,11 @@
         });
         audioPlayer.addEventListener('pause', updateMusicPlayerUI);        
         audioPlayer.addEventListener('ended', () => {
-            if (songQueue.length > 0) {
-                const nextIndex = songQueue.shift();
+            // Xác định danh sách đang phát dựa trên activeQueueType
+            const currentQueue = activeQueueType === 'custom' ? customQueue : singerQueue;
+            
+            if (currentQueue.length > 0) {
+                const nextIndex = currentQueue.shift();
                 
                 // Nếu bài tiếp theo trong hàng đợi trùng với bài đang phát, chỉ cần phát lại
                 if (nextIndex === currentSongIndex) {
@@ -4299,7 +4339,7 @@
                 }
 
                 if (isSongListOpen) populateSongList();
-                if (clearQueueBox.style.display === 'flex') renderQueueBox();
+                if (clearQueueBox.style.display === 'flex') renderQueueBox(activeQueueType);
                 return;
             }
             let newIndex;
