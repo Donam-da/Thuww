@@ -811,6 +811,43 @@
         #clear-queue-box:hover {
             background-color: transparent;
         }
+        /* --- Gallery Preview Overlay --- */
+        #gallery-preview-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.95);
+            z-index: 4000; /* Above galleries */
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #gallery-preview-close {
+            position: absolute; top: 20px; left: 30px;
+            color: white; font-size: 40px; cursor: pointer;
+            z-index: 4001;
+        }
+        #gallery-preview-download {
+            position: absolute; top: 20px; right: 30px;
+            background: rgba(0, 0, 0, 0.5); 
+            border: 1px solid #00ffff; color: #00ffff;
+            padding: 10px 20px; border-radius: 5px; cursor: pointer;
+            font-size: 18px;
+            z-index: 4001;
+            display: flex; align-items: center; gap: 10px;
+            font-family: 'VN Time', sans-serif;
+        }
+        #gallery-preview-download:hover {
+            background: rgba(0, 255, 255, 0.2);
+        }
+        #gallery-preview-img {
+            max-width: 90%; max-height: 80%;
+            box-shadow: 0 0 20px rgba(0,255,255,0.2);
+            object-fit: contain;
+        }
+        #gallery-preview-info {
+            color: white; font-family: 'VN Time', sans-serif; font-size: 20px;
+            margin-top: 20px; text-align: center;
+        }
         /* Confirmation Modal */
         #confirmation-modal {
             position: fixed;
@@ -1443,6 +1480,14 @@
             <div class="gallery-header"><span>Thư viện Ảnh</span><span class="gallery-close-btn" onclick="hideGalleries()">&times;</span></div>
             <div class="gallery-content"><div id="image-gallery-grid" class="gallery-grid"></div></div>
         </div>
+        
+        <!-- Gallery Preview Overlay -->
+        <div id="gallery-preview-overlay">
+            <span id="gallery-preview-close">&times;</span>
+            <button id="gallery-preview-download"><i class="fas fa-download"></i> Tải xuống</button>
+            <img id="gallery-preview-img" src="" alt="Preview">
+            <div id="gallery-preview-info"></div>
+        </div>
 
         <!-- More Options Overlay (Menu 3 gạch ngang) -->
         <div id="more-options-overlay">
@@ -2036,11 +2081,13 @@
             const tvOverlay = document.getElementById('tv-gallery-overlay');
             const musicOverlay = document.getElementById('music-gallery-overlay');
             const imageOverlay = document.getElementById('image-gallery-overlay');
+            const previewOverlay = document.getElementById('gallery-preview-overlay');
             
             // Nếu click vào bên trong bất kỳ overlay nào đang mở thì không làm gì
             if (tvOverlay.style.display === 'flex' && tvOverlay.contains(event.target)) return;
             if (musicOverlay.style.display === 'flex' && musicOverlay.contains(event.target)) return;
             if (imageOverlay.style.display === 'flex' && imageOverlay.contains(event.target)) return;
+            if (previewOverlay && previewOverlay.style.display === 'flex') return;
 
             // Nếu click ra ngoài, đóng tất cả
             hideGalleries();
@@ -2599,7 +2646,7 @@
                     div.appendChild(img);
                     div.onclick = () => {
                         const filename = src.split('/').pop();
-                        downloadURI(src, filename);
+                        showGalleryPreview(src, filename, true);
                     };
                     grid.appendChild(div);
                 });
@@ -2664,7 +2711,7 @@
                     li.className = 'music-download-item';
                     li.innerHTML = `<span>${song.name}</span><i class="fas fa-download"></i>`;
                     li.onclick = () => {
-                        downloadURI(song.file, `${song.name}.mp3`);
+                        showGalleryPreview(song.file, `${song.name}.mp3`, false);
                     };
                     list.appendChild(li);
                 });
@@ -2695,7 +2742,7 @@
                     div.appendChild(img);
                     div.onclick = () => {
                         const filename = src.split('/').pop();
-                        downloadURI(src, filename);
+                        showGalleryPreview(src, filename, true);
                     };
                     grid.appendChild(div);
                 });
@@ -2763,6 +2810,44 @@
                 downloadURI(dataURL, 'solar_system_screenshot.png');
             });
         }
+
+        // --- Gallery Preview Logic ---
+        const galleryPreviewOverlay = document.getElementById('gallery-preview-overlay');
+        const galleryPreviewImg = document.getElementById('gallery-preview-img');
+        const galleryPreviewInfo = document.getElementById('gallery-preview-info');
+        const galleryPreviewDownloadBtn = document.getElementById('gallery-preview-download');
+        const galleryPreviewCloseBtn = document.getElementById('gallery-preview-close');
+        let currentPreviewUrl = '';
+        let currentPreviewName = '';
+
+        function showGalleryPreview(url, name, isImage = true) {
+            currentPreviewUrl = url;
+            currentPreviewName = name;
+            
+            if (isImage) {
+                galleryPreviewImg.src = url;
+                galleryPreviewImg.style.display = 'block';
+                galleryPreviewInfo.innerHTML = ''; 
+            } else {
+                galleryPreviewImg.style.display = 'none';
+                galleryPreviewInfo.innerHTML = `<i class="fas fa-music" style="font-size: 60px; color: #00ffff; margin-bottom: 20px; display: block;"></i>${name}`;
+            }
+            
+            galleryPreviewOverlay.style.display = 'flex';
+        }
+
+        function hideGalleryPreview() {
+            galleryPreviewOverlay.style.display = 'none';
+            galleryPreviewImg.src = '';
+        }
+
+        galleryPreviewCloseBtn.addEventListener('click', hideGalleryPreview);
+        galleryPreviewDownloadBtn.addEventListener('click', () => {
+            downloadURI(currentPreviewUrl, currentPreviewName);
+        });
+        galleryPreviewOverlay.addEventListener('click', (e) => {
+            if (e.target === galleryPreviewOverlay) hideGalleryPreview();
+        });
 
         // Add event listener for changing visualizer style
         if (changeVisualizerStyleBtn) {
