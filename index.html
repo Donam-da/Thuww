@@ -1631,6 +1631,114 @@
             { name: 'Sao Hải Vương', distance: 220, size: 4.0, color: 0x1e90ff, speed: EARTH_SIMULATION_SPEED / 164.79, realSpeed: 5.43 }
         ];
 
+        // --- Music Configuration & Data (Moved up for Preloading) ---
+        const totalMusicFiles = 93; 
+        const songs = [];
+        for (let i = 1; i <= totalMusicFiles; i++) {
+            let songName;
+            switch (i) {
+                case 1: songName = "Đi Cùng Anh - buitruonglinh, 52Hz"; break;
+                case 2: songName = "BABY LAVIEM - BigWind, KA"; break;
+                case 3: songName = "Anh Chưa Từng Hết Yêu - buitruonglinh"; break;
+                case 4: songName = "Giờ Thì - buitruonglinh"; break;
+                case 5: songName = "Intro (Mong Em Hạnh Phúc Suốt Cuộc Đời Này) - buitruonglinh"; break;
+                case 6: songName = "VƯỚNG VÂN - Côngg, Clow"; break;
+                case 7: songName = "Khiêu Vũ - inari, Côngg"; break;
+                case 8: songName = "ĐỢI - 52Hz"; break;
+                case 9: songName = "ĐEN ĐÁ KHÔNG ĐƯỜNG - AMEE"; break;
+                case 10: songName = "Ex's Hate Me (Part 2) - AMEE, B RAY"; break;
+                case 11: songName = "MỘNG YU - AMEE, RPT MCK"; break;
+                case 12: songName = "Chờ Anh Về - Ray, AMEE, Masew"; break;
+                case 13: songName = "Nghe kể năm 90s - Ân ngờ, Suzie MK"; break;
+                case 14: songName = "Hà Nội - Obito, VSTRA"; break;
+                case 15: songName = "Sài Gòn ơi - Obito"; break;
+                case 16: songName = "Wrong Times - Puppy, Dangrangto, FOWLEX Snowz"; break;
+                case 17: songName = "Xích Thêm Chút (Remix) - RPT Groovie, tlinh, RPT MCK"; break;
+                case 18: songName = "Vạn vật như muốn ta bên nhau - RIO"; break;
+                case 19: songName = "50-50 (Interlude) - RPT MCK"; break;
+                case 20: songName = "GIAYPHUT - kidsai, Niz"; break;
+                case 21: songName = "NGÂY THER - kidsai, VSTRA"; break;
+                case 22: songName = "1-2 - Dangrangto, BIG WIND, Lee À"; break;
+                case 23: songName = "0.2 in the end - Lil Liem, KIDDI"; break;
+                case 24: songName = "Chấp Niệm - ZAROS, Lil Liem"; break;
+                case 25: songName = "Em đi đi - Lil Liem, BIG WIND"; break;
+                case 26: songName = "id 072019 (3107) - W-n, 267"; break;
+                case 27: songName = "Ayye - Tiji Jojo"; break;
+                case 28: songName = "Đóa Hoa - BigWind, TeuYungBoy"; break;
+                case 29: songName = "Perfect - Shiki, Tyronee"; break;
+                case 30: songName = "Night Time - Shiki"; break;
+                case 31: songName = "Lặng - Shiki"; break;
+                case 32: songName = "id 072019 (3107) - W-n, 267"; break;
+                case 33: songName = "id THANG MÁY - W-n, 267"; break;
+                case 34: songName = "0 AI NGHĨ - Wxrdie, Machiot"; break;
+                case 35: songName = "Bước Za Đi Xa - Wxrdie"; break;
+                case 36: songName = "ghệ iu dấu của em ơi - tlinh, 2pillz, wokeup"; break;
+                case 37: songName = "GIẤC MƠ - MiQ"; break;
+                case 38: songName = "Chăm Hoa - MONO"; break;
+                case 39: songName = "Em Là - MONO"; break;
+                case 40: songName = "Em Xinh - MONO"; break;
+                case 41: songName = "Crush 2 - W-n, Tez, Tien"; break;
+                case 42: songName = "Crush - W-n, An An, Vani"; break;
+                case 43: songName = "3107 7 - W-n, titie, Duongg"; break;
+                case 44: songName = "3107 3 - W-n, 267, Nâu, Duongg"; break;
+                case 45: songName = "Hồng không gai - Winno, SpideyBoy"; break;
+                case 46: songName = "Không Yêu Em Thì Yêu Ai - Vũ., Low G"; break;
+                case 47: songName = "So Bad - VSTRA"; break;
+                case 48: songName = "MỜI EM - Wxrdie, Mcee Blue"; break;
+                case 49: songName = "LONELY STONIE - Wxrdie"; break;
+                case 50: songName = "LỐI SỐNG - Wxrdie"; break;
+                case 51: songName = "LÂU ĐÀI - Wxrdie, Flava Sati"; break;
+                case 52: songName = "GIA TÀI - Wxrdie, BABY SMOKE"; break;
+                case 53: songName = "ĐẾN THĂM ANH ĐI - Wxrdie"; break;
+                case 54: songName = "CA KHÚC CUỐI - Wxrdie"; break;
+                case 55: songName = "Có Đôi Điều - Shiki"; break;
+                case 56: songName = "Anh Vẫn Đợi - Shiki"; break;
+                case 57: songName = "1000 Ánh Mắt - Shiki, Obito"; break;
+                case 58: songName = "Iu bạn mình - Shayda"; break;
+                case 59: songName = "Nắng có mang em về - Shartnuss, Tr.D, Phankeo"; break;
+                case 60: songName = "Thôi Em Đừng Đi - RPT MCK, Trung Trần"; break;
+                case 61: songName = "Thờ Er - RPT MCK"; break;
+                case 62: songName = "PHONG - VSTRA, TGSN, Tyronee"; break;
+                case 63: songName = "Thích Quá Rùi Nà - tlinh, Trung Trần"; break;
+                case 64: songName = "Phóng Zìn Zìn - Low G, tlinh"; break;
+                case 65: songName = "Nếu lúc đó - tlinh, 2pillz"; break;
+                case 66: songName = "GIAYPHUT - kidsai, Niz"; break;
+                case 67: songName = "In another life, maybe it was you and me, where we loved each other - Lil Liem"; break;
+                case 68: songName = "MƯA RƠI VÀO PHÒNG - Khởi My"; break;
+                case 69: songName = "DỄ THƯƠNG - Khởi My"; break;
+                case 70: songName = "Đã Lỡ Yêu Em Nhiều - JustaTee"; break;
+                case 71: songName = "KHÔNG BUÔNG - Hngle, Ari"; break;
+                case 72: songName = "23:40 - Hào"; break;
+                case 73: songName = "vaicaunoicokhiennguoithaydoi - GREY D, tlinh"; break;
+                case 74: songName = "VẾT THƯƠNG - fishy"; break;
+                case 75: songName = "KHÔNG ĐAU NỮA RỒI - 52Hz, Pháp Kiều, Mỹ Mỹ, Châu Bùi, Orange"; break;
+                case 76: songName = "BÊN ANH - EREN, Lil Liem"; break;
+                case 77: songName = "SugarMommy - inari, Côngg"; break;
+                case 78: songName = "Nói Dối - inari, Côngg"; break;
+                case 79: songName = "Simp Gái 808 - Low G"; break;
+                case 80: songName = "In Love - Low G, JustaTee"; break;
+                case 81: songName = "uocgianhaynoiyeutoi - Lil Liem"; break;
+                case 82: songName = "hãy cho con chịu đau khổ thay em - EREN, Lil Liem"; break;
+                case 83: songName = "TẠI VÌ SAO - RPT MCK"; break;
+                case 84: songName = "Show Me Love - RPT MCK"; break;
+                case 85: songName = "Chìm Sâu - RPT MCK, Trung Trần"; break;
+                case 86: songName = "Chỉ Một Đêm Nữa Thôi - RPT MCK, tlinh"; break;
+                case 87: songName = "Anh Đã Ổn Hơn - RPT MCK"; break;
+                case 88: songName = "GIẤC MƠ - MiQ"; break;
+                case 89: songName = "Phép Màu - Mounter, MAYDAYs, Minh Tốc"; break;
+                case 90: songName = "Và Thế Giới Đã Mất Đi Một Người Cô Đơn"; break;
+                case 91: songName = "Vì Anh Đâu Có Biết - Madihu, Vũ."; break;
+                case 92: songName = "Có em - Madihu, Low G"; break;
+                case 93: songName = "An Thần - Low G, Thắng"; break;
+                default: songName = `Bài hát ${i}`; // Fallback for any unexpected index
+            }
+            songs.push({
+                id: i,
+                name: songName,
+                file: `music/music${i}.mp3`
+            });
+        }
+
         // --- Loading Manager ---
         const loadingManager = new THREE.LoadingManager();
         const textureLoader = new THREE.TextureLoader(loadingManager);
@@ -1640,6 +1748,7 @@
 
         // --- TV Playlist & Preloading (Moved here for initialization) ---
         const tvPlaylist = [];
+        const musicCache = new Map(); // Cache for preloaded music blobs
         const processedTvImages = new Map(); // Lưu trữ các ảnh đã xử lý thành công
 
         // Populate Playlist
@@ -1653,6 +1762,22 @@
                 if (isSuccess) processedTvImages.set(src, resultSrc);
                 loadingManager.itemEnd(src); // Đánh dấu item đã xong
             });
+        });
+
+        // Preload Music Files
+        songs.forEach(song => {
+            loadingManager.itemStart(song.file);
+            fetch(song.file)
+                .then(response => response.blob())
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    musicCache.set(song.file, blobUrl);
+                    loadingManager.itemEnd(song.file);
+                })
+                .catch(err => {
+                    console.error("Failed to preload music:", song.file, err);
+                    loadingManager.itemEnd(song.file); // Ensure loader finishes even on error
+                });
         });
 
         loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
@@ -2952,7 +3077,11 @@
                 galleryPreviewInfo.innerHTML = ''; 
             } else {
                 galleryPreviewImg.style.display = 'none';
-                galleryPreviewAudio.src = url;
+                if (musicCache.has(url)) {
+                    galleryPreviewAudio.src = musicCache.get(url);
+                } else {
+                    galleryPreviewAudio.src = url;
+                }
                 galleryPreviewCustomControls.style.display = 'flex';
                 previewPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                 
@@ -3211,118 +3340,6 @@
         });
         
         // --- Music Player Logic ---
-        // --- CẤU HÌNH NHẠC ---
-        // 1. Đặt tên các file nhạc của bạn theo thứ tự: music1.mp3, music2.mp3, ... và đặt chúng vào thư mục 'music'.
-        // 2. Cập nhật số `totalMusicFiles` dưới đây cho khớp với tổng số file nhạc bạn có. (Hiện tại là 93)
-        const totalMusicFiles = 93; 
-
-        // Tự động tạo danh sách bài hát. Sau này bạn có thể gán tên cụ thể cho từng bài.
-        const songs = [];
-        for (let i = 1; i <= totalMusicFiles; i++) {
-            let songName;
-            switch (i) {
-                case 1: songName = "Đi Cùng Anh - buitruonglinh, 52Hz"; break;
-                case 2: songName = "BABY LAVIEM - BigWind, KA"; break;
-                case 3: songName = "Anh Chưa Từng Hết Yêu - buitruonglinh"; break;
-                case 4: songName = "Giờ Thì - buitruonglinh"; break;
-                case 5: songName = "Intro (Mong Em Hạnh Phúc Suốt Cuộc Đời Này) - buitruonglinh"; break;
-                case 6: songName = "VƯỚNG VÂN - Côngg, Clow"; break;
-                case 7: songName = "Khiêu Vũ - inari, Côngg"; break;
-                case 8: songName = "ĐỢI - 52Hz"; break;
-                case 9: songName = "ĐEN ĐÁ KHÔNG ĐƯỜNG - AMEE"; break;
-                case 10: songName = "Ex's Hate Me (Part 2) - AMEE, B RAY"; break;
-                case 11: songName = "MỘNG YU - AMEE, RPT MCK"; break;
-                case 12: songName = "Chờ Anh Về - Ray, AMEE, Masew"; break;
-                case 13: songName = "Nghe kể năm 90s - Ân ngờ, Suzie MK"; break;
-                case 14: songName = "Hà Nội - Obito, VSTRA"; break;
-                case 15: songName = "Sài Gòn ơi - Obito"; break;
-                case 16: songName = "Wrong Times - Puppy, Dangrangto, FOWLEX Snowz"; break;
-                case 17: songName = "Xích Thêm Chút (Remix) - RPT Groovie, tlinh, RPT MCK"; break;
-                case 18: songName = "Vạn vật như muốn ta bên nhau - RIO"; break;
-                case 19: songName = "50-50 (Interlude) - RPT MCK"; break;
-                case 20: songName = "GIAYPHUT - kidsai, Niz"; break;
-                case 21: songName = "NGÂY THER - kidsai, VSTRA"; break;
-                case 22: songName = "1-2 - Dangrangto, BIG WIND, Lee À"; break;
-                case 23: songName = "0.2 in the end - Lil Liem, KIDDI"; break;
-                case 24: songName = "Chấp Niệm - ZAROS, Lil Liem"; break;
-                case 25: songName = "Em đi đi - Lil Liem, BIG WIND"; break;
-                case 26: songName = "id 072019 (3107) - W-n, 267"; break;
-                case 27: songName = "Ayye - Tiji Jojo"; break;
-                case 28: songName = "Đóa Hoa - BigWind, TeuYungBoy"; break;
-                case 29: songName = "Perfect - Shiki, Tyronee"; break;
-                case 30: songName = "Night Time - Shiki"; break;
-                case 31: songName = "Lặng - Shiki"; break;
-                case 32: songName = "id 072019 (3107) - W-n, 267"; break;
-                case 33: songName = "id THANG MÁY - W-n, 267"; break;
-                case 34: songName = "0 AI NGHĨ - Wxrdie, Machiot"; break;
-                case 35: songName = "Bước Za Đi Xa - Wxrdie"; break;
-                case 36: songName = "ghệ iu dấu của em ơi - tlinh, 2pillz, wokeup"; break;
-                case 37: songName = "GIẤC MƠ - MiQ"; break;
-                case 38: songName = "Chăm Hoa - MONO"; break;
-                case 39: songName = "Em Là - MONO"; break;
-                case 40: songName = "Em Xinh - MONO"; break;
-                case 41: songName = "Crush 2 - W-n, Tez, Tien"; break;
-                case 42: songName = "Crush - W-n, An An, Vani"; break;
-                case 43: songName = "3107 7 - W-n, titie, Duongg"; break;
-                case 44: songName = "3107 3 - W-n, 267, Nâu, Duongg"; break;
-                case 45: songName = "Hồng không gai - Winno, SpideyBoy"; break;
-                case 46: songName = "Không Yêu Em Thì Yêu Ai - Vũ., Low G"; break;
-                case 47: songName = "So Bad - VSTRA"; break;
-                case 48: songName = "MỜI EM - Wxrdie, Mcee Blue"; break;
-                case 49: songName = "LONELY STONIE - Wxrdie"; break;
-                case 50: songName = "LỐI SỐNG - Wxrdie"; break;
-                case 51: songName = "LÂU ĐÀI - Wxrdie, Flava Sati"; break;
-                case 52: songName = "GIA TÀI - Wxrdie, BABY SMOKE"; break;
-                case 53: songName = "ĐẾN THĂM ANH ĐI - Wxrdie"; break;
-                case 54: songName = "CA KHÚC CUỐI - Wxrdie"; break;
-                case 55: songName = "Có Đôi Điều - Shiki"; break;
-                case 56: songName = "Anh Vẫn Đợi - Shiki"; break;
-                case 57: songName = "1000 Ánh Mắt - Shiki, Obito"; break;
-                case 58: songName = "Iu bạn mình - Shayda"; break;
-                case 59: songName = "Nắng có mang em về - Shartnuss, Tr.D, Phankeo"; break;
-                case 60: songName = "Thôi Em Đừng Đi - RPT MCK, Trung Trần"; break;
-                case 61: songName = "Thờ Er - RPT MCK"; break;
-                case 62: songName = "PHONG - VSTRA, TGSN, Tyronee"; break;
-                case 63: songName = "Thích Quá Rùi Nà - tlinh, Trung Trần"; break;
-                case 64: songName = "Phóng Zìn Zìn - Low G, tlinh"; break;
-                case 65: songName = "Nếu lúc đó - tlinh, 2pillz"; break;
-                case 66: songName = "GIAYPHUT - kidsai, Niz"; break;
-                case 67: songName = "In another life, maybe it was you and me, where we loved each other - Lil Liem"; break;
-                case 68: songName = "MƯA RƠI VÀO PHÒNG - Khởi My"; break;
-                case 69: songName = "DỄ THƯƠNG - Khởi My"; break;
-                case 70: songName = "Đã Lỡ Yêu Em Nhiều - JustaTee"; break;
-                case 71: songName = "KHÔNG BUÔNG - Hngle, Ari"; break;
-                case 72: songName = "23:40 - Hào"; break;
-                case 73: songName = "vaicaunoicokhiennguoithaydoi - GREY D, tlinh"; break;
-                case 74: songName = "VẾT THƯƠNG - fishy"; break;
-                case 75: songName = "KHÔNG ĐAU NỮA RỒI - 52Hz, Pháp Kiều, Mỹ Mỹ, Châu Bùi, Orange"; break;
-                case 76: songName = "BÊN ANH - EREN, Lil Liem"; break;
-                case 77: songName = "SugarMommy - inari, Côngg"; break;
-                case 78: songName = "Nói Dối - inari, Côngg"; break;
-                case 79: songName = "Simp Gái 808 - Low G"; break;
-                case 80: songName = "In Love - Low G, JustaTee"; break;
-                case 81: songName = "uocgianhaynoiyeutoi - Lil Liem"; break;
-                case 82: songName = "hãy cho con chịu đau khổ thay em - EREN, Lil Liem"; break;
-                case 83: songName = "TẠI VÌ SAO - RPT MCK"; break;
-                case 84: songName = "Show Me Love - RPT MCK"; break;
-                case 85: songName = "Chìm Sâu - RPT MCK, Trung Trần"; break;
-                case 86: songName = "Chỉ Một Đêm Nữa Thôi - RPT MCK, tlinh"; break;
-                case 87: songName = "Anh Đã Ổn Hơn - RPT MCK"; break;
-                case 88: songName = "GIẤC MƠ - MiQ"; break;
-                case 89: songName = "Phép Màu - Mounter, MAYDAYs, Minh Tốc"; break;
-                case 90: songName = "Và Thế Giới Đã Mất Đi Một Người Cô Đơn"; break;
-                case 91: songName = "Vì Anh Đâu Có Biết - Madihu, Vũ."; break;
-                case 92: songName = "Có em - Madihu, Low G"; break;
-                case 93: songName = "An Thần - Low G, Thắng"; break;
-                default: songName = `Bài hát ${i}`; // Fallback for any unexpected index
-            }
-            songs.push({
-                id: i,
-                name: songName,
-                file: `music/music${i}.mp3`
-            });
-        }
-
         const audioPlayer = document.getElementById('background-music');
         const selectSongBtn = document.getElementById('select-song-btn');
         const songListOverlay = document.getElementById('song-list-overlay');
@@ -3472,7 +3489,11 @@
         function playSong(file) {
             initAudioContext(); // Ensure AudioContext is initialized
 
-            audioPlayer.src = file;
+            if (musicCache.has(file)) {
+                audioPlayer.src = musicCache.get(file);
+            } else {
+                audioPlayer.src = file;
+            }
 
             // Attempt to play. If it fails, queue it for later.
             audioPlayer.play().then(() => { // This .then() block is executed if autoplay is successful
