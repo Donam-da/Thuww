@@ -4513,51 +4513,42 @@
         function showMessageOnSun() {
             if (sunMessageMesh) return;
 
-            // Get current time and create the dynamic message
+            // Tính thời gian từ 10:06:00 13/09/2025 đến hiện tại
             const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            const currentTime = `${hours}:${minutes}`;
-            let messageSuffix = '';
+            const startDate = new Date(2025, 8, 13, 10, 6, 0); // Tháng 9 là index 8
+            
+            let diff = Math.abs(now - startDate);
 
-            // Logic để xác định câu chúc dựa trên giờ hiện tại
-            const currentHour = now.getHours();
-            const currentMinute = now.getMinutes(); // Lấy phút để xử lý khung giờ 06:30
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            diff -= days * (1000 * 60 * 60 * 24);
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            diff -= hours * (1000 * 60 * 60);
+            
+            const minutes = Math.floor(diff / (1000 * 60));
+            diff -= minutes * (1000 * 60);
+            
+            const seconds = Math.floor(diff / 1000);
 
-            if (currentHour >= 22 || currentHour < 5) { // Từ 22:00 đến 04:59 hôm sau
-                messageSuffix = "ngủ đi bé ưi";
-            } else if (currentHour === 5 || (currentHour === 6 && currentMinute < 30)) { // Từ 05:00 đến 06:29
-                messageSuffix = "ăn sáng, xong đi học vui vẻ nhó";
-            } else if (currentHour >= 11 && currentHour < 12) { // Từ 11:00 đến 11:59
-                messageSuffix = "ăn cơm rùi nghỉ ngơi bé";
-            } else if (currentHour >= 12 && currentHour < 13) { // Từ 12:00 đến 12:59
-                messageSuffix = "bé ưi ngủ trưa đi";
-            } else if (currentHour >= 13 && currentHour < 22) { // Từ 13:00 đến 21:59
-                messageSuffix = "em có thấy đẹp ko";
-            } else {
-                // Mặc định cho các khung giờ còn lại (ví dụ: 06:30 - 10:59)
-                messageSuffix = "chúc bạn một ngày tốt lành!";
-            }
-
-            const text = `Giờ là ${currentTime}, ${messageSuffix}`;
+            const text = `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
             // Create canvas texture for the text
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
-            const fontSize = 90;
+            const fontSize = 30;
             
-            context.font = `bold ${fontSize}px Arial, sans-serif`;
+            context.font = `normal ${fontSize}px Arial, sans-serif`;
             const textMetrics = context.measureText(text);
             canvas.width = textMetrics.width + 40;
             canvas.height = fontSize * 1.5;
 
             // Redraw text with final settings
-            context.font = `bold ${fontSize}px Arial, sans-serif`;
+            context.font = `normal ${fontSize}px Arial, sans-serif`;
             context.textAlign = 'center';
             context.textBaseline = 'middle';
-            context.fillStyle = 'rgba(255, 255, 220, 1)';
-            context.shadowColor = 'rgba(255, 255, 0, 0.7)';
-            context.shadowBlur = 25;
+            context.fillStyle = 'rgba(0, 255, 255, 1)';
+            context.shadowColor = 'rgba(0, 255, 255, 0.8)';
+            context.shadowBlur = 10;
             context.fillText(text, canvas.width / 2, canvas.height / 2);
 
             const texture = new THREE.CanvasTexture(canvas);
@@ -4567,7 +4558,7 @@
                 opacity: 0
             });
 
-            const planeHeight = 150;
+            const planeHeight = 50;
             const planeWidth = planeHeight * (canvas.width / canvas.height);
             const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
 
