@@ -4096,6 +4096,7 @@
         function startTvPlayer() {
             gifTvContainer.style.display = 'block';
             playNextTvContent();
+            if (gifInterval) clearInterval(gifInterval);
             // Đổi GIF mỗi 5 giây
             gifInterval = setInterval(playNextTvContent, 5000);
             if (toggleTvLabel) toggleTvLabel.textContent = 'Ẩn TV';
