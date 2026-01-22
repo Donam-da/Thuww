@@ -2873,7 +2873,11 @@
                     singerSelectionList.appendChild(li);
                 });
             } else {
-                const sortedSingers = Array.from(singersMap.keys()).sort((a, b) => a.localeCompare(b));
+                const sortedSingers = Array.from(singersMap.keys()).sort((a, b) => {
+                    const countDiff = singersMap.get(b).length - singersMap.get(a).length;
+                    if (countDiff !== 0) return countDiff;
+                    return a.localeCompare(b, undefined, { numeric: true });
+                });
                 sortedSingers.forEach(singer => {
                     if (query && !singer.toLowerCase().includes(query)) return;
                     const li = document.createElement('li');
