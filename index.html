@@ -1803,6 +1803,7 @@
             isPlanetListOpen = true; // Set flag when planet list is open
             populatePlanetList();
             controls.enabled = false; // Disable controls when list is open
+            if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
             // Thêm trình lắng nghe sự kiện toàn cục để đóng dropmenu khi click/touch bên ngoài
             document.addEventListener('click', handleOutsideInteraction);
             document.addEventListener('touchend', handleOutsideInteraction);
@@ -2057,6 +2058,7 @@
             if (isSongListOpen) hideSongList();
             if (isVolumeSliderOpen) hideVolumeSlider();
             if (isZoomSliderOpen) hideZoomSlider();
+            if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
             controls.enabled = false;
             document.addEventListener('click', handleOutsideSettingsInteraction, true);
             document.addEventListener('touchend', handleOutsideSettingsInteraction, true);
@@ -2068,6 +2070,7 @@
             if (isSettingsMenuOpen) hideSettingsMenu();
             if (isSongListOpen) hideSongList();
             if (isZoomSliderOpen) hideZoomSlider();
+            if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
             controls.enabled = false;
             document.addEventListener('click', handleOutsideVolumeInteraction, true);
             document.addEventListener('touchend', handleOutsideVolumeInteraction, true);
@@ -2114,6 +2117,7 @@
             if (isSongListOpen) hideSongList();
             if (isPlanetListOpen) hidePlanetList();
             if (isVolumeSliderOpen) hideVolumeSlider();
+            if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
             controls.enabled = false;
             document.addEventListener('click', handleOutsideZoomInteraction, true);
             document.addEventListener('touchend', handleOutsideZoomInteraction, true);
@@ -3064,6 +3068,7 @@
             if (isPlanetListOpen) hidePlanetList();
             if (isVolumeSliderOpen) hideVolumeSlider();
             if (isZoomSliderOpen) hideZoomSlider();
+            if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
             
             controls.enabled = false;
             document.addEventListener('click', handleOutsideSingerInteraction, true);
@@ -3144,11 +3149,6 @@
                     btnContainer.appendChild(addSingerBtn);
                 }
 
-                const closeBtn = document.createElement('button');
-                closeBtn.style.cssText = 'background: transparent; border: 1px solid white; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
-                closeBtn.textContent = 'Thoát';
-                closeBtn.onclick = (e) => { e.stopPropagation(); clearQueueBox.style.display = 'none'; };
-                btnContainer.appendChild(closeBtn);
                 clearQueueBox.appendChild(btnContainer);
 
                 clearQueueBox.style.cursor = 'default';
@@ -3345,12 +3345,6 @@
                 renderQueueBox(viewType);
             };
             btnContainer.appendChild(actionBtn);
-
-            const closeBtn = document.createElement('button');
-            closeBtn.style.cssText = 'background: transparent; border: 1px solid white; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
-            closeBtn.textContent = 'Thoát';
-            closeBtn.onclick = (e) => { e.stopPropagation(); clearQueueBox.style.display = 'none'; };
-            btnContainer.appendChild(closeBtn);
 
             clearQueueBox.appendChild(btnContainer);
             clearQueueBox.style.cursor = 'default';
