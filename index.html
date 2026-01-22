@@ -754,9 +754,9 @@
         }
         #play-all-list-btn.active {
             background: transparent;
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-            color: #ffffff;
-            text-shadow: 0 0 5px #00ffff;
+            box-shadow: none;
+            color: #00ffff;
+            text-shadow: none;
         }
         
         /* Làm đậm bài hát đang phát trong danh sách */
@@ -3282,7 +3282,7 @@
                 playAlbumDiv.style.color = '#00ffff';
                 playAlbumDiv.style.marginBottom = '0';
                 playAlbumDiv.style.textAlign = 'center';
-                playAlbumDiv.style.border = '1px solid #00ffff';
+                playAlbumDiv.style.border = 'none';
                 playAlbumDiv.style.width = '40%';
                 playAlbumDiv.style.padding = '5px';
                 playAlbumDiv.style.fontSize = '13px';
@@ -3439,7 +3439,7 @@
                 
                 if (viewType === 'singer') {
                     const addSingerBtn = document.createElement('button');
-                    addSingerBtn.style.cssText = 'background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
+                    addSingerBtn.style.cssText = 'background: transparent; border: none; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
                     addSingerBtn.textContent = 'Thêm ca sĩ';
                     addSingerBtn.onclick = (e) => {
                         e.stopPropagation();
@@ -3449,7 +3449,7 @@
                     btnContainer.appendChild(addSingerBtn);
                 } else if (viewType === 'custom') {
                     const addSongBtn = document.createElement('button');
-                    addSongBtn.style.cssText = 'background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
+                    addSongBtn.style.cssText = 'background: transparent; border: none; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
                     addSongBtn.textContent = 'Thêm bài';
                     addSongBtn.onclick = (e) => {
                         e.stopPropagation();
@@ -3551,14 +3551,25 @@
             // Nút "Đưa lên trình phát" cho DS Riêng / DS Ca sĩ
             const setActiveBtn = document.createElement('button');
             const isActive = activeQueueType === viewType;
-            const btnColor = isActive ? '#00ffff' : '#ff4d4d';
-            const btnBg = isActive ? 'rgba(0, 255, 255, 0.3)' : 'transparent';
-            setActiveBtn.style.cssText = `background: ${btnBg}; border: 1px solid ${btnColor}; color: ${btnColor}; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: bold;`;
+            
+            // Áp dụng style giống nút #play-all-list-btn
+            setActiveBtn.style.cssText = 'background: transparent; border: none; outline: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 14px; transition: background 0.2s; box-shadow: none; text-shadow: none;';
+            
+            if (isActive) {
+                setActiveBtn.style.color = '#00ffff';
+                setActiveBtn.style.boxShadow = 'none'; // Loại bỏ hiệu ứng phát sáng
+                setActiveBtn.style.textShadow = 'none'; // Loại bỏ hiệu ứng phát sáng chữ
+            } else {
+                setActiveBtn.style.color = '#ff4d4d';
+                setActiveBtn.style.boxShadow = 'none'; // Đảm bảo không có bóng khi không active
+                setActiveBtn.style.textShadow = 'none'; // Đảm bảo không có bóng chữ khi không active
+            }
+
             setActiveBtn.innerHTML = '<i class="fas fa-upload"></i>';
             setActiveBtn.title = isActive ? 'Đang phát danh sách này' : 'Đưa lên trình phát';
-            if (isActive) {
-                setActiveBtn.style.boxShadow = '0 0 5px rgba(0, 255, 255, 0.5)';
-            }
+            setActiveBtn.onmouseenter = () => { setActiveBtn.style.background = 'rgba(0, 255, 255, 0.1)'; };
+            setActiveBtn.onmouseleave = () => { setActiveBtn.style.background = 'transparent'; };
+            
             setActiveBtn.onclick = (e) => {
                 e.stopPropagation();
                 if (activeQueueType === viewType) {
@@ -3581,7 +3592,7 @@
 
             if (viewType === 'singer') {
                 const changeSingerBtn = document.createElement('button');
-                changeSingerBtn.style.cssText = 'background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
+                changeSingerBtn.style.cssText = 'background: transparent; border: none; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
                 changeSingerBtn.textContent = 'Đổi ca sĩ';
                 changeSingerBtn.onclick = (e) => {
                     e.stopPropagation();
@@ -3594,7 +3605,7 @@
             // Nút thùng rác (Chỉ hiện cho DS Riêng)
             if (viewType === 'custom') {
                 const trashBtn = document.createElement('button');
-                trashBtn.style.cssText = 'background: transparent; border: 1px solid white; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 14px;';
+                trashBtn.style.cssText = 'background: transparent; border: none; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 14px;';
                 trashBtn.innerHTML = '<i class="fas fa-trash"></i>';
                 trashBtn.title = 'Xóa bài hát đã chọn';
                 
@@ -3627,7 +3638,7 @@
             }
 
             const actionBtn = document.createElement('button');
-            actionBtn.style.cssText = 'background: rgba(255, 0, 0, 0.6); border: 1px solid #ff4d4d; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
+            actionBtn.style.cssText = 'background: transparent; border: none; color: #ff4d4d; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px;';
             actionBtn.textContent = 'Hủy danh sách';
             actionBtn.onclick = (e) => {
                 e.stopPropagation();
