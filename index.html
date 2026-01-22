@@ -2527,6 +2527,7 @@
         let customQueue = []; // Danh sách phát riêng do người dùng chọn
         let singerQueue = []; // Danh sách phát theo ca sĩ (Album)
         let activeQueueType = 'all'; // 'all', 'custom' hoặc 'singer' để biết đang phát danh sách nào
+        let lastActiveQueueSongIndex = -1; // Ghi nhớ bài hát cuối cùng được phát từ danh sách đang active
         let isPlanetListOpen = false; // New: Track if planet list is open
         // Global variables for audio visualization
         let audioContext = null;
@@ -3245,8 +3246,6 @@
                         updateActionButton();
                     } else {
                         // Phát bài hát khi nhấn vào
-                        activeQueueType = viewType;
-                        saveSettings();
                         showMusicPlayer(songIndex);
                         clearQueueBox.style.display = 'none';
                     }
@@ -3645,6 +3644,15 @@
                     // If the current song is already in the shuffled list, just update currentShuffledIndex
                     currentShuffledIndex = shuffledSongIndices.indexOf(songIndex);
                 }
+            }
+
+            // Cập nhật lastActiveQueueSongIndex nếu bài hát thuộc danh sách đang active
+            if (activeQueueType === 'all') {
+                lastActiveQueueSongIndex = songIndex;
+            } else if (activeQueueType === 'custom' && customQueue.includes(songIndex)) {
+                lastActiveQueueSongIndex = songIndex;
+            } else if (activeQueueType === 'singer' && singerQueue.includes(songIndex)) {
+                lastActiveQueueSongIndex = songIndex;
             }
 
             // Set the current song index based on the (potentially adjusted) songIndex
@@ -4510,9 +4518,17 @@
                         nextIndex = currentQueue[randPos];
                     } else {
                         // Sequential
-                        const currentQueueIndex = currentQueue.indexOf(currentSongIndex);
-                        if (currentQueueIndex !== -1 && currentQueueIndex < currentQueue.length - 1) {
-                            nextIndex = currentQueue[currentQueueIndex + 1];
+                        let queueIndex = currentQueue.indexOf(currentSongIndex);
+                        
+                        // Cơ chế quay lại (Resume): Nếu bài hát vừa kết thúc không thuộc danh sách active, tìm theo lastActiveQueueSongIndex
+                        if (queueIndex === -1) {
+                            queueIndex = currentQueue.indexOf(lastActiveQueueSongIndex);
+                        }
+
+                        if (queueIndex !== -1 && queueIndex < currentQueue.length - 1) {
+                            nextIndex = currentQueue[queueIndex + 1];
+                        } else if (queueIndex === -1) {
+                            nextIndex = currentQueue[0]; // Fallback về đầu danh sách nếu không tìm thấy
                         } else {
                             return; // Stop if end of list or song not found
                         }
