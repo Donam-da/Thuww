@@ -469,20 +469,25 @@
         #song-list-overlay, 
         #planet-list-overlay,
         #settings-overlay,
-        #song-selection-list {
+        #song-selection-list,
+        #singer-list-overlay,
+        #singer-selection-list {
             -ms-overflow-style: none;  /* IE and Edge */
             scrollbar-width: none;  /* Firefox */
         }
         #song-list-overlay::-webkit-scrollbar,
         #planet-list-overlay::-webkit-scrollbar,
         #settings-overlay::-webkit-scrollbar,
-        #song-selection-list::-webkit-scrollbar
+        #song-selection-list::-webkit-scrollbar,
+        #singer-list-overlay::-webkit-scrollbar,
+        #singer-selection-list::-webkit-scrollbar
         {
             display: none; /* Chrome, Safari, Opera */
         }
 
         /* --- Search Input for Song List --- */
-        #song-search-input {
+        #song-search-input,
+        #singer-search-input {
             width: 100%;
             padding: 8px 10px;
             margin-bottom: 10px;
@@ -497,12 +502,14 @@
             -webkit-user-select: text; /* Allow text selection in input */
             user-select: text;
         }
-        #song-search-input:focus {
+        #song-search-input:focus,
+        #singer-search-input:focus {
             outline: none;
             border-color: rgba(0, 255, 255, 0.75);
             box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
         }
-        #song-search-input::placeholder {
+        #song-search-input::placeholder,
+        #singer-search-input::placeholder {
             color: rgba(255, 255, 255, 0.5);
         }
 
@@ -524,7 +531,25 @@
             font-family: 'VN Time', Arial, sans-serif; /* Apply VN Time font */
             font-weight: 100; /* Thinner font weight */
         }
-        #close-song-menu-btn {
+        #singer-list-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 400px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,255,255,0.6);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            font-family: 'VN Time', Arial, sans-serif;
+            font-weight: 100;
+        }
+        #close-song-menu-btn,
+        #close-singer-menu-btn {
             position: absolute;
             top: 5px;
             right: 10px;
@@ -533,7 +558,8 @@
             cursor: pointer;
             z-index: 1003;
         }
-        .song-list-item {
+        .song-list-item,
+        .singer-list-item {
             color: white;
             padding: 10px;
             margin-bottom: 5px;
@@ -542,7 +568,8 @@
             cursor: pointer;
             transition: background-color 0.2s ease;
         }
-        #song-selection-list {
+        #song-selection-list,
+        #singer-selection-list {
             flex-grow: 1; /* Take available vertical space */
             overflow-y: auto; /* Enable scrolling for the list only */
             -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
@@ -550,8 +577,52 @@
             padding: 0;
             margin: 0;
         }
-        .song-list-item:hover {
+        .song-list-item:hover,
+        .singer-list-item:hover {
             background-color: rgba(255, 255, 255, 0.1);
+        }
+        /* Làm đậm bài hát đang phát trong danh sách */
+        .song-list-item.current-song,
+        .singer-list-item.current-singer {
+            color: rgba(0, 255, 255, 0.5);
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+        }
+        #song-search-input,
+        #singer-search-input {
+            width: 100%;
+            padding: 8px 10px;
+            margin-bottom: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            border-radius: 4px;
+            color: white;
+            font-family: 'VN Time', Arial, sans-serif;
+            font-weight: 100;
+            font-size: 14px;
+            box-sizing: border-box; /* Ensure padding doesn't affect width */
+            -webkit-user-select: text; /* Allow text selection in input */
+            user-select: text;
+        }
+        #song-search-input:focus,
+        #singer-search-input:focus {
+            outline: none;
+            border-color: rgba(0, 255, 255, 0.75);
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+        }
+        #song-search-input::placeholder,
+        #singer-search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        #song-list-overlay {
+        }
+        #close-song-menu-btn {
+        }
+        .song-list-item {
+        }
+        #song-selection-list {
+        }
+        .song-list-item:hover {
         }
         /* Làm đậm bài hát đang phát trong danh sách */
         .song-list-item.current-song {
@@ -968,7 +1039,8 @@
 
             /* Overlays for mobile (positioned above the bottom control bar) */
             #planet-list-overlay,
-            #song-list-overlay {
+            #song-list-overlay,
+            #singer-list-overlay {
                 top: auto; /* Remove top positioning */
                 bottom: 120px; /* Đặt vị trí cách lề dưới 110px (để tránh thanh điều khiển chính) */
                 left: 50%; /* Center horizontally */
@@ -991,14 +1063,16 @@
             }
 
             #close-dropmenu-btn,
-            #close-song-menu-btn {
+            #close-song-menu-btn,
+            #close-singer-menu-btn {
                 top: 5px;
                 right: 8px; /* Điều chỉnh vị trí nút đóng */
                 font-size: 18px;
             }
 
             .planet-list-item,
-            .song-list-item {
+            .song-list-item,
+            .singer-list-item {
                 padding: 6px; /* Smaller padding */
                 font-size: 12px;
             }
@@ -1127,6 +1201,13 @@
                 <!-- Song items will be inserted here -->
             </ul>
         </div> <!-- Đóng thẻ div cho song-list-overlay -->
+        <div id="singer-list-overlay" style="display: none;">
+            <span id="close-singer-menu-btn">&times;</span>
+            <input type="text" id="singer-search-input" placeholder="Tìm kiếm ca sĩ...">
+            <ul id="singer-selection-list">
+                <!-- Singer items will be inserted here -->
+            </ul>
+        </div>
         <div id="clear-queue-box">Hủy danh sách riêng đó</div>
         <div id="gif-tv-container">
             <img id="gif-tv-screen" src="" alt="TV">
@@ -1154,6 +1235,9 @@
                 <li class="settings-list-item" id="toggle-tv-btn" style="cursor: pointer;">
                     <!-- The text inside the label will be controlled by JavaScript -->
                     <label style="pointer-events: none; margin-bottom: 0;">Hiện TV</label>
+                </li>
+                <li class="settings-list-item" id="select-singer-btn" style="cursor: pointer;">
+                    <label style="pointer-events: none; margin-bottom: 0;">Ca sĩ</label>
                 </li>
                 <li class="settings-list-item">
                     <label for="radius-slider">Mở rộng vũ trụ (<span id="radius-value">10.00</span>x)</label>
@@ -2730,6 +2814,127 @@
                 hideSongList();
             }
         }
+
+        // --- Singer List Logic ---
+        const selectSingerBtn = document.getElementById('select-singer-btn');
+        const singerListOverlay = document.getElementById('singer-list-overlay');
+        const singerSelectionList = document.getElementById('singer-selection-list');
+        const singerSearchInput = document.getElementById('singer-search-input');
+        const closeSingerMenuBtn = document.getElementById('close-singer-menu-btn');
+
+        let singersMap = new Map();
+        let selectedSinger = null;
+
+        function extractSingers() {
+            singersMap.clear();
+            songs.forEach(song => {
+                const parts = song.name.split(' - ');
+                if (parts.length > 1) {
+                    const artists = parts[1].split(',').map(s => s.trim());
+                    artists.forEach(artist => {
+                        if (!singersMap.has(artist)) {
+                            singersMap.set(artist, []);
+                        }
+                        singersMap.get(artist).push(song);
+                    });
+                }
+            });
+        }
+
+        function renderSingerMenu() {
+            singerSelectionList.innerHTML = '';
+            const query = singerSearchInput.value.toLowerCase().trim();
+
+            if (selectedSinger) {
+                const backLi = document.createElement('li');
+                backLi.className = 'singer-list-item';
+                backLi.style.fontWeight = 'bold';
+                backLi.style.borderBottom = '1px solid rgba(0, 255, 255, 0.3)';
+                backLi.style.marginBottom = '10px';
+                backLi.innerHTML = `<i class="fas fa-arrow-left" style="margin-right: 10px;"></i> ${selectedSinger}`;
+                backLi.onclick = () => {
+                    selectedSinger = null;
+                    singerSearchInput.value = '';
+                    singerSearchInput.placeholder = "Tìm kiếm ca sĩ...";
+                    renderSingerMenu();
+                };
+                singerSelectionList.appendChild(backLi);
+
+                const artistSongs = singersMap.get(selectedSinger);
+                artistSongs.forEach(song => {
+                    if (query && !song.name.toLowerCase().includes(query)) return;
+                    const li = document.createElement('li');
+                    li.className = 'singer-list-item';
+                    li.textContent = song.name;
+                    li.onclick = () => {
+                        showMusicPlayer(song.id - 1);
+                        hideSingerList();
+                    };
+                    singerSelectionList.appendChild(li);
+                });
+            } else {
+                const sortedSingers = Array.from(singersMap.keys()).sort((a, b) => a.localeCompare(b));
+                sortedSingers.forEach(singer => {
+                    if (query && !singer.toLowerCase().includes(query)) return;
+                    const li = document.createElement('li');
+                    li.className = 'singer-list-item';
+                    li.style.display = 'flex';
+                    li.style.justifyContent = 'space-between';
+                    li.innerHTML = `<span>${singer}</span><span style="opacity:0.7; font-size:0.9em; background:rgba(255,255,255,0.1); padding:0 6px; border-radius:10px;">${singersMap.get(singer).length}</span>`;
+                    li.onclick = () => {
+                        selectedSinger = singer;
+                        singerSearchInput.value = '';
+                        singerSearchInput.placeholder = `Tìm bài hát của ${singer}...`;
+                        renderSingerMenu();
+                    };
+                    singerSelectionList.appendChild(li);
+                });
+            }
+        }
+
+        function showSingerList() {
+            extractSingers();
+            singerListOverlay.style.display = 'flex';
+            selectedSinger = null;
+            singerSearchInput.value = '';
+            singerSearchInput.placeholder = "Tìm kiếm ca sĩ...";
+            renderSingerMenu();
+            
+            if (isSettingsMenuOpen) hideSettingsMenu();
+            if (isSongListOpen) hideSongList();
+            if (isPlanetListOpen) hidePlanetList();
+            if (isVolumeSliderOpen) hideVolumeSlider();
+            if (isZoomSliderOpen) hideZoomSlider();
+            
+            controls.enabled = false;
+            document.addEventListener('click', handleOutsideSingerInteraction, true);
+            document.addEventListener('touchend', handleOutsideSingerInteraction, true);
+        }
+
+        function hideSingerList() {
+            singerListOverlay.style.display = 'none';
+            if (!isCameraAnimating && !isViewLocked) controls.enabled = true;
+            document.removeEventListener('click', handleOutsideSingerInteraction, true);
+            document.removeEventListener('touchend', handleOutsideSingerInteraction, true);
+        }
+
+        function handleOutsideSingerInteraction(event) {
+            if (singerListOverlay.style.display === 'flex' && !singerListOverlay.contains(event.target) && !selectSingerBtn.contains(event.target)) {
+                hideSingerList();
+            }
+        }
+
+        selectSingerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showSingerList();
+        });
+
+        closeSingerMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hideSingerList();
+        });
+
+        singerSearchInput.addEventListener('input', renderSingerMenu);
 
         // --- Logic nhấn giữ nút Chọn nhạc để hủy Queue ---
         let songBtnPressTimer;
