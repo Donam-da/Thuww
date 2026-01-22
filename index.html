@@ -1363,8 +1363,18 @@
                 playbackMode = 'random'; // Mặc định là phát ngẫu nhiên
                 generateShuffledPlaylist(); // Tạo danh sách phát ngẫu nhiên ban đầu
                 updatePlaybackModeUI(); // Set initial button state
-                const randomIndex = Math.floor(Math.random() * songs.length);
-                showMusicPlayer(randomIndex);
+                
+                // Chọn bài hát khởi động dựa trên danh sách đang được kích hoạt (activeQueueType)
+                let initialIndex;
+                if (activeQueueType === 'custom' && customQueue.length > 0) {
+                    initialIndex = customQueue[Math.floor(Math.random() * customQueue.length)];
+                } else if (activeQueueType === 'singer' && singerQueue.length > 0) {
+                    initialIndex = singerQueue[Math.floor(Math.random() * singerQueue.length)];
+                } else {
+                    initialIndex = Math.floor(Math.random() * songs.length);
+                }
+                showMusicPlayer(initialIndex);
+
                 // Nút "Toàn cảnh" giờ đã được đặt đúng vị trí và có CSS display: block, nên không cần setTimeout hay console.log nữa.
                 // console.log('Main scene displayed. Overview button display:', document.getElementById('overview-btn').style.display); // Debugging (có thể xóa)
                 animate();
@@ -2714,7 +2724,7 @@
                 textDiv.style.pointerEvents = 'none'; // Allow clicks to pass through
 
                 // Highlight the currently playing song by comparing objects or IDs
-                if (currentPlayingSong && song.id === currentPlayingSong.id) {
+                if (activeQueueType === 'all' && currentPlayingSong && song.id === currentPlayingSong.id) {
                     listItem.classList.add('current-song');
                 }
 
@@ -2867,6 +2877,7 @@
             activeQueueType = 'all';
             saveSettings();
             updatePlayAllButtonState();
+            populateSongList(); // Cập nhật lại danh sách để hiển thị màu xanh cho bài đang phát
             
             // Phát ngay lập tức bài tiếp theo trong danh sách "Tất cả"
             let nextIndex;
@@ -2970,7 +2981,7 @@
                     singerQueue = [];
                     artistSongs.forEach(song => singerQueue.push(song.id - 1));
                     activeQueueType = 'singer'; // Chuyển sang chế độ phát danh sách ca sĩ
-                    const firstIndex = singerQueue.shift();
+                    const firstIndex = singerQueue[0];
                     saveSettings();
                     showMusicPlayer(firstIndex);
                     hideSingerList();
@@ -3159,6 +3170,30 @@
                 badge.textContent = songIndex + 1;
                 itemDiv.appendChild(badge);
                 
+                // Hàm cập nhật style cho item (xử lý cả trạng thái chọn và trạng thái đang phát)
+                const updateItemStyle = () => {
+                    const isSelected = queueItemsSelected.has(songIndex);
+                    const isPlaying = (activeQueueType === viewType && songIndex === currentSongIndex);
+                    
+                    if (isSelected) {
+                        itemDiv.style.color = '#00ffff';
+                        itemDiv.style.borderBottomColor = '#00ffff';
+                        itemDiv.style.textShadow = 'none';
+                        itemDiv.style.fontWeight = 'normal';
+                    } else if (isPlaying) {
+                        itemDiv.style.color = '#00ffff';
+                        itemDiv.style.borderBottomColor = 'rgba(255,255,255,0.1)';
+                        itemDiv.style.textShadow = '0 0 5px #00ffff';
+                        itemDiv.style.fontWeight = 'bold';
+                    } else {
+                        itemDiv.style.color = 'white';
+                        itemDiv.style.borderBottomColor = 'rgba(255,255,255,0.1)';
+                        itemDiv.style.textShadow = 'none';
+                        itemDiv.style.fontWeight = 'normal';
+                    }
+                };
+                updateItemStyle(); // Gọi lần đầu
+
                 let itemPressTimer;
                 let isItemLongPress = false;
 
@@ -3169,13 +3204,10 @@
                         isItemLongPress = true;
                         if (queueItemsSelected.has(songIndex)) {
                             queueItemsSelected.delete(songIndex);
-                            itemDiv.style.color = 'white';
-                            itemDiv.style.borderBottomColor = 'rgba(255,255,255,0.1)';
                         } else {
                             queueItemsSelected.add(songIndex);
-                            itemDiv.style.color = '#00ffff';
-                            itemDiv.style.borderBottomColor = '#00ffff';
                         }
+                        updateItemStyle();
                         updateActionButton();
                         if (navigator.vibrate) navigator.vibrate(50);
                     }, 500);
@@ -3195,13 +3227,10 @@
                     if (queueItemsSelected.size > 0) {
                         if (queueItemsSelected.has(songIndex)) {
                             queueItemsSelected.delete(songIndex);
-                            itemDiv.style.color = 'white';
-                            itemDiv.style.borderBottomColor = 'rgba(255,255,255,0.1)';
                         } else {
                             queueItemsSelected.add(songIndex);
-                            itemDiv.style.color = '#00ffff';
-                            itemDiv.style.borderBottomColor = '#00ffff';
                         }
+                        updateItemStyle();
                         updateActionButton();
                     } else {
                         // Phát bài hát khi nhấn vào
@@ -3238,8 +3267,7 @@
                 // Phát ngay lập tức bài đầu tiên trong danh sách
                 const targetQueue = viewType === 'custom' ? customQueue : singerQueue;
                 if (targetQueue.length > 0) {
-                    const nextIndex = targetQueue.shift();
-                    saveSettings();
+                    const nextIndex = targetQueue[0];
                     showMusicPlayer(nextIndex);
                     renderQueueBox(viewType);
                 }
@@ -4448,16 +4476,27 @@
                 const currentQueue = activeQueueType === 'custom' ? customQueue : singerQueue;
                 
                 if (currentQueue.length > 0) {
-                    const nextIndex = currentQueue.shift();
-                    saveSettings();
-                    
-                    // Nếu bài tiếp theo trong hàng đợi trùng với bài đang phát, chỉ cần phát lại
-                    if (nextIndex === currentSongIndex) {
+                    if (playbackMode === 'repeat-one') {
                         audioPlayer.currentTime = 0;
                         audioPlayer.play();
-                    } else {
-                        showMusicPlayer(nextIndex);
+                        return;
                     }
+
+                    let nextIndex;
+                    if (playbackMode === 'random') {
+                        const randPos = Math.floor(Math.random() * currentQueue.length);
+                        nextIndex = currentQueue[randPos];
+                    } else {
+                        // Sequential
+                        const currentQueueIndex = currentQueue.indexOf(currentSongIndex);
+                        if (currentQueueIndex !== -1 && currentQueueIndex < currentQueue.length - 1) {
+                            nextIndex = currentQueue[currentQueueIndex + 1];
+                        } else {
+                            return; // Stop if end of list or song not found
+                        }
+                    }
+                    
+                    showMusicPlayer(nextIndex);
 
                     if (isSongListOpen) populateSongList();
                     if (clearQueueBox.style.display === 'flex') renderQueueBox(activeQueueType);
