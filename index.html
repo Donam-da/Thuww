@@ -420,12 +420,19 @@
 
         #volume-slider-container {
             position: absolute;
-            left: calc(100% + 5px); /* Position to the right of the button */
-            top: 50%;
-            transform: translateY(-50%);
+            left: 50%;
+            bottom: 100%;
+            margin-bottom: 10px;
+            transform: translateX(-50%);
+            top: auto;
             background-color: transparent;
-            padding: 10px 5px; /* Adjusted for horizontal layout */
+            padding: 5px 0;
             border-radius: 8px;
+            width: 30px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             /* box-shadow: 0 0 15px rgba(0,255,255,0.5); */ /* Đã xóa hiệu ứng đổ bóng để làm cho khung chứa trong suốt */
             z-index: 1002;
         }
@@ -438,6 +445,7 @@
             height: 20px; /* Container height for track/thumb */
             background: transparent;
             cursor: pointer;
+            transform: rotate(-90deg);
         }
 
         /* Track */
@@ -486,7 +494,7 @@
             position: relative; /* For slider positioning */
         }
 
-        #zoom-btn {
+        #zoom-btn, #screenshot-btn {
             /* Match other icon buttons */
             padding: 10px 15px;
             background-color: transparent;
@@ -499,12 +507,20 @@
 
         #zoom-slider-container {
             position: absolute;
-            right: calc(100% + 5px); /* Position to the left of the button */
-            top: 50%;
-            transform: translateY(-50%);
+            left: 50%;
+            bottom: 100%;
+            margin-bottom: 10px;
+            transform: translateX(-50%);
+            top: auto;
+            right: auto;
             background-color: transparent;
-            padding: 10px 5px;
+            padding: 5px 0;
             border-radius: 8px;
+            width: 30px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             z-index: 1002;
         }
 
@@ -515,6 +531,7 @@
             height: 20px;
             background: transparent;
             cursor: pointer;
+            transform: rotate(-90deg);
         }
 
         #zoom-level-slider::-webkit-slider-runnable-track {
@@ -1124,7 +1141,7 @@
                 font-size: 14px; /* Smaller font size */
                 border: none; /* Bỏ viền */
             }
-            #zoom-btn {
+            #zoom-btn, #screenshot-btn {
                 padding: 8px 12px;
                 font-size: 14px;
             }
@@ -1385,9 +1402,6 @@
                 <li class="settings-list-item" id="download-planet-img-btn" style="cursor: pointer;">
                     <label style="pointer-events: none; margin-bottom: 0;">Images</label>
                 </li>
-                <li class="settings-list-item" id="screenshot-btn" style="cursor: pointer;">
-                    <label style="pointer-events: none; margin-bottom: 0;">Chụp ảnh màn hình</label>
-                </li>
                 <li class="settings-list-item" id="select-singer-btn" style="cursor: pointer;">
                     <label style="pointer-events: none; margin-bottom: 0;">Ca sĩ</label>
                 </li>
@@ -1427,6 +1441,7 @@
                     <input type="range" id="zoom-level-slider" min="10" max="120" value="75">
                 </div>
             </div>
+            <button id="screenshot-btn"><i class="fas fa-camera"></i></button>
         </div>
     </div>
 
