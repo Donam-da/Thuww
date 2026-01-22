@@ -834,6 +834,7 @@
             color: white;
             box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
             min-width: 250px;
+            width: 250px;
         }
         .confirmation-buttons {
             display: flex;
@@ -3844,15 +3845,6 @@
             actionBtn.textContent = 'Hủy danh sách';
             actionBtn.onclick = (e) => {
                 e.stopPropagation();
-                if (viewType === 'custom') {
-                    customQueue = [];
-                } else {
-                    singerQueue = [];
-                    currentSingerName = '';
-                }
-                saveSettings();
-                populateSongList();
-                renderQueueBox(viewType);
                 showConfirmationModal(viewType);
             };
             btnContainer.appendChild(actionBtn);
