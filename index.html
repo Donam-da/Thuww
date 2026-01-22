@@ -3178,7 +3178,8 @@
 
             const listContainer = document.createElement('div');
             listContainer.id = 'queue-list-container';
-            listContainer.style.cssText = 'flex-grow: 1; width: 100%; overflow-y: auto; text-align: left; margin-bottom: 15px; padding-right: 5px; font-size: 14px;';
+            // Thêm -webkit-overflow-scrolling: touch để kích hoạt cuộn mượt trên iOS và overscroll-behavior để tránh cuộn trang nền
+            listContainer.style.cssText = 'flex-grow: 1; width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; text-align: left; margin-bottom: 15px; padding-right: 5px; font-size: 14px;';
             
             const queueItemsSelected = new Set();
             const actionBtn = document.createElement('button');
@@ -3267,6 +3268,7 @@
                     itemDiv.addEventListener('mouseup', cancelItemPress);
                     itemDiv.addEventListener('mouseleave', cancelItemPress);
                     itemDiv.addEventListener('touchend', cancelItemPress);
+                    itemDiv.addEventListener('touchmove', cancelItemPress); // Hủy nhấn giữ khi cuộn
                     
                     itemDiv.addEventListener('click', (e) => {
                         e.stopPropagation();
