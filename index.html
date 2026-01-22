@@ -286,7 +286,7 @@
             transform: translate(-50%, -50%);
             width: 80%;
             height: 80%;
-            background-color: rgba(0, 0, 0, 0.9);
+            background-color: transparent;
             border: 1px solid #00ffff;
             border-radius: 10px;
             z-index: 3000;
@@ -1939,6 +1939,13 @@
 
         let selectedPlanetObject = null; // Biến toàn cục để theo dõi hành tinh đang được chọn
         let isSettingsMenuOpen = false; // Track if settings menu is open
+        
+        function hideGalleries() {
+            document.getElementById('tv-gallery-overlay').style.display = 'none';
+            document.getElementById('music-gallery-overlay').style.display = 'none';
+            document.getElementById('image-gallery-overlay').style.display = 'none';
+        }
+
         selectPlanetBtn.addEventListener('click', (event) => {
             event.stopPropagation(); // Ngăn chặn sự kiện lan truyền lên document
             if (isPlanetListOpen) {
@@ -1966,6 +1973,7 @@
             populatePlanetList();
             controls.enabled = false; // Disable controls when list is open
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
+            hideGalleries();
             // Thêm trình lắng nghe sự kiện toàn cục để đóng dropmenu khi click/touch bên ngoài
             document.addEventListener('click', handleOutsideInteraction);
             document.addEventListener('touchend', handleOutsideInteraction);
@@ -2236,6 +2244,7 @@
             if (isMoreOptionsMenuOpen) hideMoreOptionsMenu();
             if (singerListOverlay.style.display === 'flex') hideSingerList();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
+            hideGalleries();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideSettingsInteraction, true);
             document.addEventListener('touchend', handleOutsideSettingsInteraction, true);
@@ -2253,6 +2262,7 @@
             if (isZoomSliderOpen) hideZoomSlider();
             if (singerListOverlay.style.display === 'flex') hideSingerList();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
+            hideGalleries();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideMoreOptionsInteraction, true);
             document.addEventListener('touchend', handleOutsideMoreOptionsInteraction, true);
@@ -2268,6 +2278,7 @@
             if (isPlanetListOpen) hidePlanetList();
             if (singerListOverlay.style.display === 'flex') hideSingerList();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
+            hideGalleries();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideVolumeInteraction, true);
             document.addEventListener('touchend', handleOutsideVolumeInteraction, true);
@@ -2333,6 +2344,7 @@
             if (isVolumeSliderOpen) hideVolumeSlider();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
             if (singerListOverlay.style.display === 'flex') hideSingerList();
+            hideGalleries();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideZoomInteraction, true);
             document.addEventListener('touchend', handleOutsideZoomInteraction, true);
@@ -3208,6 +3220,7 @@
             if (clearQueueBox.style.display === 'flex') {
                 clearQueueBox.style.display = 'none';
             }
+            hideGalleries();
 
             // musicControls2D.style.display = 'none'; // Removed: Keep 2D music controls visible when song list is open
             controls.enabled = false; // Tắt điều khiển 3D khi mở danh sách nhạc
@@ -3437,6 +3450,7 @@
             if (isZoomSliderOpen) hideZoomSlider();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
             
+            hideGalleries();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideSingerInteraction, true);
             document.addEventListener('touchend', handleOutsideSingerInteraction, true);
@@ -3745,6 +3759,7 @@
                 if (isVolumeSliderOpen) hideVolumeSlider();
                 if (isZoomSliderOpen) hideZoomSlider();
                 if (singerListOverlay.style.display === 'flex') hideSingerList();
+                hideGalleries();
 
                 renderQueueBox();
 
