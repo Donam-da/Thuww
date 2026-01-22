@@ -833,7 +833,6 @@
             font-family: 'VN Time', Arial, sans-serif;
             color: white;
             box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
-            min-width: 250px;
             width: 250px;
         }
         .confirmation-buttons {
@@ -3916,6 +3915,9 @@
         });
 
         const handleOutsideQueueBoxInteraction = (e) => {
+            // Nếu click vào modal xác nhận, không đóng box danh sách
+            if (confirmationModal.contains(e.target)) return;
+
             if (clearQueueBox.style.display === 'flex' && !clearQueueBox.contains(e.target) && !selectSongBtn.contains(e.target)) {
                 clearQueueBox.style.display = 'none';
             }
