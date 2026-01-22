@@ -4707,7 +4707,11 @@
 
         function processImageForTv(src, callback) {
             const img = new Image();
-            // img.crossOrigin = "Anonymous"; // Đã xóa để tránh lỗi tainted canvas với file local hoặc server không có header CORS
+            // Xử lý CORS: Chỉ bật crossOrigin khi chạy trên server (http/https) để tránh lỗi tainted canvas
+            if (window.location.protocol.startsWith('http')) {
+                img.crossOrigin = "Anonymous";
+            }
+
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width;
@@ -4769,7 +4773,13 @@
                 }
             };
             img.onerror = () => callback(src);
-            img.src = src;
+            
+            // Thêm timestamp để tránh cache khi chạy trên web, giúp CORS hoạt động ổn định hơn
+            if (window.location.protocol.startsWith('http')) {
+                img.src = src + '?t=' + new Date().getTime();
+            } else {
+                img.src = src;
+            }
         }
 
         function applyScrollingToTitle(titleElement, songName) {
