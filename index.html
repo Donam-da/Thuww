@@ -1273,9 +1273,11 @@
                     <!-- The text inside the label will be controlled by JavaScript -->
                     <label style="pointer-events: none; margin-bottom: 0;">Ẩn Thời gian</label>
                 </li>
-                <li class="settings-list-item" id="toggle-tv-btn" style="cursor: pointer;">
-                    <!-- The text inside the label will be controlled by JavaScript -->
-                    <label style="pointer-events: none; margin-bottom: 0;">Hiện TV</label>
+                <li class="settings-list-item" style="display: flex; align-items: center; justify-content: space-between;">
+                    <div id="toggle-tv-btn" style="cursor: pointer; flex-grow: 1;">
+                        <label style="pointer-events: none; margin-bottom: 0; cursor: pointer;">Hiện TV</label>
+                    </div>
+                    <button id="toggle-tv-mode-btn" style="background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; margin-left: 10px;">Kĩ thuật số</button>
                 </li>
                 <li class="settings-list-item" id="select-singer-btn" style="cursor: pointer;">
                     <label style="pointer-events: none; margin-bottom: 0;">Ca sĩ</label>
@@ -1947,6 +1949,8 @@
         // New TV toggle elements
         const toggleTvBtn = document.getElementById('toggle-tv-btn');
         const toggleTvLabel = toggleTvBtn.querySelector('label');
+        const toggleTvModeBtn = document.getElementById('toggle-tv-mode-btn');
+        let isTvDigitalMode = true;
 
         // New volume control elements
         const volumeBtn = document.getElementById('volume-btn');
@@ -1973,6 +1977,7 @@
                 visualizerVisible: isVisualizerVisible,
                 visualizerStyle: currentVisualizerStyle,
                 timeDisplayVisible: isTimeDisplayVisible,
+                tvMode: isTvDigitalMode,
                 volume: volumeSlider.value,
                 fov: camera.fov,
                 customQueue: customQueue,
@@ -1997,6 +2002,7 @@
                 // Load visualizer visibility, defaulting to true if not found or not explicitly false
                 const visualizerVisible = settings.visualizerVisible === false ? false : true;
                 const timeDisplayVisible = false; // Luôn ẩn thời gian khi khởi động
+                const tvMode = settings.tvMode !== undefined ? settings.tvMode : true;
                 const savedVisualizerStyle = (settings.visualizerStyle !== undefined) ? settings.visualizerStyle : 4;
                 // Load volume, defaulting to 100 if not found
                 const volume = settings.volume || '100';
@@ -2043,6 +2049,9 @@
                 if (toggleTimeDisplayLabel) {
                     toggleTimeDisplayLabel.textContent = isTimeDisplayVisible ? 'Ẩn Thời gian' : 'Hiện Thời gian';
                 }
+
+                isTvDigitalMode = tvMode;
+                if (toggleTvModeBtn) toggleTvModeBtn.textContent = isTvDigitalMode ? 'Kĩ thuật số' : 'Gốc';
                 
                 // Apply visualizer style
                 currentVisualizerStyle = parseInt(savedVisualizerStyle);
@@ -2229,6 +2238,23 @@
                 stopTvPlayer();
             }
         });
+
+        // Add event listener for TV Mode toggle
+        if (toggleTvModeBtn) {
+            toggleTvModeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                isTvDigitalMode = !isTvDigitalMode;
+                toggleTvModeBtn.textContent = isTvDigitalMode ? 'Kĩ thuật số' : 'Gốc';
+                saveSettings();
+                
+                if (gifTvContainer.style.display !== 'none') {
+                    if (currentTvShuffledIndex > 0) currentTvShuffledIndex--; // Replay current
+                    playNextTvContent();
+                    if (gifInterval) clearInterval(gifInterval);
+                    gifInterval = setInterval(playNextTvContent, 5000);
+                }
+            });
+        }
 
         // Add event listener for changing visualizer style
         if (changeVisualizerStyleBtn) {
@@ -4669,10 +4695,14 @@
             const selectedSrc = tvPlaylist[actualIndex];
             currentTvShuffledIndex++; // Chuyển sang ảnh tiếp theo trong nhóm ngẫu nhiên
             
-            // Xử lý xóa nền và tạo hiệu ứng nét vẽ cho tất cả ảnh (bao gồm cả frame đầu của GIF)
-            processImageForTv(selectedSrc, (processedDataUrl) => {
-                gifTvScreen.src = processedDataUrl;
-            });
+            if (isTvDigitalMode) {
+                // Xử lý xóa nền và tạo hiệu ứng nét vẽ cho tất cả ảnh (bao gồm cả frame đầu của GIF)
+                processImageForTv(selectedSrc, (processedDataUrl) => {
+                    gifTvScreen.src = processedDataUrl;
+                });
+            } else {
+                gifTvScreen.src = selectedSrc;
+            }
         }
 
         function processImageForTv(src, callback) {
