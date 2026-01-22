@@ -144,7 +144,7 @@
             display: block; /* Đảm bảo nút luôn hiển thị */
             font-size: 16px;
         }
-        #more-options-btn { /* Nút 3 chấm mới */
+        #more-options-btn, #settings-icon-btn { /* Nút 3 chấm mới và nút cài đặt */
             z-index: 1001;
             padding: 10px 15px;
             background-color: transparent;
@@ -176,7 +176,7 @@
         }
 
         /* --- Settings Menu --- */
-        #settings-overlay {
+        #settings-overlay, #more-options-overlay {
             position: fixed;
             bottom: 70px; /* Position above the 3-bar button */
             left: 20px;
@@ -192,7 +192,7 @@
             font-weight: bold;
         }
 
-        #close-settings-menu-btn {
+        #close-settings-menu-btn, #close-more-options-menu-btn {
             position: absolute;
             top: 5px;
             right: 10px;
@@ -575,6 +575,7 @@
         #song-list-overlay, 
         #planet-list-overlay,
         #settings-overlay,
+        #more-options-overlay,
         #song-selection-list,
         #singer-list-overlay,
         #singer-selection-list,
@@ -585,6 +586,7 @@
         #song-list-overlay::-webkit-scrollbar,
         #planet-list-overlay::-webkit-scrollbar,
         #settings-overlay::-webkit-scrollbar,
+        #more-options-overlay::-webkit-scrollbar,
         #song-selection-list::-webkit-scrollbar,
         #singer-list-overlay::-webkit-scrollbar,
         #singer-selection-list::-webkit-scrollbar,
@@ -1144,7 +1146,7 @@
                 padding: 8px 12px;
                 font-size: 14px;
             }
-            #more-options-btn { /* Kiểu dáng mobile cho nút 3 chấm */
+            #more-options-btn, #settings-icon-btn { /* Kiểu dáng mobile cho nút 3 chấm và cài đặt */
                 padding: 8px 12px;
                 font-size: 14px;
                 border: none;
@@ -1171,7 +1173,7 @@
             }
 
             /* --- Mobile Settings Menu --- */
-            #settings-overlay {
+            #settings-overlay, #more-options-overlay {
                 top: 70px; /* Position below the 3-bar button */
                 bottom: auto;
                 left: 50%;
@@ -1375,10 +1377,10 @@
             <div class="gallery-content"><div id="image-gallery-grid" class="gallery-grid"></div></div>
         </div>
 
-        <!-- New Settings Overlay -->
-        <div id="settings-overlay">
-            <span id="close-settings-menu-btn">&times;</span>
-            <ul id="settings-list" style="list-style: none; padding: 0; margin: 0;">
+        <!-- More Options Overlay (Menu 3 gạch ngang) -->
+        <div id="more-options-overlay">
+            <span id="close-more-options-menu-btn">&times;</span>
+            <ul id="more-options-list" style="list-style: none; padding: 0; margin: 0;">
                 <li class="settings-list-item" id="toggle-orbits-btn" style="cursor: pointer;">
                     <!-- The text inside the label will be controlled by JavaScript -->
                     <label style="pointer-events: none; margin-bottom: 0;">Ẩn Quỹ đạo</label>
@@ -1413,6 +1415,13 @@
                 <li class="settings-list-item" id="select-singer-btn" style="cursor: pointer;">
                     <label style="pointer-events: none; margin-bottom: 0;">Ca sĩ</label>
                 </li>
+            </ul>
+        </div>
+
+        <!-- Settings Overlay (Menu bánh răng - Chỉ chứa 4 chức năng) -->
+        <div id="settings-overlay">
+            <span id="close-settings-menu-btn">&times;</span>
+            <ul id="settings-list" style="list-style: none; padding: 0; margin: 0;">
                 <li class="settings-list-item">
                     <label for="radius-slider">Mở rộng vũ trụ (<span id="radius-value">10.00</span>x)</label>
                     <input type="range" id="radius-slider" min="1" max="50" value="30" step="0.01">
@@ -1433,6 +1442,7 @@
         </div>
         <div id="bottom-left-controls">
             <button id="more-options-btn"><i class="fas fa-bars"></i></button>
+            <button id="settings-icon-btn"><i class="fas fa-cog"></i></button>
             <div id="volume-control-container">
                 <button id="volume-btn"><i class="fas fa-volume-up"></i></button>
                 <div id="volume-slider-container" style="display: none;">
@@ -1944,6 +1954,7 @@
                 if (isSettingsMenuOpen) { // Nếu menu cài đặt đang mở, đóng nó lại
                     hideSettingsMenu();
                 }
+                if (isMoreOptionsMenuOpen) hideMoreOptionsMenu();
                 if (singerListOverlay.style.display === 'flex') hideSingerList();
                 showPlanetList();
             }
@@ -2037,8 +2048,12 @@
 
         // --- Settings Menu Logic ---
         const moreOptionsBtn = document.getElementById('more-options-btn');
+        const settingsIconBtn = document.getElementById('settings-icon-btn');
         const settingsOverlay = document.getElementById('settings-overlay');
         const closeSettingsBtn = document.getElementById('close-settings-menu-btn');
+        
+        const moreOptionsOverlay = document.getElementById('more-options-overlay');
+        const closeMoreOptionsBtn = document.getElementById('close-more-options-menu-btn');
 
         const radiusSlider = document.getElementById('radius-slider');
         const radiusValue = document.getElementById('radius-value');
@@ -2218,6 +2233,7 @@
             if (isSongListOpen) hideSongList();
             if (isVolumeSliderOpen) hideVolumeSlider();
             if (isZoomSliderOpen) hideZoomSlider();
+            if (isMoreOptionsMenuOpen) hideMoreOptionsMenu();
             if (singerListOverlay.style.display === 'flex') hideSingerList();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
             controls.enabled = false;
@@ -2225,10 +2241,28 @@
             document.addEventListener('touchend', handleOutsideSettingsInteraction, true);
         }
 
+        let isMoreOptionsMenuOpen = false;
+        function showMoreOptionsMenu() {
+            moreOptionsOverlay.style.display = 'block';
+            isMoreOptionsMenuOpen = true;
+            // Close other menus if open
+            if (isSettingsMenuOpen) hideSettingsMenu();
+            if (isPlanetListOpen) hidePlanetList();
+            if (isSongListOpen) hideSongList();
+            if (isVolumeSliderOpen) hideVolumeSlider();
+            if (isZoomSliderOpen) hideZoomSlider();
+            if (singerListOverlay.style.display === 'flex') hideSingerList();
+            if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
+            controls.enabled = false;
+            document.addEventListener('click', handleOutsideMoreOptionsInteraction, true);
+            document.addEventListener('touchend', handleOutsideMoreOptionsInteraction, true);
+        }
+
         function showVolumeSlider() {
             volumeSliderContainer.style.display = 'block';
             isVolumeSliderOpen = true;
             if (isSettingsMenuOpen) hideSettingsMenu();
+            if (isMoreOptionsMenuOpen) hideMoreOptionsMenu();
             if (isSongListOpen) hideSongList();
             if (isZoomSliderOpen) hideZoomSlider();
             if (isPlanetListOpen) hidePlanetList();
@@ -2249,6 +2283,16 @@
             document.removeEventListener('touchend', handleOutsideSettingsInteraction, true);
         }
 
+        function hideMoreOptionsMenu() {
+            moreOptionsOverlay.style.display = 'none';
+            isMoreOptionsMenuOpen = false;
+            if (!isCameraAnimating && !isViewLocked) {
+                controls.enabled = true;
+            }
+            document.removeEventListener('click', handleOutsideMoreOptionsInteraction, true);
+            document.removeEventListener('touchend', handleOutsideMoreOptionsInteraction, true);
+        }
+
         function hideVolumeSlider() {
             volumeSliderContainer.style.display = 'none';
             isVolumeSliderOpen = false;
@@ -2259,8 +2303,14 @@
             document.removeEventListener('touchend', handleOutsideVolumeInteraction, true);
         }
 
+        function handleOutsideMoreOptionsInteraction(event) {
+            if (isMoreOptionsMenuOpen && !moreOptionsOverlay.contains(event.target) && !moreOptionsBtn.contains(event.target)) {
+                hideMoreOptionsMenu();
+            }
+        }
+
         function handleOutsideSettingsInteraction(event) {
-            if (isSettingsMenuOpen && !settingsOverlay.contains(event.target) && !moreOptionsBtn.contains(event.target)) {
+            if (isSettingsMenuOpen && !settingsOverlay.contains(event.target) && !settingsIconBtn.contains(event.target)) {
                 hideSettingsMenu();
             }
         }
@@ -2277,6 +2327,7 @@
             isZoomSliderOpen = true;
             // Close other menus
             if (isSettingsMenuOpen) hideSettingsMenu();
+            if (isMoreOptionsMenuOpen) hideMoreOptionsMenu();
             if (isSongListOpen) hideSongList();
             if (isPlanetListOpen) hidePlanetList();
             if (isVolumeSliderOpen) hideVolumeSlider();
@@ -2305,12 +2356,22 @@
 
         moreOptionsBtn.addEventListener('click', (event) => {
             event.stopPropagation();
+            isMoreOptionsMenuOpen ? hideMoreOptionsMenu() : showMoreOptionsMenu();
+        });
+
+        settingsIconBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
             isSettingsMenuOpen ? hideSettingsMenu() : showSettingsMenu();
         });
 
         closeSettingsBtn.addEventListener('click', (event) => {
             event.stopPropagation();
             hideSettingsMenu();
+        });
+
+        closeMoreOptionsBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            hideMoreOptionsMenu();
         });
 
         // Add event listener for the new orbit toggle button
@@ -2404,7 +2465,7 @@
         const downloadTvBtn = document.getElementById('download-tv-btn');
         if (downloadTvBtn) {
             downloadTvBtn.addEventListener('click', () => {
-                hideSettingsMenu();
+                hideMoreOptionsMenu();
                 const overlay = document.getElementById('tv-gallery-overlay');
                 const grid = document.getElementById('tv-gallery-grid');
                 grid.innerHTML = ''; // Clear old content
@@ -2430,7 +2491,7 @@
         const downloadMp3Btn = document.getElementById('download-mp3-btn');
         if (downloadMp3Btn) {
             downloadMp3Btn.addEventListener('click', () => {
-                hideSettingsMenu();
+                hideMoreOptionsMenu();
                 const overlay = document.getElementById('music-gallery-overlay');
                 const list = document.getElementById('music-gallery-list');
                 list.innerHTML = '';
@@ -2452,7 +2513,7 @@
         const downloadPlanetImgBtn = document.getElementById('download-planet-img-btn');
         if (downloadPlanetImgBtn) {
             downloadPlanetImgBtn.addEventListener('click', () => {
-                hideSettingsMenu();
+                hideMoreOptionsMenu();
                 const overlay = document.getElementById('image-gallery-overlay');
                 const grid = document.getElementById('image-gallery-grid');
                 grid.innerHTML = '';
@@ -3142,6 +3203,7 @@
             if (isZoomSliderOpen) hideZoomSlider();
             if (isSettingsMenuOpen) hideSettingsMenu();
             if (isVolumeSliderOpen) hideVolumeSlider();
+                if (isMoreOptionsMenuOpen) hideMoreOptionsMenu();
             
             if (clearQueueBox.style.display === 'flex') {
                 clearQueueBox.style.display = 'none';
@@ -3368,6 +3430,7 @@
             renderSingerMenu();
             
             if (isSettingsMenuOpen) hideSettingsMenu();
+            if (isMoreOptionsMenuOpen) hideMoreOptionsMenu();
             if (isSongListOpen) hideSongList();
             if (isPlanetListOpen) hidePlanetList();
             if (isVolumeSliderOpen) hideVolumeSlider();
@@ -3678,6 +3741,7 @@
                 if (isSongListOpen) hideSongList();
                 if (isPlanetListOpen) hidePlanetList();
                 if (isSettingsMenuOpen) hideSettingsMenu();
+                if (isMoreOptionsMenuOpen) hideMoreOptionsMenu();
                 if (isVolumeSliderOpen) hideVolumeSlider();
                 if (isZoomSliderOpen) hideZoomSlider();
                 if (singerListOverlay.style.display === 'flex') hideSingerList();
@@ -3715,6 +3779,7 @@
                 if (isSettingsMenuOpen) { // Nếu menu cài đặt đang mở, đóng nó lại
                     hideSettingsMenu();
                 }
+                if (isMoreOptionsMenuOpen) hideMoreOptionsMenu();
                 if (singerListOverlay.style.display === 'flex') hideSingerList();
                 if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
                 showSongList();
