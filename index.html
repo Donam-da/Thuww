@@ -5920,12 +5920,10 @@
                             queueIndex = currentQueue.indexOf(lastActiveQueueSongIndex);
                         }
 
-                        if (queueIndex !== -1 && queueIndex < currentQueue.length - 1) {
-                            nextIndex = currentQueue[queueIndex + 1];
-                        } else if (queueIndex === -1) {
-                            nextIndex = currentQueue[0]; // Fallback về đầu danh sách nếu không tìm thấy
+                        if (queueIndex !== -1) {
+                            nextIndex = currentQueue[(queueIndex + 1) % currentQueue.length];
                         } else {
-                            return; // Stop if end of list or song not found
+                            nextIndex = currentQueue[0]; // Fallback về đầu danh sách nếu không tìm thấy
                         }
                     }
                     
