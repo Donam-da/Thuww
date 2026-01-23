@@ -149,7 +149,7 @@
             display: block; /* Đảm bảo nút luôn hiển thị */
             font-size: 16px;
         }
-        #more-options-btn, #settings-icon-btn { /* Nút 3 chấm mới và nút cài đặt */
+        #more-options-btn, #settings-icon-btn, #lock-screen-btn { /* Nút 3 chấm mới, nút cài đặt và nút khóa */
             z-index: 1001;
             padding: 10px 15px;
             background-color: transparent;
@@ -1297,7 +1297,7 @@
                 padding: 8px 12px;
                 font-size: 14px;
             }
-            #more-options-btn, #settings-icon-btn { /* Kiểu dáng mobile cho nút 3 chấm và cài đặt */
+            #more-options-btn, #settings-icon-btn, #lock-screen-btn { /* Kiểu dáng mobile cho nút 3 chấm, cài đặt và khóa */
                 padding: 8px 12px;
                 font-size: 14px;
                 border: none;
@@ -1425,6 +1425,14 @@
                 width: 150%; /* Rộng hơn container */
                 height: 200px; /* Chiều cao cho mobile */
             }
+        }
+
+        /* --- Lock Screen Styles --- */
+        body.app-locked #main-scene {
+            pointer-events: none !important;
+        }
+        body.app-locked #lock-screen-btn {
+            pointer-events: auto !important;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -1639,6 +1647,7 @@
         <div id="bottom-left-controls">
             <button id="more-options-btn"><i class="fas fa-bars"></i></button>
             <button id="settings-icon-btn"><i class="fas fa-cog"></i></button>
+            <button id="lock-screen-btn" title="Khóa màn hình"><i class="fas fa-lock-open"></i></button>
             <div id="volume-control-container">
                 <button id="volume-btn"><i class="fas fa-volume-up"></i></button>
                 <div id="volume-slider-container" style="display: none;">
@@ -2482,6 +2491,7 @@
         const moreOptionsBtn = document.getElementById('more-options-btn');
         const settingsIconBtn = document.getElementById('settings-icon-btn');
         const settingsOverlay = document.getElementById('settings-overlay');
+        const lockScreenBtn = document.getElementById('lock-screen-btn');
         const closeSettingsBtn = document.getElementById('close-settings-menu-btn');
         
         const moreOptionsOverlay = document.getElementById('more-options-overlay');
@@ -2897,6 +2907,23 @@
         closeMoreOptionsBtn.addEventListener('click', (event) => {
             event.stopPropagation();
             hideMoreOptionsMenu();
+        });
+
+        // --- Lock Screen Logic ---
+        let isScreenLocked = false;
+        lockScreenBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isScreenLocked = !isScreenLocked;
+            
+            if (isScreenLocked) {
+                document.body.classList.add('app-locked');
+                lockScreenBtn.innerHTML = '<i class="fas fa-lock"></i>';
+                lockScreenBtn.style.color = '#ff4d4d'; // Màu đỏ để báo hiệu đang khóa
+            } else {
+                document.body.classList.remove('app-locked');
+                lockScreenBtn.innerHTML = '<i class="fas fa-lock-open"></i>';
+                lockScreenBtn.style.color = 'white';
+            }
         });
 
         // Add event listener for the new orbit toggle button
