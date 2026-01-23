@@ -1767,71 +1767,108 @@
         for (let i = 1; i <= 184; i++) tvPlaylist.push(`gifs/gif${i}.gif`);
         for (let i = 1; i <= 64; i++) tvPlaylist.push(`gifs/gif${i}.jpg`);
 
-        // Preload and Process TV Images (Fetch as Blob first)
-        tvPlaylist.forEach(src => {
-            loadingManager.itemStart(src); // Đăng ký item với loading manager
-            fetch(src)
-                .then(response => response.blob())
-                .then(blob => {
-                    const blobUrl = URL.createObjectURL(blob);
-                    tvOriginalCache.set(src, blobUrl);
-                    
-                    // Process using the Blob URL
-                    processImageForTv(blobUrl, (resultSrc, isSuccess) => {
-                        if (isSuccess) processedTvImages.set(src, resultSrc);
-                        loadingManager.itemEnd(src);
-                    });
-                })
-                .catch(err => {
-                    console.error("Failed to preload TV image:", src, err);
-                    loadingManager.itemEnd(src);
-                });
-        });
+        // --- NEW LOADING LOGIC ---
+        const totalResourcesCount = songs.length + tvPlaylist.length + allImageUrls.length;
+        let loadedResourcesCount = 0;
 
-        // Preload Music Files
-        songs.forEach(song => {
-            loadingManager.itemStart(song.file);
-            fetch(song.file)
-                .then(response => response.blob())
-                .then(blob => {
-                    const blobUrl = URL.createObjectURL(blob);
-                    musicCache.set(song.file, blobUrl);
-                    loadingManager.itemEnd(song.file);
-                })
-                .catch(err => {
-                    console.error("Failed to preload music:", song.file, err);
-                    loadingManager.itemEnd(song.file); // Ensure loader finishes even on error
-                });
-        });
-
-        // Preload Planet Images (Fetch as Blob first)
-        allImageUrls.forEach(url => {
-            loadingManager.itemStart(url);
-            fetch(url)
-                .then(response => response.blob())
-                .then(blob => {
-                    const blobUrl = URL.createObjectURL(blob);
-                    imageCache.set(url, blobUrl);
-                    // Load texture using Blob URL, but map it to original URL key
-                    textureCache[url] = textureLoader.load(blobUrl);
-                    loadingManager.itemEnd(url);
-                })
-                .catch(err => {
-                    console.error("Failed to preload image:", url, err);
-                    // Fallback to normal load if fetch fails
-                    textureCache[url] = textureLoader.load(url);
-                    loadingManager.itemEnd(url);
-                });
-        });
-
-        loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
-            const progress = (itemsLoaded / itemsTotal) * 100;
+        function updateLoaderProgress() {
+            const progress = Math.min(100, (loadedResourcesCount / totalResourcesCount) * 100);
             const percentage = Math.round(progress);
             progressText.textContent = `${percentage}%`;
             progressCircle.style.background = `conic-gradient(#3498db ${progress}%, #1a1a1a 0%)`;
+        }
+
+        function loadMusic() {
+            const promises = songs.map(song => {
+                loadingManager.itemStart(song.file);
+                return fetch(song.file)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const blobUrl = URL.createObjectURL(blob);
+                        musicCache.set(song.file, blobUrl);
+                        loadingManager.itemEnd(song.file);
+                        loadedResourcesCount++;
+                        updateLoaderProgress();
+                    })
+                    .catch(err => {
+                        console.error("Failed to preload music:", song.file, err);
+                        loadingManager.itemEnd(song.file);
+                        loadedResourcesCount++;
+                        updateLoaderProgress();
+                    });
+            });
+            return Promise.all(promises);
+        }
+
+        function loadVisuals() {
+            // Preload and Process TV Images
+            tvPlaylist.forEach(src => {
+                loadingManager.itemStart(src);
+                fetch(src)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const blobUrl = URL.createObjectURL(blob);
+                        tvOriginalCache.set(src, blobUrl);
+                        
+                        processImageForTv(blobUrl, (resultSrc, isSuccess) => {
+                            if (isSuccess) processedTvImages.set(src, resultSrc);
+                            loadingManager.itemEnd(src);
+                            loadedResourcesCount++;
+                            updateLoaderProgress();
+                        });
+                    })
+                    .catch(err => {
+                        console.error("Failed to preload TV image:", src, err);
+                        loadingManager.itemEnd(src);
+                        loadedResourcesCount++;
+                        updateLoaderProgress();
+                    });
+            });
+
+            // Preload Planet Images
+            allImageUrls.forEach(url => {
+                loadingManager.itemStart(url);
+                fetch(url)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const blobUrl = URL.createObjectURL(blob);
+                        imageCache.set(url, blobUrl);
+                        textureCache[url] = textureLoader.load(blobUrl);
+                        loadingManager.itemEnd(url);
+                        loadedResourcesCount++;
+                        updateLoaderProgress();
+                    })
+                    .catch(err => {
+                        console.error("Failed to preload image:", url, err);
+                        textureCache[url] = textureLoader.load(url);
+                        loadingManager.itemEnd(url);
+                        loadedResourcesCount++;
+                        updateLoaderProgress();
+                    });
+            });
+        }
+
+        loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
+            // Custom progress handling used instead
         };
 
+        // Start Loading Sequence
+        loadMusic().then(() => {
+            // Music loaded. Enable 8D and update UI text.
+            is8DEnabled = true;
+            if (icon8D) {
+                icon8D.style.color = '#00ffff';
+                icon8D.style.textShadow = '0 0 10px #00ffff';
+            }
+            const loaderText = document.querySelector('.loader-container .loader-text:last-child');
+            if (loaderText) loaderText.textContent = "Đang xử lý nhạc 8D & Tải hình ảnh...";
+            
+            loadVisuals();
+        });
+
         loadingManager.onLoad = function () {
+            if (loadedResourcesCount < totalResourcesCount) return;
+
             // Fade out loader
             loaderOverlay.style.opacity = '0';
             setTimeout(() => {
@@ -2505,7 +2542,7 @@
                 if (settings.singerQueue) singerQueue = settings.singerQueue;
                 if (settings.currentSingerName) currentSingerName = settings.currentSingerName;
                 activeQueueType = settings.activeQueueType || 'all'; // Mặc định là 'all'
-                const saved8DEnabled = settings.is8DEnabled || false;
+                const saved8DEnabled = settings.is8DEnabled !== undefined ? settings.is8DEnabled : true;
 
                 // Cập nhật giá trị cho các thanh trượt
                 radiusSlider.value = radius;
@@ -3460,7 +3497,7 @@
         let audioSource = null; // To hold the MediaElementSourceNode
 
         // 8D Audio Variables
-        let is8DEnabled = false;
+        let is8DEnabled = true;
         let pannerNode = null;
         let convolverNode = null;
         let dryGainNode = null;
