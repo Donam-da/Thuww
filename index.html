@@ -495,7 +495,7 @@
         #panning-speed-slider-container {
             position: absolute;
             left: 50%;
-            transform: translateX(calc(-50% - 30px));
+            transform: translateX(calc(-50% - 47px));
             top: 50px; /* Desktop: Hiển thị bên dưới icon */
             background-color: transparent;
             padding: 5px 0;
@@ -1913,8 +1913,6 @@
                 icon8D.style.color = '#00ffff';
                 icon8D.style.textShadow = '0 0 10px #00ffff';
             }
-            const loaderText = document.querySelector('.loader-container .loader-text:last-child');
-            if (loaderText) loaderText.textContent = "Đang xử lý nhạc 8D & Tải hình ảnh...";
             
             loadVisuals();
         });
