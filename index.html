@@ -1826,7 +1826,7 @@
 
         function updateLoaderProgress() {
             const progress = Math.min(100, (loadedResourcesCount / totalResourcesCount) * 100);
-            const percentage = Math.round(progress);
+            const percentage = progress.toFixed(2);
             progressText.textContent = `${percentage}%`;
             progressCircle.style.background = `conic-gradient(#3498db ${progress}%, #1a1a1a 0%)`;
         }
