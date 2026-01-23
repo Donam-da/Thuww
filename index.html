@@ -1129,7 +1129,7 @@
         /* New container for main UI buttons */
         #main-ui-controls {
             position: fixed;
-            top: 20px;
+            top: 45px;
             left: 20px;
             right: 20px; /* Extends across the top */
             z-index: 1001;
@@ -1433,7 +1433,10 @@
                     <button id="shuffle-btn" class="playback-mode-btn" title="Phát ngẫu nhiên"><i class="fas fa-random"></i></button>
                 </div>
             </div>
-            <div class="ui-button-group">
+            <div class="ui-button-group" style="position: relative;">
+                <button id="toggle-8d-btn" style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%); background: transparent; border: none; cursor: pointer; padding: 0; z-index: 10;" title="Bật/Tắt Nhạc 8D">
+                    <i id="icon-8d" class="fas fa-headphones" style="font-size: 22px; color: #ff4d4d; transition: all 0.3s; text-shadow: 0 0 5px rgba(255, 77, 77, 0.5);"></i>
+                </button>
                 <button id="select-song-btn">Chọn nhạc</button>
                 <button id="toggle-images-btn">Hiện ảnh</button>
             </div>
@@ -1553,9 +1556,6 @@
                 </li>
                 <li class="settings-list-item" id="download-planet-img-btn" style="cursor: pointer;">
                     <label style="pointer-events: none; margin-bottom: 0;">Images</label>
-                </li>
-                <li class="settings-list-item" id="toggle-8d-btn" style="cursor: pointer;">
-                    <label style="pointer-events: none; margin-bottom: 0;">Bật Nhạc 8D</label>
                 </li>
             </ul>
         </div>
@@ -2438,7 +2438,7 @@
         const toggleTvModeBtn = document.getElementById('toggle-tv-mode-btn');
         // 8D Audio Toggle
         const toggle8DBtn = document.getElementById('toggle-8d-btn');
-        const toggle8DLabel = toggle8DBtn.querySelector('label');
+        const icon8D = document.getElementById('icon-8d');
         let isTvDigitalMode = true;
 
         // New volume control elements
@@ -2548,7 +2548,15 @@
                 
                 // Apply 8D setting
                 is8DEnabled = saved8DEnabled;
-                if (toggle8DLabel) toggle8DLabel.textContent = is8DEnabled ? 'Tắt Nhạc 8D' : 'Bật Nhạc 8D';
+                if (icon8D) {
+                    if (is8DEnabled) {
+                        icon8D.style.color = '#00ffff';
+                        icon8D.style.textShadow = '0 0 10px #00ffff';
+                    } else {
+                        icon8D.style.color = '#ff4d4d';
+                        icon8D.style.textShadow = '0 0 5px rgba(255, 77, 77, 0.5)';
+                    }
+                }
                 if (audioContext) {
                     updateAudioRouting();
                 }
@@ -2810,7 +2818,13 @@
         if (toggle8DBtn) {
             toggle8DBtn.addEventListener('click', () => {
                 is8DEnabled = !is8DEnabled;
-                toggle8DLabel.textContent = is8DEnabled ? 'Tắt Nhạc 8D' : 'Bật Nhạc 8D';
+                if (is8DEnabled) {
+                    icon8D.style.color = '#00ffff';
+                    icon8D.style.textShadow = '0 0 10px #00ffff';
+                } else {
+                    icon8D.style.color = '#ff4d4d';
+                    icon8D.style.textShadow = '0 0 5px rgba(255, 77, 77, 0.5)';
+                }
                 if (audioContext) updateAudioRouting();
                 saveSettings();
             });
