@@ -1624,7 +1624,7 @@
                     <input type="range" id="density-slider" min="200000" max="3400000" step="1" value="200000">
                 </li>
                 <li class="settings-list-item">
-                    <label for="zoom-slider">Giới hạn zoom (<span id="zoom-value">20,000x</span>)</label>
+                    <label for="zoom-slider">Giới hạn zoom (<span id="zoom-value">20,000</span>x)</label>
                     <input type="range" id="zoom-slider" min="50" max="100000" step="1" value="20000">
                 </li>
                 <li class="settings-list-item">
@@ -2627,7 +2627,7 @@
                 // Cập nhật văn bản hiển thị giá trị
                 radiusValue.textContent = parseFloat(radius).toFixed(2);
                 densityValue.textContent = parseInt(density).toLocaleString('en-US');
-                zoomValue.textContent = parseInt(zoom).toLocaleString('en-US') + 'x';
+                zoomValue.textContent = parseInt(zoom).toLocaleString('en-US');
                 speedValue.textContent = parseFloat(speed).toFixed(2);
 
                 // Cập nhật các biến trạng thái của ứng dụng
@@ -3497,7 +3497,7 @@
         zoomSlider.addEventListener('input', () => {
             const newMaxDistance = parseInt(zoomSlider.value);
             controls.maxDistance = newMaxDistance;
-            zoomValue.textContent = newMaxDistance.toLocaleString('en-US') + 'x';
+            zoomValue.textContent = newMaxDistance.toLocaleString('en-US');
             saveSettings();
         });
 
