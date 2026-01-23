@@ -3832,6 +3832,7 @@
                 normalGainNode.gain.value = 0.5; // Cân bằng âm lượng chế độ thường (50%)
 
                 audioSource = audioContext.createMediaElementSource(audioPlayer);
+                audioPlayer.setAttribute('playsinline', 'true'); // Hỗ trợ chạy nền tốt hơn
                 
                 // Initial Routing
                 updateAudioRouting();
@@ -5866,8 +5867,20 @@
         audioPlayer.addEventListener('play', () => {
             updateMusicPlayerUI();
             updateSongTitle(); // Recalculate scrolling
+            // Đảm bảo AudioContext chạy và cập nhật trạng thái MediaSession để giữ thông báo
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'playing';
+            }
         });
-        audioPlayer.addEventListener('pause', updateMusicPlayerUI);        
+        audioPlayer.addEventListener('pause', () => {
+            updateMusicPlayerUI();
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'paused';
+            }
+        });        
         audioPlayer.addEventListener('ended', () => {
             // Ưu tiên kiểm tra chế độ lặp lại 1 bài trước tiên, bất kể danh sách nào
             if (playbackMode === 'repeat-one') {
