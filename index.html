@@ -3658,6 +3658,7 @@
         let convolverNode = null;
         let dryGainNode = null;
         let wetGainNode = null;
+        let normalGainNode = null;
         let compressorNode = null;
         let reverbFilterNode = null;
         
@@ -3797,6 +3798,7 @@
                 convolverNode = audioContext.createConvolver();
                 dryGainNode = audioContext.createGain();
                 wetGainNode = audioContext.createGain();
+                normalGainNode = audioContext.createGain();
                 
                 // Setup Compressor (Professional Filter - prevents distortion/crackling)
                 compressorNode = audioContext.createDynamicsCompressor();
@@ -3827,6 +3829,7 @@
                 // Set Mix Levels
                 dryGainNode.gain.value = 0.8; // Direct sound (Clearer)
                 wetGainNode.gain.value = 0.3; // Reverb sound (Subtler)
+                normalGainNode.gain.value = 0.5; // Cân bằng âm lượng chế độ thường (50%)
 
                 audioSource = audioContext.createMediaElementSource(audioPlayer);
                 
@@ -3848,6 +3851,7 @@
             convolverNode.disconnect();
             if (compressorNode) compressorNode.disconnect();
             if (reverbFilterNode) reverbFilterNode.disconnect();
+            if (normalGainNode) normalGainNode.disconnect();
 
             if (is8DEnabled) {
                 // 8D Path: Source -> Panner -> (Dry + Wet) -> Compressor -> Analyser
@@ -3865,8 +3869,9 @@
                 
                 compressorNode.connect(analyser);
             } else {
-                // Normal Path: Source -> Analyser
-                audioSource.connect(analyser);
+                // Normal Path: Source -> NormalGain -> Analyser
+                audioSource.connect(normalGainNode);
+                normalGainNode.connect(analyser);
             }
         }
 
