@@ -2825,7 +2825,10 @@
                     icon8D.style.color = '#ff4d4d';
                     icon8D.style.textShadow = '0 0 5px rgba(255, 77, 77, 0.5)';
                 }
-                if (audioContext) updateAudioRouting();
+                if (audioContext) {
+                    if (audioContext.state === 'suspended') audioContext.resume(); // Đảm bảo AudioContext luôn chạy khi bật 8D
+                    updateAudioRouting();
+                }
                 saveSettings();
             });
         }
@@ -3432,9 +3435,7 @@
         // --- Music Player Logic ---
         const audioPlayer = document.getElementById('background-music');
         // Tự động xử lý crossOrigin: Bật cho GitHub Pages/Web, tắt cho Localhost/File để tránh lỗi CORS với Blob
-        // Thêm điều kiện: Không bật trên Mobile vì Blob URL + crossOrigin thường gây lỗi trên Mobile Browser
-        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        if (!isMobileDevice && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.protocol !== 'file:') {
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.protocol !== 'file:') {
             audioPlayer.crossOrigin = "anonymous";
         }
 
