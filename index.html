@@ -1497,10 +1497,10 @@
             </div>
             <div class="ui-button-group" style="position: relative;">
                 <button id="toggle-8d-btn" style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%); background: transparent; border: none; cursor: pointer; padding: 0; z-index: 10;" title="Bật/Tắt Nhạc 8D">
-                    <i id="icon-8d" class="fas fa-headphones" style="font-size: 22px; color: #ff4d4d; transition: all 0.3s; text-shadow: 0 0 5px rgba(255, 77, 77, 0.5);"></i>
+                    <i id="icon-8d" class="fas fa-headphones" style="font-size: 22px; color: #00ffff; transition: all 0.3s; text-shadow: 0 0 10px #00ffff;"></i>
                 </button>
                 <div id="panning-speed-slider-container" style="display: none;">
-                    <input type="range" id="panning-speed-slider" min="0.1" max="5.0" step="0.1" value="0.5" title="Tốc độ 8D">
+                    <input type="range" id="panning-speed-slider" min="0.1" max="5.0" step="0.1" value="2.5" title="Tốc độ 8D">
                 </div>
                 <button id="select-song-btn">Chọn nhạc</button>
                 <button id="toggle-images-btn">Hiện ảnh</button>
@@ -2633,7 +2633,7 @@
                 if (settings.currentSingerName) currentSingerName = settings.currentSingerName;
                 activeQueueType = settings.activeQueueType || 'all'; // Mặc định là 'all'
                 const saved8DEnabled = settings.is8DEnabled !== undefined ? settings.is8DEnabled : true;
-                const savedPanningSpeed = settings.panningSpeed !== undefined ? settings.panningSpeed : 0.5;
+                const savedPanningSpeed = settings.panningSpeed !== undefined ? settings.panningSpeed : 2.5;
 
                 // Cập nhật giá trị cho các thanh trượt
                 radiusSlider.value = radius;
@@ -3726,7 +3726,7 @@
         let compressorNode = null;
         let reverbFilterNode = null;
         
-        let panningSpeed = 0.5;
+        let panningSpeed = 2.5;
         let currentPanningPhase = 0;
 
         // Global flags for autoplay handling
