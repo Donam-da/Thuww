@@ -495,7 +495,7 @@
         #panning-speed-slider-container {
             position: absolute;
             left: 50%;
-            transform: translateX(calc(-50% - 40px));
+            transform: translateX(calc(-50% - 30px));
             top: 50px; /* Desktop: Hiển thị bên dưới icon */
             background-color: transparent;
             padding: 5px 0;
@@ -520,9 +520,9 @@
             height: 4px;
             background: linear-gradient(to right, 
                 rgba(0, 255, 255, 0.75) var(--panning-progress, 10%), 
-                rgba(0, 255, 255, 0.15) var(--panning-progress, 10%)
+                transparent var(--panning-progress, 10%)
             );
-            border: 1px solid rgba(0, 255, 255, 0.25);
+            border: none;
             border-radius: 3px;
         }
         #panning-speed-slider::-webkit-slider-thumb {
