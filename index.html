@@ -4010,7 +4010,11 @@
                         return;
                     }
                     showMusicPlayer(songIndex);
-                    hideSongList(); // Close the selection menu
+                    
+                    // Update Highlight manually to avoid list rebuild and scroll reset
+                    const allItems = songSelectionList.querySelectorAll('.song-list-item');
+                    allItems.forEach(i => i.classList.remove('current-song'));
+                    listItem.classList.add('current-song');
                 };
 
                 listItem.addEventListener('mousedown', startPress);
@@ -4173,7 +4177,8 @@
         function renderSingerMenu() {
             singerSelectionList.innerHTML = '';
             singerListHeader.innerHTML = '';
-            const query = singerSearchInput.value.toLowerCase().trim();
+            const query = singerSearchInput.value.trim().toLowerCase();
+            const normalizedQuery = removeVietnameseTones(query);
 
             if (selectedSinger) {
                 const headerContainer = document.createElement('div');
@@ -4226,7 +4231,8 @@
 
                 const artistSongs = singersMap.get(selectedSinger);
                 artistSongs.forEach((song, index) => {
-                    if (query && !song.name.toLowerCase().includes(query)) return;
+                    const normalizedSongName = removeVietnameseTones(song.name.toLowerCase());
+                    if (query && !normalizedSongName.includes(normalizedQuery)) return;
                     const li = document.createElement('li');
                     li.className = 'singer-list-item';
                     li.style.display = 'flex';
@@ -4250,7 +4256,6 @@
 
                     li.onclick = () => {
                         showMusicPlayer(song.id - 1);
-                        hideSingerList();
                     };
                     singerSelectionList.appendChild(li);
                 });
@@ -4261,7 +4266,8 @@
                     return a.localeCompare(b, undefined, { numeric: true });
                 });
                 sortedSingers.forEach(singer => {
-                    if (query && !singer.toLowerCase().includes(query)) return;
+                    const normalizedSingerName = removeVietnameseTones(singer.toLowerCase());
+                    if (query && !normalizedSingerName.includes(normalizedQuery)) return;
                     const li = document.createElement('li');
                     li.className = 'singer-list-item';
                     li.style.display = 'flex';
@@ -4495,7 +4501,13 @@
                         } else {
                             // Phát bài hát khi nhấn vào
                             showMusicPlayer(songIndex);
-                            clearQueueBox.style.display = 'none';
+                            
+                            // Refresh UI to show new playing item while keeping scroll position
+                            const container = document.getElementById('queue-list-container');
+                            const savedScrollTop = container ? container.scrollTop : 0;
+                            renderQueueBox(viewType);
+                            const newContainer = document.getElementById('queue-list-container');
+                            if (newContainer) newContainer.scrollTop = savedScrollTop;
                         }
                     });
                 } else {
@@ -4503,7 +4515,12 @@
                     itemDiv.addEventListener('click', (e) => {
                         e.stopPropagation();
                         showMusicPlayer(songIndex);
-                        clearQueueBox.style.display = 'none';
+                        
+                        const container = document.getElementById('queue-list-container');
+                        const savedScrollTop = container ? container.scrollTop : 0;
+                        renderQueueBox(viewType);
+                        const newContainer = document.getElementById('queue-list-container');
+                        if (newContainer) newContainer.scrollTop = savedScrollTop;
                     });
                 }
 
