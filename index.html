@@ -4712,7 +4712,7 @@
             // Chỉ đặt lại giao diện người dùng về trạng thái mặc định nếu KHÔNG ở chế độ toàn cảnh.
             if (!wasInOverview) {
                 musicPlayerFloatInfo.enabled = true;
-                document.getElementById('music-controls-2d').style.transform = '';
+                document.getElementById('main-ui-controls').style.transform = '';
             }
 
             // If playbackMode is random, ensure shuffledSongIndices is set up
@@ -5886,7 +5886,7 @@
             }
 
             // Di chuyển trình phát nhạc xuống
-            document.getElementById('music-controls-2d').style.transform = 'translateY(20px)';
+            document.getElementById('main-ui-controls').style.transform = 'translateY(20px)';
             
             // Bắt đầu phát TV GIF
             startTvPlayer();
@@ -5982,7 +5982,7 @@
             // Điều này đảm bảo sóng nhạc sẽ bắt đầu di chuyển trở lại nếu trước đó đang ở chế độ "Toàn cảnh".
             musicPlayerFloatInfo.enabled = true;
             selectedPlanetObject = planet; // Cập nhật hành tinh đang được chọn
-            document.getElementById('music-controls-2d').style.transform = '';
+            document.getElementById('main-ui-controls').style.transform = '';
             // Đặt lại kích thước và vị trí của trình phát nhạc 3D
             if (musicPlayerObject && musicPlayerObject.element) {
                 musicPlayerObject.element.style.transform = 'scale(1) translateY(0)';
@@ -6455,7 +6455,7 @@
                     musicPlayerObject.element.style.transform = 'scale(1) translateY(0)';
                 }
                 // Đặt lại vị trí của các nút điều khiển 2D
-                document.getElementById('music-controls-2d').style.transform = '';
+                document.getElementById('main-ui-controls').style.transform = '';
             }
 
             if (isViewLocked && !isCameraAnimating) {
