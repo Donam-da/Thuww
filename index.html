@@ -4123,13 +4123,19 @@
             saveSettings();
             updatePlayAllButtonState();
             
+            if (playbackMode === 'random') generateShuffledPlaylist();
+
             // Phát ngay lập tức bài tiếp theo trong danh sách "Tất cả"
             let nextIndex;
             if (playbackMode === 'repeat-one') {
                 nextIndex = currentSongIndex;
             } else if (playbackMode === 'random') {
-                if (shuffledSongIndices.length === 0) generateShuffledPlaylist();
-                currentShuffledIndex = (currentShuffledIndex + 1) % shuffledSongIndices.length;
+                let newIndex = currentShuffledIndex + 1;
+                if (newIndex >= shuffledSongIndices.length) {
+                    generateShuffledPlaylist();
+                    newIndex = 0;
+                }
+                currentShuffledIndex = newIndex;
                 nextIndex = shuffledSongIndices[currentShuffledIndex];
             } else {
                 nextIndex = (currentSongIndex + 1) % songs.length;
@@ -4238,6 +4244,7 @@
                     const firstIndex = singerQueue[0];
                     saveSettings();
                     showMusicPlayer(firstIndex);
+                    if (playbackMode === 'random') generateShuffledPlaylist();
                     hideSingerList();
                 };
                 headerContainer.appendChild(playAlbumDiv);
@@ -4576,6 +4583,8 @@
                 activeQueueType = viewType;
                 saveSettings();
                 
+                if (playbackMode === 'random') generateShuffledPlaylist();
+
                 // Phát ngay lập tức bài đầu tiên trong danh sách
                 const targetQueue = viewType === 'custom' ? customQueue : singerQueue;
                 if (targetQueue.length > 0) {
@@ -4789,34 +4798,48 @@
         function playNextSong(direction) {
             let nextIndex;
             
-            if (activeQueueType === 'custom' || activeQueueType === 'singer') {
-                const currentQueue = activeQueueType === 'custom' ? customQueue : singerQueue;
-                if (currentQueue.length === 0) return;
+            // Check if current queue is empty
+            if (activeQueueType === 'custom' && customQueue.length === 0) return;
+            if (activeQueueType === 'singer' && singerQueue.length === 0) return;
 
-                if (playbackMode === 'random') {
-                    // Pick random song from current queue
-                    const randPos = Math.floor(Math.random() * currentQueue.length);
-                    nextIndex = currentQueue[randPos];
-                } else {
-                    // Sequential or Repeat One (manual nav)
-                    let queueIndex = currentQueue.indexOf(currentSongIndex);
-                    
-                    if (queueIndex === -1) {
-                        // Nếu bài hát hiện tại không nằm trong danh sách đang active
-                        // Next (1) -> Bài đầu tiên, Prev (-1) -> Bài cuối cùng
-                        nextIndex = (direction === 1) ? currentQueue[0] : currentQueue[currentQueue.length - 1];
+            if (playbackMode === 'random') {
+                // Ensure we have a shuffle list
+                if (shuffledSongIndices.length === 0) {
+                    generateShuffledPlaylist();
+                }
+
+                let newShuffledIndex = currentShuffledIndex + direction;
+                
+                // Check bounds for reshuffling (Finish list then new cycle)
+                if (newShuffledIndex >= shuffledSongIndices.length || newShuffledIndex < 0) {
+                    generateShuffledPlaylist(); 
+                    if (direction === 1) {
+                        newShuffledIndex = 0;
                     } else {
-                        let newQueueIndex = (queueIndex + direction + currentQueue.length) % currentQueue.length;
-                        nextIndex = currentQueue[newQueueIndex];
+                        newShuffledIndex = shuffledSongIndices.length - 1;
                     }
                 }
+                
+                currentShuffledIndex = newShuffledIndex;
+                nextIndex = shuffledSongIndices[currentShuffledIndex];
+                
             } else {
-                // 'all'
-                if (playbackMode === 'random') {
-                    if (shuffledSongIndices.length === 0) generateShuffledPlaylist();
-                    currentShuffledIndex = (currentShuffledIndex + direction + shuffledSongIndices.length) % shuffledSongIndices.length;
-                    nextIndex = shuffledSongIndices[currentShuffledIndex];
+                // Sequential logic
+                let currentQueue = null;
+                if (activeQueueType === 'custom') currentQueue = customQueue;
+                else if (activeQueueType === 'singer') currentQueue = singerQueue;
+                
+                if (currentQueue) {
+                     let queueIndex = currentQueue.indexOf(currentSongIndex);
+                     if (queueIndex === -1) {
+                         // Fallback if current song not in queue
+                         nextIndex = (direction === 1) ? currentQueue[0] : currentQueue[currentQueue.length - 1];
+                     } else {
+                         let newQueueIndex = (queueIndex + direction + currentQueue.length) % currentQueue.length;
+                         nextIndex = currentQueue[newQueueIndex];
+                     }
                 } else {
+                    // All songs
                     nextIndex = (currentSongIndex + direction + songs.length) % songs.length;
                 }
             }
@@ -4878,20 +4901,37 @@
 
         // --- Playback Mode Functions ---
         function generateShuffledPlaylist() {
-            shuffledSongIndices = Array.from({ length: songs.length }, (_, i) => i); // [0, 1, 2, ...]
+            let sourceList;
+            if (activeQueueType === 'custom') {
+                sourceList = [...customQueue];
+            } else if (activeQueueType === 'singer') {
+                sourceList = [...singerQueue];
+            } else {
+                sourceList = Array.from({ length: songs.length }, (_, i) => i);
+            }
+
+            if (sourceList.length === 0) {
+                shuffledSongIndices = [];
+                return;
+            }
+
+            shuffledSongIndices = sourceList;
             // Fisher-Yates (Knuth) shuffle algorithm
             for (let i = shuffledSongIndices.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [shuffledSongIndices[i], shuffledSongIndices[j]] = [shuffledSongIndices[j], shuffledSongIndices[i]];
             }
-            // Optional: Ensure the current song isn't the very next one if possible
+            
+            // Ensure current song isn't the first one to avoid immediate repeat
             if (currentSongIndex !== -1 && shuffledSongIndices[0] === currentSongIndex && songs.length > 1) {
-                // Find a different index to swap with
-                let swapIndex = 1;
-                if (shuffledSongIndices.length > 2 && shuffledSongIndices[1] === currentSongIndex) { // Avoid swapping with itself if only 2 songs
-                    swapIndex = 2;
-                }
+                const swapIndex = shuffledSongIndices.length - 1;
                 [shuffledSongIndices[0], shuffledSongIndices[swapIndex]] = [shuffledSongIndices[swapIndex], shuffledSongIndices[0]];
+            }
+            
+            // Sync pointer
+            currentShuffledIndex = -1;
+            if (currentSongIndex !== -1) {
+                currentShuffledIndex = shuffledSongIndices.indexOf(currentSongIndex);
             }
         }
 
@@ -4906,7 +4946,6 @@
             updatePlaybackModeUI();
             if (playbackMode === 'random') {
                 generateShuffledPlaylist();
-                currentShuffledIndex = -1; // Reset to pick the first from shuffled list on next song end
             }
             /* The line `musicPlayerSongTitle2D.style.display = 'none';` was removed from here as it was causing unintended hiding of the song title. */
             updateMusicPlayerUI(); // Initial UI update for 2D controls
@@ -5902,61 +5941,7 @@
                 return;
             }
 
-            // Xác định danh sách đang phát dựa trên activeQueueType
-            if (activeQueueType === 'custom' || activeQueueType === 'singer') {
-                const currentQueue = activeQueueType === 'custom' ? customQueue : singerQueue;
-                
-                if (currentQueue.length > 0) {
-                    let nextIndex;
-                    if (playbackMode === 'random') {
-                        const randPos = Math.floor(Math.random() * currentQueue.length);
-                        nextIndex = currentQueue[randPos];
-                    } else {
-                        // Sequential
-                        let queueIndex = currentQueue.indexOf(currentSongIndex);
-                        
-                        // Cơ chế quay lại (Resume): Nếu bài hát vừa kết thúc không thuộc danh sách active, tìm theo lastActiveQueueSongIndex
-                        if (queueIndex === -1) {
-                            queueIndex = currentQueue.indexOf(lastActiveQueueSongIndex);
-                        }
-
-                        if (queueIndex !== -1) {
-                            nextIndex = currentQueue[(queueIndex + 1) % currentQueue.length];
-                        } else {
-                            nextIndex = currentQueue[0]; // Fallback về đầu danh sách nếu không tìm thấy
-                        }
-                    }
-                    
-                    showMusicPlayer(nextIndex);
-
-                    if (isSongListOpen) populateSongList();
-                    if (clearQueueBox.style.display === 'flex') renderQueueBox(activeQueueType);
-                    return;
-                } else {
-                    // Nếu danh sách riêng/ca sĩ đã hết, dừng lại (không phát tiếp danh sách tất cả)
-                    // vì yêu cầu là "chỉ được phát các bài hát của 1 danh sách"
-                    return; 
-                }
-            }
-
-            // Nếu activeQueueType là 'all', chạy logic phát ngẫu nhiên/tuần tự bên dưới
-            let newIndex;
-            if (playbackMode === 'sequential') {
-                newIndex = (currentSongIndex + 1) % songs.length;
-            } else if (playbackMode === 'random') {
-                // If shuffled list is empty or we've played all shuffled songs, regenerate
-                if (shuffledSongIndices.length === 0 || currentShuffledIndex >= shuffledSongIndices.length - 1) {
-                    generateShuffledPlaylist();
-                    currentShuffledIndex = 0; // Start from the beginning of the new shuffled list
-                } else {
-                    currentShuffledIndex++;
-                }
-                newIndex = shuffledSongIndices[currentShuffledIndex];
-            }
-            // Ensure newIndex is valid before calling showMusicPlayer
-            if (newIndex !== undefined && newIndex >= 0 && newIndex < songs.length) {
-                showMusicPlayer(newIndex);
-            }
+            playNextSong(1);
         });
 
         // --- GIF TV Player Logic ---
