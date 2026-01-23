@@ -2440,6 +2440,7 @@
         const toggle8DBtn = document.getElementById('toggle-8d-btn');
         const icon8D = document.getElementById('icon-8d');
         let isTvDigitalMode = true;
+        let next8DScheduleTime = 0;
 
         // New volume control elements
         const volumeBtn = document.getElementById('volume-btn');
@@ -2828,6 +2829,9 @@
                 if (audioContext) {
                     if (audioContext.state === 'suspended') audioContext.resume(); // Đảm bảo AudioContext luôn chạy khi bật 8D
                     updateAudioRouting();
+                    if (is8DEnabled) {
+                        next8DScheduleTime = audioContext.currentTime;
+                    }
                 }
                 saveSettings();
             });
@@ -3434,10 +3438,6 @@
         
         // --- Music Player Logic ---
         const audioPlayer = document.getElementById('background-music');
-        // Tự động xử lý crossOrigin: Bật cho GitHub Pages/Web, tắt cho Localhost/File để tránh lỗi CORS với Blob
-        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.protocol !== 'file:') {
-            audioPlayer.crossOrigin = "anonymous";
-        }
 
         const selectSongBtn = document.getElementById('select-song-btn');
         const songListOverlay = document.getElementById('song-list-overlay');
@@ -3586,7 +3586,16 @@
                 dataArray = new Uint8Array(bufferLength);
 
                 // 8D Audio Setup
-                pannerNode = audioContext.createStereoPanner();
+                pannerNode = audioContext.createPanner();
+                pannerNode.panningModel = 'HRTF'; // Sử dụng HRTF để giả lập âm thanh vòm 360 độ chất lượng cao
+                pannerNode.distanceModel = 'inverse';
+                pannerNode.refDistance = 1;
+                pannerNode.maxDistance = 10000;
+                pannerNode.rolloffFactor = 1;
+                pannerNode.coneInnerAngle = 360;
+                pannerNode.coneOuterAngle = 0;
+                pannerNode.coneOuterGain = 0;
+
                 convolverNode = audioContext.createConvolver();
                 dryGainNode = audioContext.createGain();
                 wetGainNode = audioContext.createGain();
@@ -6185,6 +6194,54 @@
             };
         }
 
+        function update8DPanning() {
+            if (!is8DEnabled || !pannerNode || !audioContext || audioContext.state !== 'running') return;
+
+            // Fallback for browsers without AudioParam for position
+            if (!pannerNode.positionX) {
+                const time = audioContext.currentTime * 0.5;
+                const radius = 3;
+                const x = Math.sin(time) * radius;
+                const z = Math.cos(time) * radius;
+                const y = Math.sin(time * 0.5) * 1.5;
+                pannerNode.setPosition(x, y, z);
+                return;
+            }
+
+            const currentTime = audioContext.currentTime;
+            const lookahead = 0.5;
+            const scheduleDuration = 2.0; // Schedule 2 seconds ahead to cover background throttling
+
+            if (next8DScheduleTime < currentTime + lookahead) {
+                const startScheduleTime = Math.max(currentTime, next8DScheduleTime);
+                const sampleRate = 20;
+                const sampleCount = Math.ceil(scheduleDuration * sampleRate);
+                const xCurve = new Float32Array(sampleCount);
+                const yCurve = new Float32Array(sampleCount);
+                const zCurve = new Float32Array(sampleCount);
+
+                for (let i = 0; i < sampleCount; i++) {
+                    const t = startScheduleTime + (i / sampleRate);
+                    const angle = t * 0.5;
+                    const radius = 3;
+                    xCurve[i] = Math.sin(angle) * radius;
+                    zCurve[i] = Math.cos(angle) * radius;
+                    yCurve[i] = Math.sin(angle * 0.5) * 1.5;
+                }
+
+                try {
+                    pannerNode.positionX.setValueCurveAtTime(xCurve, startScheduleTime, scheduleDuration);
+                    pannerNode.positionY.setValueCurveAtTime(yCurve, startScheduleTime, scheduleDuration);
+                    pannerNode.positionZ.setValueCurveAtTime(zCurve, startScheduleTime, scheduleDuration);
+                    next8DScheduleTime = startScheduleTime + scheduleDuration;
+                } catch (e) {
+                    next8DScheduleTime = currentTime;
+                }
+            }
+        }
+
+        setInterval(update8DPanning, 200);
+
         // --- Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
@@ -6211,12 +6268,6 @@
                     // Khi ở chế độ Toàn cảnh, di chuyển mượt mà đến vị trí cố định ở trung tâm
                     musicPlayerObject.position.lerp(musicPlayerFloatInfo.overviewPosition, 0.02);
                 }
-            }
-
-            // 8D Audio Panning Animation
-            if (is8DEnabled && pannerNode && audioContext && audioContext.state === 'running') {
-                const time = Date.now() * 0.0005; // Adjust speed of rotation
-                pannerNode.pan.value = Math.sin(time);
             }
 
             // Animate star brightness for twinkling effect
