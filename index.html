@@ -1647,7 +1647,7 @@
         <div id="bottom-left-controls">
             <button id="more-options-btn"><i class="fas fa-bars"></i></button>
             <button id="settings-icon-btn"><i class="fas fa-cog"></i></button>
-            <button id="lock-screen-btn" title="Khóa màn hình"><i class="fas fa-lock-open"></i></button>
+            <button id="lock-screen-btn" title="Nhấn giữ để khóa/mở khóa"><i class="fas fa-lock-open"></i></button>
             <div id="volume-control-container">
                 <button id="volume-btn"><i class="fas fa-volume-up"></i></button>
                 <div id="volume-slider-container" style="display: none;">
@@ -2911,8 +2911,9 @@
 
         // --- Lock Screen Logic ---
         let isScreenLocked = false;
-        lockScreenBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
+        let lockBtnTimer;
+
+        function toggleScreenLock() {
             isScreenLocked = !isScreenLocked;
             
             if (isScreenLocked) {
@@ -2924,6 +2925,28 @@
                 lockScreenBtn.innerHTML = '<i class="fas fa-lock-open"></i>';
                 lockScreenBtn.style.color = 'white';
             }
+        }
+
+        const startLockPress = (e) => {
+            if (e.type === 'mousedown' && e.button !== 0) return;
+            lockBtnTimer = setTimeout(() => {
+                toggleScreenLock();
+                if (navigator.vibrate) navigator.vibrate(50);
+            }, 1000);
+        };
+
+        const cancelLockPress = () => {
+            clearTimeout(lockBtnTimer);
+        };
+
+        lockScreenBtn.addEventListener('mousedown', startLockPress);
+        lockScreenBtn.addEventListener('touchstart', startLockPress, { passive: true });
+        lockScreenBtn.addEventListener('mouseup', cancelLockPress);
+        lockScreenBtn.addEventListener('mouseleave', cancelLockPress);
+        lockScreenBtn.addEventListener('touchend', cancelLockPress);
+
+        lockScreenBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
         });
 
         // Add event listener for the new orbit toggle button
