@@ -975,7 +975,7 @@
         #gif-tv-screen {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
         }
         #music-controls-2d {
             position: fixed;
@@ -3178,24 +3178,33 @@
                 if (tvContainer && tvContainer.style.display !== 'none' && tvScreen) {
                     const rect = tvScreen.getBoundingClientRect();
                     
-                    // Mô phỏng object-fit: cover khi vẽ lên canvas để ảnh không bị méo
+                    // Mô phỏng object-fit: contain khi vẽ lên canvas để ảnh nằm gọn trong khung
                     const img = tvScreen;
                     const nW = img.naturalWidth;
                     const nH = img.naturalHeight;
                     const rW = rect.width;
                     const rH = rect.height;
                     
-                    let sX = 0, sY = 0, sW = nW, sH = nH;
                     const imgAspect = nW / nH;
                     const rectAspect = rW / rH;
                     
-                    if (rectAspect > imgAspect) { // Container rộng hơn ảnh (tương đối) -> Cắt trên/dưới
-                        sH = nW / rectAspect; sY = (nH - sH) / 2;
-                    } else { // Container cao hơn ảnh (tương đối) -> Cắt trái/phải
-                        sW = nH * rectAspect; sX = (nW - sW) / 2;
+                    let dW, dH, dX, dY;
+
+                    if (rectAspect > imgAspect) { 
+                        // Container rộng hơn ảnh (về tỷ lệ) -> Fit theo chiều cao
+                        dH = rH;
+                        dW = rH * imgAspect;
+                        dY = 0;
+                        dX = (rW - dW) / 2;
+                    } else {
+                        // Container cao hơn ảnh (về tỷ lệ) -> Fit theo chiều rộng
+                        dW = rW;
+                        dH = rW / imgAspect;
+                        dX = 0;
+                        dY = (rH - dH) / 2;
                     }
                     
-                    ctx.drawImage(img, sX, sY, sW, sH, rect.left, rect.top, rW, rH);
+                    ctx.drawImage(img, 0, 0, nW, nH, rect.left + dX, rect.top + dY, dW, dH);
                 }
 
                 // Vẽ Sóng nhạc (Visualizer) nếu đang hiển thị
