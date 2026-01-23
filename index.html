@@ -1462,7 +1462,6 @@
         <!-- New container for UI buttons -->
         <div id="main-ui-controls">
             <div class="ui-button-group" style="position: relative;">
-                <button id="toggle-tv-mode-btn" style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%); background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; white-space: nowrap; z-index: 10;">Kĩ thuật số</button>
                 <button id="toggle-tv-mode-btn" style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%); background: transparent; border: none; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; white-space: nowrap; z-index: 10;">Digital</button>
                 <button id="select-planet-btn">Hành tinh</button>
                 <button id="toggle-labels-btn">Hiện tên</button>
@@ -2657,7 +2656,6 @@
                 }
 
                 isTvDigitalMode = tvMode;
-                if (toggleTvModeBtn) toggleTvModeBtn.textContent = isTvDigitalMode ? 'Kĩ thuật số' : 'Gốc';
                 if (toggleTvModeBtn) toggleTvModeBtn.textContent = isTvDigitalMode ? 'Digital' : 'Original';
                 
                 // Apply 8D setting
@@ -2959,7 +2957,6 @@
             toggleTvModeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 isTvDigitalMode = !isTvDigitalMode;
-                toggleTvModeBtn.textContent = isTvDigitalMode ? 'Kĩ thuật số' : 'Gốc';
                 toggleTvModeBtn.textContent = isTvDigitalMode ? 'Digital' : 'Original';
                 saveSettings();
                 
