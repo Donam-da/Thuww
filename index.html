@@ -1554,6 +1554,9 @@
                 <li class="settings-list-item" id="download-planet-img-btn" style="cursor: pointer;">
                     <label style="pointer-events: none; margin-bottom: 0;">Images</label>
                 </li>
+                <li class="settings-list-item" id="toggle-8d-btn" style="cursor: pointer;">
+                    <label style="pointer-events: none; margin-bottom: 0;">Bật Nhạc 8D</label>
+                </li>
             </ul>
         </div>
 
@@ -2433,6 +2436,9 @@
         const toggleTvBtn = document.getElementById('toggle-tv-btn');
         const toggleTvLabel = toggleTvBtn.querySelector('label');
         const toggleTvModeBtn = document.getElementById('toggle-tv-mode-btn');
+        // 8D Audio Toggle
+        const toggle8DBtn = document.getElementById('toggle-8d-btn');
+        const toggle8DLabel = toggle8DBtn.querySelector('label');
         let isTvDigitalMode = true;
 
         // New volume control elements
@@ -2466,7 +2472,8 @@
                 customQueue: customQueue,
                 singerQueue: singerQueue,
                 currentSingerName: currentSingerName,
-                activeQueueType: activeQueueType
+                activeQueueType: activeQueueType,
+                is8DEnabled: is8DEnabled
             };
             localStorage.setItem('solarSystemSettings', JSON.stringify(settings));
         }
@@ -2497,6 +2504,7 @@
                 if (settings.singerQueue) singerQueue = settings.singerQueue;
                 if (settings.currentSingerName) currentSingerName = settings.currentSingerName;
                 activeQueueType = settings.activeQueueType || 'all'; // Mặc định là 'all'
+                const saved8DEnabled = settings.is8DEnabled || false;
 
                 // Cập nhật giá trị cho các thanh trượt
                 radiusSlider.value = radius;
@@ -2538,6 +2546,13 @@
                 isTvDigitalMode = tvMode;
                 if (toggleTvModeBtn) toggleTvModeBtn.textContent = isTvDigitalMode ? 'Kĩ thuật số' : 'Gốc';
                 
+                // Apply 8D setting
+                is8DEnabled = saved8DEnabled;
+                if (toggle8DLabel) toggle8DLabel.textContent = is8DEnabled ? 'Tắt Nhạc 8D' : 'Bật Nhạc 8D';
+                if (audioContext) {
+                    updateAudioRouting();
+                }
+
                 // Apply visualizer style
                 currentVisualizerStyle = parseInt(savedVisualizerStyle);
                 if (changeVisualizerStyleLabel) {
@@ -2788,6 +2803,16 @@
                     if (gifInterval) clearInterval(gifInterval);
                     gifInterval = setInterval(playNextTvContent, 5000);
                 }
+            });
+        }
+
+        // Add event listener for 8D Audio toggle
+        if (toggle8DBtn) {
+            toggle8DBtn.addEventListener('click', () => {
+                is8DEnabled = !is8DEnabled;
+                toggle8DLabel.textContent = is8DEnabled ? 'Tắt Nhạc 8D' : 'Bật Nhạc 8D';
+                if (audioContext) updateAudioRouting();
+                saveSettings();
             });
         }
 
@@ -3411,6 +3436,13 @@
         let dataArray = null;
         let bufferLength = null;
         let audioSource = null; // To hold the MediaElementSourceNode
+
+        // 8D Audio Variables
+        let is8DEnabled = false;
+        let pannerNode = null;
+        let convolverNode = null;
+        let dryGainNode = null;
+        let wetGainNode = null;
         
         // Global flags for autoplay handling
         let hasUserInteracted = false;
@@ -3531,9 +3563,63 @@
                 bufferLength = analyser.frequencyBinCount; // Half of fftSize
                 dataArray = new Uint8Array(bufferLength);
 
+                // 8D Audio Setup
+                pannerNode = audioContext.createStereoPanner();
+                convolverNode = audioContext.createConvolver();
+                dryGainNode = audioContext.createGain();
+                wetGainNode = audioContext.createGain();
+
+                // Create Impulse Response for Reverb (Space simulation)
+                const sampleRate = audioContext.sampleRate;
+                const length = sampleRate * 3; // 3 seconds reverb tail
+                const impulse = audioContext.createBuffer(2, length, sampleRate);
+                const leftImpulse = impulse.getChannelData(0);
+                const rightImpulse = impulse.getChannelData(1);
+                for (let i = 0; i < length; i++) {
+                    const decay = Math.pow(1 - i / length, 3); // Exponential decay
+                    leftImpulse[i] = (Math.random() * 2 - 1) * decay;
+                    rightImpulse[i] = (Math.random() * 2 - 1) * decay;
+                }
+                convolverNode.buffer = impulse;
+
+                // Set Mix Levels
+                dryGainNode.gain.value = 0.5; // Direct sound
+                wetGainNode.gain.value = 0.5; // Reverb sound
+
                 audioSource = audioContext.createMediaElementSource(audioPlayer);
-                audioSource.connect(analyser);
+                
+                // Initial Routing
+                updateAudioRouting();
+                
                 analyser.connect(audioContext.destination);
+            }
+        }
+
+        function updateAudioRouting() {
+            if (!audioSource) return;
+
+            // Disconnect everything to reset graph
+            audioSource.disconnect();
+            pannerNode.disconnect();
+            dryGainNode.disconnect();
+            wetGainNode.disconnect();
+            convolverNode.disconnect();
+
+            if (is8DEnabled) {
+                // 8D Path: Source -> Panner -> (Dry + Wet) -> Analyser
+                audioSource.connect(pannerNode);
+                
+                // Dry Path
+                pannerNode.connect(dryGainNode);
+                dryGainNode.connect(analyser);
+                
+                // Wet Path (Reverb)
+                pannerNode.connect(convolverNode);
+                convolverNode.connect(wetGainNode);
+                wetGainNode.connect(analyser);
+            } else {
+                // Normal Path: Source -> Analyser
+                audioSource.connect(analyser);
             }
         }
 
@@ -6083,6 +6169,12 @@
                     // Khi ở chế độ Toàn cảnh, di chuyển mượt mà đến vị trí cố định ở trung tâm
                     musicPlayerObject.position.lerp(musicPlayerFloatInfo.overviewPosition, 0.02);
                 }
+            }
+
+            // 8D Audio Panning Animation
+            if (is8DEnabled && pannerNode && audioContext && audioContext.state === 'running') {
+                const time = Date.now() * 0.0005; // Adjust speed of rotation
+                pannerNode.pan.value = Math.sin(time);
             }
 
             // Animate star brightness for twinkling effect
