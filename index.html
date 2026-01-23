@@ -491,6 +491,48 @@
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
         }
 
+        /* --- Panning Speed Slider (8D) --- */
+        #panning-speed-slider-container {
+            position: absolute;
+            left: 50%;
+            transform: translateX(calc(-50% - 30px));
+            top: 50px; /* Desktop: Hiển thị bên dưới icon */
+            background-color: transparent;
+            padding: 5px 0;
+            border-radius: 8px;
+            width: 30px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1002;
+        }
+        #panning-speed-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 120px;
+            height: 20px;
+            background: transparent;
+            cursor: pointer;
+            transform: rotate(-90deg);
+        }
+        #panning-speed-slider::-webkit-slider-runnable-track {
+            height: 4px;
+            background: rgba(255, 0, 255, 0.5);
+            border: 1px solid rgba(255, 0, 255, 0.5);
+            border-radius: 3px;
+        }
+        #panning-speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            background: radial-gradient(circle, rgba(255, 0, 255, 0.4) 0%, transparent 60%);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 0, 255, 0.75);
+            margin-top: -7px;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.7);
+        }
+
         /* --- Zoom Control --- */
         #zoom-control-container {
             position: relative; /* For slider positioning */
@@ -1274,6 +1316,11 @@
                 margin-bottom: 0;
                 margin-top: 45px;
             }
+        
+        #panning-speed-slider-container {
+            top: auto;
+            bottom: 50px; /* Mobile: Hiển thị bên trên icon */
+        }
 
             /* --- Mobile Settings Menu --- */
             #settings-overlay, #more-options-overlay {
@@ -1437,6 +1484,9 @@
                 <button id="toggle-8d-btn" style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%); background: transparent; border: none; cursor: pointer; padding: 0; z-index: 10;" title="Bật/Tắt Nhạc 8D">
                     <i id="icon-8d" class="fas fa-headphones" style="font-size: 22px; color: #ff4d4d; transition: all 0.3s; text-shadow: 0 0 5px rgba(255, 77, 77, 0.5);"></i>
                 </button>
+                <div id="panning-speed-slider-container" style="display: none;">
+                    <input type="range" id="panning-speed-slider" min="0.1" max="5.0" step="0.1" value="0.5" title="Tốc độ 8D">
+                </div>
                 <button id="select-song-btn">Chọn nhạc</button>
                 <button id="toggle-images-btn">Hiện ảnh</button>
             </div>
@@ -2475,6 +2525,25 @@
         const toggleTvModeBtn = document.getElementById('toggle-tv-mode-btn');
         // 8D Audio Toggle
         const toggle8DBtn = document.getElementById('toggle-8d-btn');
+        
+        // Panning Speed Logic (Long Press on Headphone Icon)
+        let panningBtnPressTimer;
+        let isPanningBtnLongPress = false;
+
+        const startPanningBtnPress = (e) => {
+            if (e.type === 'mousedown' && e.button !== 0) return;
+            isPanningBtnLongPress = false;
+            panningBtnPressTimer = setTimeout(() => {
+                isPanningBtnLongPress = true;
+                isPanningSpeedSliderOpen ? hidePanningSpeedSlider() : showPanningSpeedSlider();
+                if (navigator.vibrate) navigator.vibrate(50);
+            }, 500);
+        };
+
+        const cancelPanningBtnPress = () => {
+            clearTimeout(panningBtnPressTimer);
+        };
+
         const icon8D = document.getElementById('icon-8d');
         let isTvDigitalMode = true;
         let next8DScheduleTime = 0;
@@ -2485,6 +2554,10 @@
         const volumeSlider = document.getElementById('volume-slider');
         const volumeIcon = volumeBtn.querySelector('i');
         let isVolumeSliderOpen = false;
+        
+        const panningSpeedSliderContainer = document.getElementById('panning-speed-slider-container');
+        const panningSpeedSlider = document.getElementById('panning-speed-slider');
+        let isPanningSpeedSliderOpen = false;
 
         // New zoom control elements
         const zoomBtn = document.getElementById('zoom-btn');
@@ -2513,6 +2586,7 @@
                 activeQueueType: activeQueueType,
                 is8DEnabled: is8DEnabled
             };
+            settings.panningSpeed = panningSpeed;
             localStorage.setItem('solarSystemSettings', JSON.stringify(settings));
         }
 
@@ -2543,6 +2617,7 @@
                 if (settings.currentSingerName) currentSingerName = settings.currentSingerName;
                 activeQueueType = settings.activeQueueType || 'all'; // Mặc định là 'all'
                 const saved8DEnabled = settings.is8DEnabled !== undefined ? settings.is8DEnabled : true;
+                const savedPanningSpeed = settings.panningSpeed !== undefined ? settings.panningSpeed : 0.5;
 
                 // Cập nhật giá trị cho các thanh trượt
                 radiusSlider.value = radius;
@@ -2610,6 +2685,10 @@
                 audioPlayer.volume = volume / 100;
                 updateVolumeIcon(volume / 100);
                 updateVolumeSliderVisual(volume);
+                
+                // Apply Panning Speed
+                panningSpeed = savedPanningSpeed;
+                panningSpeedSlider.value = panningSpeed;
 
                 // Apply FOV setting
                 camera.fov = fov;
@@ -2633,6 +2712,7 @@
             if (isMoreOptionsMenuOpen) hideMoreOptionsMenu();
             if (singerListOverlay.style.display === 'flex') hideSingerList();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
+            if (isPanningSpeedSliderOpen) hidePanningSpeedSlider();
             hideGalleries();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideSettingsInteraction, true);
@@ -2651,6 +2731,7 @@
             if (isZoomSliderOpen) hideZoomSlider();
             if (singerListOverlay.style.display === 'flex') hideSingerList();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
+            if (isPanningSpeedSliderOpen) hidePanningSpeedSlider();
             hideGalleries();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideMoreOptionsInteraction, true);
@@ -2667,6 +2748,7 @@
             if (isPlanetListOpen) hidePlanetList();
             if (singerListOverlay.style.display === 'flex') hideSingerList();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
+            if (isPanningSpeedSliderOpen) hidePanningSpeedSlider();
             hideGalleries();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideVolumeInteraction, true);
@@ -2720,6 +2802,40 @@
                 hideVolumeSlider();
             }
         }
+        
+        function showPanningSpeedSlider() {
+            panningSpeedSliderContainer.style.display = 'block';
+            isPanningSpeedSliderOpen = true;
+            if (isVolumeSliderOpen) hideVolumeSlider();
+            // Close other menus
+            if (isSettingsMenuOpen) hideSettingsMenu();
+            if (isMoreOptionsMenuOpen) hideMoreOptionsMenu();
+            if (isSongListOpen) hideSongList();
+            if (isPlanetListOpen) hidePlanetList();
+            hideGalleries();
+            controls.enabled = false;
+            document.addEventListener('click', handleOutsidePanningInteraction, true);
+            document.addEventListener('touchend', handleOutsidePanningInteraction, true);
+        }
+
+        function hidePanningSpeedSlider() {
+            panningSpeedSliderContainer.style.display = 'none';
+            isPanningSpeedSliderOpen = false;
+            if (!isCameraAnimating && !isViewLocked) controls.enabled = true;
+            document.removeEventListener('click', handleOutsidePanningInteraction, true);
+            document.removeEventListener('touchend', handleOutsidePanningInteraction, true);
+        }
+
+        function handleOutsidePanningInteraction(event) {
+            if (isPanningSpeedSliderOpen && !panningSpeedSliderContainer.contains(event.target) && !toggle8DBtn.contains(event.target)) {
+                // Nếu đang trong trạng thái nhấn giữ (vừa thả tay ra), không ẩn slider
+                if (isPanningBtnLongPress) {
+                    isPanningBtnLongPress = false;
+                    return;
+                }
+                hidePanningSpeedSlider();
+            }
+        }
 
         // New functions for zoom slider
         function showZoomSlider() {
@@ -2733,6 +2849,7 @@
             if (isVolumeSliderOpen) hideVolumeSlider();
             if (clearQueueBox.style.display === 'flex') clearQueueBox.style.display = 'none';
             if (singerListOverlay.style.display === 'flex') hideSingerList();
+            if (isPanningSpeedSliderOpen) hidePanningSpeedSlider();
             hideGalleries();
             controls.enabled = false;
             document.addEventListener('click', handleOutsideZoomInteraction, true);
@@ -2854,7 +2971,18 @@
 
         // Add event listener for 8D Audio toggle
         if (toggle8DBtn) {
-            toggle8DBtn.addEventListener('click', () => {
+            toggle8DBtn.addEventListener('mousedown', startPanningBtnPress);
+            toggle8DBtn.addEventListener('touchstart', startPanningBtnPress, { passive: true });
+            toggle8DBtn.addEventListener('mouseup', cancelPanningBtnPress);
+            toggle8DBtn.addEventListener('mouseleave', cancelPanningBtnPress);
+            toggle8DBtn.addEventListener('touchend', cancelPanningBtnPress);
+
+            toggle8DBtn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                if (isPanningBtnLongPress) {
+                    isPanningBtnLongPress = false;
+                    return;
+                }
                 is8DEnabled = !is8DEnabled;
                 if (is8DEnabled) {
                     icon8D.style.color = '#00ffff';
@@ -3287,6 +3415,7 @@
         }
 
         // Volume slider logic
+
         volumeBtn.addEventListener('click', (event) => {
             event.stopPropagation();
             isVolumeSliderOpen ? hideVolumeSlider() : showVolumeSlider();
@@ -3297,6 +3426,11 @@
             audioPlayer.volume = volume;
             updateVolumeIcon(volume);
             updateVolumeSliderVisual(volumeSlider.value);
+            saveSettings();
+        });
+        
+        panningSpeedSlider.addEventListener('input', () => {
+            panningSpeed = parseFloat(panningSpeedSlider.value);
             saveSettings();
         });
 
@@ -3503,6 +3637,9 @@
         let dryGainNode = null;
         let wetGainNode = null;
         
+        let panningSpeed = 0.5;
+        let currentPanningPhase = 0;
+
         // Global flags for autoplay handling
         let hasUserInteracted = false;
         let songToPlayAfterInteraction = null; // Stores the file path of the song to play
@@ -6236,7 +6373,8 @@
 
             // Fallback for browsers without AudioParam for position
             if (!pannerNode.positionX) {
-                const time = audioContext.currentTime * 0.5;
+                currentPanningPhase += 0.01 * panningSpeed;
+                const time = currentPanningPhase;
                 const radius = 3;
                 const x = Math.sin(time) * radius;
                 const z = Math.cos(time) * radius;
@@ -6258,8 +6396,11 @@
                 const zCurve = new Float32Array(sampleCount);
 
                 for (let i = 0; i < sampleCount; i++) {
-                    const t = startScheduleTime + (i / sampleRate);
-                    const angle = t * 0.5;
+                    // Calculate phase increment per sample based on current speed
+                    const dt = 1 / sampleRate;
+                    currentPanningPhase += dt * panningSpeed;
+                    const angle = currentPanningPhase;
+                    
                     const radius = 3;
                     xCurve[i] = Math.sin(angle) * radius;
                     zCurve[i] = Math.cos(angle) * radius;
