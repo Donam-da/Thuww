@@ -2600,7 +2600,8 @@
                 singerQueue: singerQueue,
                 currentSingerName: currentSingerName,
                 activeQueueType: activeQueueType,
-                is8DEnabled: is8DEnabled
+                is8DEnabled: is8DEnabled,
+                isScreenLocked: isScreenLocked
             };
             settings.panningSpeed = panningSpeed;
             localStorage.setItem('solarSystemSettings', JSON.stringify(settings));
@@ -2634,6 +2635,7 @@
                 activeQueueType = settings.activeQueueType || 'all'; // Mặc định là 'all'
                 const saved8DEnabled = settings.is8DEnabled !== undefined ? settings.is8DEnabled : true;
                 const savedPanningSpeed = settings.panningSpeed !== undefined ? settings.panningSpeed : 2.5;
+                const savedIsScreenLocked = settings.isScreenLocked !== undefined ? settings.isScreenLocked : false;
 
                 // Cập nhật giá trị cho các thanh trượt
                 radiusSlider.value = radius;
@@ -2688,6 +2690,18 @@
                 }
                 if (audioContext) {
                     updateAudioRouting();
+                }
+
+                // Apply Lock Screen setting
+                isScreenLocked = savedIsScreenLocked;
+                if (isScreenLocked) {
+                    document.body.classList.add('app-locked');
+                    lockScreenBtn.innerHTML = '<i class="fas fa-lock"></i>';
+                    lockScreenBtn.style.color = '#ff4d4d';
+                } else {
+                    document.body.classList.remove('app-locked');
+                    lockScreenBtn.innerHTML = '<i class="fas fa-lock-open"></i>';
+                    lockScreenBtn.style.color = 'white';
                 }
 
                 // Apply visualizer style
@@ -2925,6 +2939,7 @@
                 lockScreenBtn.innerHTML = '<i class="fas fa-lock-open"></i>';
                 lockScreenBtn.style.color = 'white';
             }
+            saveSettings();
         }
 
         const startLockPress = (e) => {
