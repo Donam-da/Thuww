@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>3D Solar System Image Gallery</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
     <style>
         /*
          * To use the "VN Time" font, you need to provide the font file (e.g., VNtime.ttf, VNtime.woff).
@@ -3445,6 +3448,16 @@
             panningSpeed = parseFloat(panningSpeedSlider.value);
             updatePanningSliderVisual(panningSpeed);
             saveSettings();
+            // Cập nhật ngay lập tức khi thay đổi tốc độ (để khắc phục độ trễ do buffer lớn)
+            if (pannerNode && pannerNode.positionX && audioContext) {
+                try {
+                    const now = audioContext.currentTime;
+                    pannerNode.positionX.cancelScheduledValues(now);
+                    pannerNode.positionY.cancelScheduledValues(now);
+                    pannerNode.positionZ.cancelScheduledValues(now);
+                    next8DScheduleTime = now;
+                } catch(e) {}
+            }
         });
 
         // Zoom slider logic
@@ -6470,7 +6483,7 @@
 
             const currentTime = audioContext.currentTime;
             const lookahead = 0.5;
-            const scheduleDuration = 2.0; // Schedule 2 seconds ahead to cover background throttling
+            const scheduleDuration = 10.0; // Tăng thời gian đệm lên 10s để tránh bị ngắt quãng khi chạy nền
 
             if (next8DScheduleTime < currentTime + lookahead) {
                 const startScheduleTime = Math.max(currentTime, next8DScheduleTime);
