@@ -3914,14 +3914,22 @@
         const shuffleBtn = document.getElementById('shuffle-btn');
         songSearchInput.addEventListener('input', populateSongList);
 
+        function removeVietnameseTones(str) {
+            return str.normalize('NFD')
+                      .replace(/[\u0300-\u036f]/g, '')
+                      .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+        }
+
         function populateSongList() {
-            const query = songSearchInput.value.toLowerCase().trim();
+            const query = songSearchInput.value.trim().toLowerCase();
+            const normalizedQuery = removeVietnameseTones(query);
             songSelectionList.innerHTML = ''; // Clear previous list
             const currentPlayingSong = songs[currentSongIndex];
 
             songs.forEach(song => {
+                const normalizedSongName = removeVietnameseTones(song.name.toLowerCase());
                 // Filter logic: if query exists and song name doesn't include it, skip
-                if (query && !song.name.toLowerCase().includes(query)) {
+                if (query && !normalizedSongName.includes(normalizedQuery)) {
                     return;
                 }
 
