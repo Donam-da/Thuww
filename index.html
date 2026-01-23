@@ -532,7 +532,7 @@
             background: radial-gradient(circle, rgba(0, 255, 255, 0.4) 0%, transparent 60%);
             border-radius: 50%;
             border: 2px solid rgba(0, 255, 255, 0.75);
-            margin-top: -6.4px;
+            margin-top: -6px;
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
         }
 
@@ -1461,7 +1461,9 @@
     <div id="main-scene">
         <!-- New container for UI buttons -->
         <div id="main-ui-controls">
-            <div class="ui-button-group">
+            <div class="ui-button-group" style="position: relative;">
+                <button id="toggle-tv-mode-btn" style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%); background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; white-space: nowrap; z-index: 10;">Kĩ thuật số</button>
+                <button id="toggle-tv-mode-btn" style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%); background: transparent; border: none; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; white-space: nowrap; z-index: 10;">Digital</button>
                 <button id="select-planet-btn">Hành tinh</button>
                 <button id="toggle-labels-btn">Hiện tên</button>
             </div>
@@ -1595,11 +1597,8 @@
                     <!-- The text inside the label will be controlled by JavaScript -->
                     <label style="pointer-events: none; margin-bottom: 0;">Ẩn Thời gian</label>
                 </li>
-                <li class="settings-list-item" style="display: flex; align-items: center; justify-content: space-between;">
-                    <div id="toggle-tv-btn" style="cursor: pointer; flex-grow: 1;">
-                        <label style="pointer-events: none; margin-bottom: 0; cursor: pointer;">Hiện TV</label>
-                    </div>
-                    <button id="toggle-tv-mode-btn" style="background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; margin-left: 10px;">Kĩ thuật số</button>
+                <li class="settings-list-item" id="toggle-tv-btn" style="cursor: pointer;">
+                    <label style="pointer-events: none; margin-bottom: 0;">Hiện TV</label>
                 </li>
                 <li class="settings-list-item" id="download-tv-btn" style="cursor: pointer;">
                     <label style="pointer-events: none; margin-bottom: 0;">Ảnh tv</label>
@@ -2659,6 +2658,7 @@
 
                 isTvDigitalMode = tvMode;
                 if (toggleTvModeBtn) toggleTvModeBtn.textContent = isTvDigitalMode ? 'Kĩ thuật số' : 'Gốc';
+                if (toggleTvModeBtn) toggleTvModeBtn.textContent = isTvDigitalMode ? 'Digital' : 'Original';
                 
                 // Apply 8D setting
                 is8DEnabled = saved8DEnabled;
@@ -2960,6 +2960,7 @@
                 e.stopPropagation();
                 isTvDigitalMode = !isTvDigitalMode;
                 toggleTvModeBtn.textContent = isTvDigitalMode ? 'Kĩ thuật số' : 'Gốc';
+                toggleTvModeBtn.textContent = isTvDigitalMode ? 'Digital' : 'Original';
                 saveSettings();
                 
                 if (gifTvContainer.style.display !== 'none') {
