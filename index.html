@@ -4817,6 +4817,26 @@
             scene_bg.add(musicPlayerObject); // Thêm vào scene nền
             show2DMusicControls(); // Show the 2D controls
             playSong(song.file);
+
+            // --- Media Session API (Hỗ trợ phát nhạc nền trên Mobile) ---
+            if ('mediaSession' in navigator) {
+                const parts = song.name.split(' - ');
+                const title = parts.length > 1 ? parts[0].trim() : song.name;
+                const artist = parts.length > 1 ? parts[1].trim() : (currentSingerName || 'Solar System 3D');
+
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: title,
+                    artist: artist,
+                    album: 'Solar System 3D Collection',
+                    artwork: [{ src: 'images/3.png', sizes: '512x512', type: 'image/png' }] // Dùng tạm ảnh Trái Đất làm bìa
+                });
+
+                navigator.mediaSession.setActionHandler('play', () => audioPlayer.play());
+                navigator.mediaSession.setActionHandler('pause', () => audioPlayer.pause());
+                navigator.mediaSession.setActionHandler('previoustrack', () => playNextSong(-1));
+                navigator.mediaSession.setActionHandler('nexttrack', () => playNextSong(1));
+            }
+
             // Call the function to handle scrolling after the player is in the DOM
             // and its width can be accurately determined. Increased delay for better compatibility on deployed environments.
             setTimeout(() => { applyScrollingToTitle(titleDiv, song.name); }, 200);
