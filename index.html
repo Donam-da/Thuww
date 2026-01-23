@@ -495,7 +495,7 @@
         #panning-speed-slider-container {
             position: absolute;
             left: 50%;
-            transform: translateX(calc(-50% - 30px));
+            transform: translateX(calc(-50% - 40px));
             top: 50px; /* Desktop: Hiển thị bên dưới icon */
             background-color: transparent;
             padding: 5px 0;
@@ -518,19 +518,22 @@
         }
         #panning-speed-slider::-webkit-slider-runnable-track {
             height: 4px;
-            background: rgba(255, 0, 255, 0.5);
-            border: 1px solid rgba(255, 0, 255, 0.5);
+            background: linear-gradient(to right, 
+                rgba(0, 255, 255, 0.75) var(--panning-progress, 10%), 
+                rgba(0, 255, 255, 0.15) var(--panning-progress, 10%)
+            );
+            border: 1px solid rgba(0, 255, 255, 0.25);
             border-radius: 3px;
         }
         #panning-speed-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             height: 16px;
             width: 16px;
-            background: radial-gradient(circle, rgba(255, 0, 255, 0.4) 0%, transparent 60%);
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.4) 0%, transparent 60%);
             border-radius: 50%;
-            border: 2px solid rgba(255, 0, 255, 0.75);
+            border: 2px solid rgba(0, 255, 255, 0.75);
             margin-top: -7px;
-            box-shadow: 0 0 10px rgba(255, 0, 255, 0.7);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
         }
 
         /* --- Zoom Control --- */
@@ -2689,6 +2692,7 @@
                 // Apply Panning Speed
                 panningSpeed = savedPanningSpeed;
                 panningSpeedSlider.value = panningSpeed;
+                updatePanningSliderVisual(panningSpeed);
 
                 // Apply FOV setting
                 camera.fov = fov;
@@ -3431,6 +3435,7 @@
         
         panningSpeedSlider.addEventListener('input', () => {
             panningSpeed = parseFloat(panningSpeedSlider.value);
+            updatePanningSliderVisual(panningSpeed);
             saveSettings();
         });
 
@@ -3462,6 +3467,15 @@
             if (volumeSlider) {
                 // The value is expected to be between 0 and 100
                 volumeSlider.style.setProperty('--volume-progress', `${value}%`);
+            }
+        }
+
+        function updatePanningSliderVisual(value) {
+            if (panningSpeedSlider) {
+                const min = parseFloat(panningSpeedSlider.min);
+                const max = parseFloat(panningSpeedSlider.max);
+                const percentage = ((value - min) / (max - min)) * 100;
+                panningSpeedSlider.style.setProperty('--panning-progress', `${percentage}%`);
             }
         }
 
