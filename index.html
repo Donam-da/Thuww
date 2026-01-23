@@ -3648,6 +3648,8 @@
         let convolverNode = null;
         let dryGainNode = null;
         let wetGainNode = null;
+        let compressorNode = null;
+        let reverbFilterNode = null;
         
         let panningSpeed = 0.5;
         let currentPanningPhase = 0;
@@ -3785,10 +3787,23 @@
                 convolverNode = audioContext.createConvolver();
                 dryGainNode = audioContext.createGain();
                 wetGainNode = audioContext.createGain();
+                
+                // Setup Compressor (Professional Filter - prevents distortion/crackling)
+                compressorNode = audioContext.createDynamicsCompressor();
+                compressorNode.threshold.value = -24;
+                compressorNode.knee.value = 30;
+                compressorNode.ratio.value = 12;
+                compressorNode.attack.value = 0.003;
+                compressorNode.release.value = 0.25;
+
+                // Setup Reverb Filter (Clear Audio - removes muddy highs)
+                reverbFilterNode = audioContext.createBiquadFilter();
+                reverbFilterNode.type = 'lowpass';
+                reverbFilterNode.frequency.value = 3000;
 
                 // Create Impulse Response for Reverb (Space simulation)
                 const sampleRate = audioContext.sampleRate;
-                const length = sampleRate * 3; // 3 seconds reverb tail
+                const length = sampleRate * 1.5; // Reduced to 1.5s to prevent stuttering on mobile/screen off
                 const impulse = audioContext.createBuffer(2, length, sampleRate);
                 const leftImpulse = impulse.getChannelData(0);
                 const rightImpulse = impulse.getChannelData(1);
@@ -3800,8 +3815,8 @@
                 convolverNode.buffer = impulse;
 
                 // Set Mix Levels
-                dryGainNode.gain.value = 0.5; // Direct sound
-                wetGainNode.gain.value = 0.5; // Reverb sound
+                dryGainNode.gain.value = 0.8; // Direct sound (Clearer)
+                wetGainNode.gain.value = 0.3; // Reverb sound (Subtler)
 
                 audioSource = audioContext.createMediaElementSource(audioPlayer);
                 
@@ -3821,19 +3836,24 @@
             dryGainNode.disconnect();
             wetGainNode.disconnect();
             convolverNode.disconnect();
+            if (compressorNode) compressorNode.disconnect();
+            if (reverbFilterNode) reverbFilterNode.disconnect();
 
             if (is8DEnabled) {
-                // 8D Path: Source -> Panner -> (Dry + Wet) -> Analyser
+                // 8D Path: Source -> Panner -> (Dry + Wet) -> Compressor -> Analyser
                 audioSource.connect(pannerNode);
                 
                 // Dry Path
                 pannerNode.connect(dryGainNode);
-                dryGainNode.connect(analyser);
+                dryGainNode.connect(compressorNode);
                 
                 // Wet Path (Reverb)
                 pannerNode.connect(convolverNode);
-                convolverNode.connect(wetGainNode);
-                wetGainNode.connect(analyser);
+                convolverNode.connect(reverbFilterNode);
+                reverbFilterNode.connect(wetGainNode);
+                wetGainNode.connect(compressorNode);
+                
+                compressorNode.connect(analyser);
             } else {
                 // Normal Path: Source -> Analyser
                 audioSource.connect(analyser);
