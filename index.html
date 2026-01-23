@@ -51,7 +51,7 @@
         .loader-container { text-align: center; }
         .progress-circle {
             width: 120px; height: 120px; border-radius: 50%;
-            background: conic-gradient(#3498db 0%, #1a1a1a 0%);
+            background: conic-gradient(#00ffff 0%, #1a1a1a 0%);
             display: flex; justify-content: center; align-items: center;
             margin: 0 auto 20px auto;
         }
@@ -1832,7 +1832,7 @@
             const progress = Math.min(100, (loadedResourcesCount / totalResourcesCount) * 100);
             const percentage = progress.toFixed(2);
             progressText.textContent = `${percentage}%`;
-            progressCircle.style.background = `conic-gradient(#3498db ${progress}%, #1a1a1a 0%)`;
+            progressCircle.style.background = `conic-gradient(#00ffff ${progress}%, #1a1a1a 0%)`;
         }
 
         function loadMusic() {
@@ -3606,13 +3606,13 @@
                         const progress = (planetsProcessed / totalPlanets) * 100;
                         const percentage = Math.round(progress);
                         imageProgressText.textContent = `${percentage}%`;
-                        imageProgressCircle.style.background = `conic-gradient(#3498db ${progress}%, #1a1a1a 0%)`;
+                        imageProgressCircle.style.background = `conic-gradient(#00ffff ${progress}%, #1a1a1a 0%)`;
 
                         setTimeout(processNextPlanet, 16);
                     }
 
                     imageProgressText.textContent = `0%`;
-                    imageProgressCircle.style.background = `conic-gradient(#3498db 0%, #1a1a1a 0%)`;
+                    imageProgressCircle.style.background = `conic-gradient(#00ffff 0%, #1a1a1a 0%)`;
                     setTimeout(processNextPlanet, 16);
                 } else {
                     // SHOW mode (SUBSEQUENT TIMES): Instantly show existing images
