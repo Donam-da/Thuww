@@ -1605,7 +1605,6 @@
         </div>
     </div>
 
-    <audio id="background-music" crossorigin="anonymous"></audio>
     <audio id="background-music"></audio>
 
     <script>
@@ -3432,7 +3431,11 @@
         
         // --- Music Player Logic ---
         const audioPlayer = document.getElementById('background-music');
-        audioPlayer.crossOrigin = "anonymous"; // Đảm bảo Web Audio API có thể xử lý âm thanh từ Blob/Cache
+        // Tự động xử lý crossOrigin: Bật cho GitHub Pages/Web, tắt cho Localhost/File để tránh lỗi CORS với Blob
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.protocol !== 'file:') {
+            audioPlayer.crossOrigin = "anonymous";
+        }
+
         const selectSongBtn = document.getElementById('select-song-btn');
         const songListOverlay = document.getElementById('song-list-overlay');
         const clearQueueBox = document.getElementById('clear-queue-box');
