@@ -5217,6 +5217,25 @@
             // Call the function to handle scrolling after the player is in the DOM
             // and its width can be accurately determined. Increased delay for better compatibility on deployed environments.
             setTimeout(() => { applyScrollingToTitle(titleDiv, song.name); }, 200);
+
+            // Cập nhật danh sách nhạc nếu đang mở để hiển thị bài hát mới
+            if (isSongListOpen) {
+                populateSongList();
+                setTimeout(() => {
+                    const currentSongItem = songSelectionList.querySelector('.current-song');
+                    if (currentSongItem) {
+                        currentSongItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 100);
+            }
+            // Cập nhật danh sách chờ nếu đang mở
+            if (clearQueueBox.style.display === 'flex') {
+                renderQueueBox();
+            }
+            // Cập nhật danh sách ca sĩ nếu đang mở và đang xem bài hát
+            if (singerListOverlay.style.display === 'flex' && selectedSinger) {
+                renderSingerMenu();
+            }
         }
 
         function updateMusicPlayerUI() {
