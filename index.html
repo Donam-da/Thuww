@@ -1885,9 +1885,47 @@
                     })
                     .catch(err => {
                         console.error("Failed to preload TV image:", src, err);
-                        loadingManager.itemEnd(src);
-                        loadedResourcesCount++;
-                        updateLoaderProgress();
+                        console.warn("Fetch failed for TV image, trying direct load (offline mode):", src);
+                        // Fallback: Try loading image to cache Original (DataURL) and process Digital
+                        const img = new Image();
+                        if (src.startsWith('http') && !src.includes(window.location.hostname)) {
+                            img.crossOrigin = "Anonymous";
+                        }
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                            
+                            // Cache Original (Static if GIF)
+                            try {
+                                const originalData = canvas.toDataURL(src.toLowerCase().endsWith('.jpg') ? 'image/jpeg' : 'image/png');
+                                tvOriginalCache.set(src, originalData);
+                                
+                                // Process Digital using Data URL
+                                processImageForTv(originalData, (resultSrc, isSuccess) => {
+                                    if (isSuccess) processedTvImages.set(src, resultSrc);
+                                    loadingManager.itemEnd(src);
+                                    loadedResourcesCount++;
+                                    updateLoaderProgress();
+                                });
+                            } catch (e) {
+                                // Fallback if canvas fails
+                                processImageForTv(src, (resultSrc, isSuccess) => {
+                                    if (isSuccess) processedTvImages.set(src, resultSrc);
+                                    loadingManager.itemEnd(src);
+                                    loadedResourcesCount++;
+                                    updateLoaderProgress();
+                                });
+                            }
+                        };
+                        img.onerror = () => {
+                            loadingManager.itemEnd(src);
+                            loadedResourcesCount++;
+                            updateLoaderProgress();
+                        };
+                        img.src = src;
                     });
             });
 
@@ -6089,7 +6127,11 @@
                     }
                     // Nếu không có trong map (xử lý lỗi), vòng lặp sẽ tiếp tục tìm ảnh khác
                 } else {
-                    gifTvScreen.src = selectedSrc;
+                    if (tvOriginalCache.has(selectedSrc)) {
+                        gifTvScreen.src = tvOriginalCache.get(selectedSrc);
+                    } else {
+                        gifTvScreen.src = selectedSrc;
+                    }
                     found = true;
                 }
                 attempts++;
