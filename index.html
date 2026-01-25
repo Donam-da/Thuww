@@ -1920,11 +1920,11 @@
 
         // Start Loading Sequence
         loadMusic().then(() => {
-            // Music loaded. Enable 8D and update UI text.
-            is8DEnabled = true;
+            // Music loaded. Default to Normal mode (8D disabled).
+            is8DEnabled = false;
             if (icon8D) {
-                icon8D.style.color = '#00ffff';
-                icon8D.style.textShadow = '0 0 10px #00ffff';
+                icon8D.style.color = '#ff4d4d';
+                icon8D.style.textShadow = '0 0 5px rgba(255, 77, 77, 0.5)';
             }
             
             loadVisuals();
@@ -2633,7 +2633,7 @@
                 if (settings.singerQueue) singerQueue = settings.singerQueue;
                 if (settings.currentSingerName) currentSingerName = settings.currentSingerName;
                 activeQueueType = settings.activeQueueType || 'all'; // Mặc định là 'all'
-                const saved8DEnabled = settings.is8DEnabled !== undefined ? settings.is8DEnabled : true;
+                const saved8DEnabled = settings.is8DEnabled !== undefined ? settings.is8DEnabled : false;
                 const savedPanningSpeed = settings.panningSpeed !== undefined ? settings.panningSpeed : 2.5;
                 const savedIsScreenLocked = settings.isScreenLocked !== undefined ? settings.isScreenLocked : false;
 
@@ -3732,7 +3732,7 @@
         let audioSource = null; // To hold the MediaElementSourceNode
 
         // 8D Audio Variables
-        let is8DEnabled = true;
+        let is8DEnabled = false;
         let pannerNode = null;
         let convolverNode = null;
         let dryGainNode = null;
